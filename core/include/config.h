@@ -12,6 +12,7 @@ typedef struct {
     uint16_t id;                ///< unique node identifier
     uint8_t radio_address;      ///< address for radio communication
     uint8_t radio_channel;      ///< current frequency
+    char name[8];               ///< name of the node
 } config_t;
 
 /* @brief:  Element to store in flashrom */
