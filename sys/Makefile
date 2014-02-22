@@ -62,6 +62,9 @@ endif
 ifneq (,$(filter rpl,$(USEMODULE)))
     DIRS += net/routing/rpl
 endif
+ifneq (,$(filter olsr2,$(USEMODULE)))
+    DIRS += net/routing/olsr2
+endif
 ifneq (,$(filter ieee802154,$(USEMODULE)))
     DIRS += net/link_layer/ieee802154
 endif
