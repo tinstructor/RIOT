@@ -1,0 +1,47 @@
+/*
+ * Copyright (C) 2013 Freie Universität Berlin
+ *
+ * This file subject to the terms and conditions of the GNU Lesser General
+ * Public License. See the file LICENSE in the top level directory for more
+ * details.
+ */
+
+/**
+ * @defgroup    boards_msba2 MSB-A2
+ * @ingroup     boards
+ * @brief       Support for the MSB-A2 board
+ * @{
+ *
+ * @file        board.h
+ * @brief       Basic definitions for the MSB-A2 board
+ *
+ * @author      unknown
+ */
+
+#ifndef __BOARD_H
+#define __BOARD_H
+
+//#include "msba2_common.h"
+#include "bitarithm.h"
+
+//#define LED_RED_PIN (BIT25)
+//#define LED_GREEN_PIN (BIT26)
+//
+//#define LED_GREEN_OFF (FIO3SET = LED_GREEN_PIN)
+//#define LED_GREEN_ON (FIO3CLR = LED_GREEN_PIN)
+//#define LED_GREEN_TOGGLE (FIO3PIN ^= LED_GREEN_PIN)
+//
+//#define LED_RED_OFF (FIO3SET = LED_RED_PIN)
+//#define LED_RED_ON (FIO3CLR = LED_RED_PIN)
+//#define LED_RED_TOGGLE (FIO3PIN ^= LED_RED_PIN)
+
+#define LED_RED_ON
+#define LED_RED_TOGGLE
+#define LED_GREEN_TOGGLE
+#define LED_GREEN_OFF
+
+void init_clks1(void);
+
+//typedef uint8_t radio_packet_length_t;
+
+#endif /* __BOARD_H */
