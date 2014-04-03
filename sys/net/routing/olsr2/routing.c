@@ -63,6 +63,7 @@ void fill_routing_table(void) {
 		simple_list_for_each_safe(head, fn, prev, skipped) {
 			/* chose shortest route from the set of availiable routes */
 			uint8_t min_hops = 255;
+			metric_t min_mtrc = METRIC_MAX;
 			struct olsr_node* node = NULL;
 			struct alt_route* route;
 			simple_list_for_each(fn->node->other_routes, route) {
@@ -74,30 +75,33 @@ void fill_routing_table(void) {
 						continue;
 
 					min_hops = 1;
+					min_mtrc = fn->node->link_metric;
 					break;
 				}
 
 				/* see if we can find a better route */
 				struct olsr_node* _tmp = get_node(route->last_addr);
 				if (_tmp != NULL && _tmp->addr != NULL &&
-					_tmp->distance + 1 <= min_hops &&
+					_tmp->path_metric + fn->node->link_metric <= min_mtrc &&
 					_tmp->next_addr != NULL) {
 
 					if (_tmp->next_addr == NULL)
 						continue;
+
 					/* ignore pending nodes */
 					if (_tmp->distance == 1 && _tmp->pending)
 						continue;
 
 					/* try to minimize MPR count */
-					if (min_hops == 2) {
+					if (min_hops == 2 && min_mtrc == _tmp->path_metric + fn->node->link_metric) {
 						/* use the neighbor with the most 2-hop neighbors */
-						if (h1_deriv(node)->mpr_neigh > h1_deriv(_tmp)->mpr_neigh + 1)
+						if (h1_deriv(node)->mpr_neigh_route > h1_deriv(_tmp)->mpr_neigh_route + 1)
 							continue;
 					}
 
 					node = _tmp;
 					min_hops = _tmp->distance + 1;
+					min_mtrc = _tmp->path_metric + fn->node->link_metric;
 				}
 			}
 
@@ -107,6 +111,7 @@ void fill_routing_table(void) {
 					netaddr_to_str_s(&nbuf[0], fn->node->addr), fn->node->name);
 				noop = false;
 				fn->node->next_addr = netaddr_use(fn->node->addr);
+				fn->node->path_metric = fn->node->link_metric;
 				fn->node->distance = 1;
 				fn->node->lost = 0;
 
@@ -124,10 +129,11 @@ void fill_routing_table(void) {
 
 				/* update MPR information */
 				if (node->distance == 1) {
-					h1_deriv(node)->mpr_neigh++;
+					h1_deriv(node)->mpr_neigh_route++;
 				}
 
 				fn->node->distance = node->distance + 1;
+				fn->node->path_metric = node->path_metric + fn->node->link_metric;
 				fn->node->next_addr = netaddr_use(node->next_addr);
 
 				pop_other_route(fn->node, node->addr);

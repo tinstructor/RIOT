@@ -15,7 +15,7 @@
 #include "list.h"
 
 static struct olsr_node* _new_olsr_node(struct netaddr* addr,
-	uint8_t distance, uint8_t vtime, char* name) {
+	uint8_t distance, metric_t metric, uint8_t vtime, char* name) {
 
 	struct olsr_node* n = calloc(1, sizeof(struct olsr_node));
 
@@ -32,6 +32,7 @@ static struct olsr_node* _new_olsr_node(struct netaddr* addr,
 	n->node.key = n->addr;
 	n->type = NODE_TYPE_OLSR;
 	n->distance = distance;
+	n->link_metric = metric;
 	n->expires = time_now() + vtime;
 #ifdef ENABLE_NAME
 	if (name)
@@ -131,7 +132,8 @@ static void _update_link_quality(struct nhdp_node* node) {
 	if (!h1_super(node)->pending && node->link_quality < HYST_LOW) {
 		h1_super(node)->pending = 1;
 		h1_super(node)->lost = LOST_ITER_MAX;
-		node->mpr_neigh = 0;
+		node->mpr_neigh_flood = 0;
+		node->mpr_neigh_route = 0;
 
 		add_free_node(h1_super(node));
 		push_default_route(h1_super(node));
@@ -201,64 +203,67 @@ void route_expired(struct olsr_node* node, struct netaddr* last_addr) {
 		_olsr_node_expired(node);
 }
 
-void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtime, uint8_t distance, char* name) {
+void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtime, uint8_t distance, metric_t metric, char* name) {
 	struct olsr_node* n = get_node(addr);
 
 	if (n == NULL)
-		n = _new_olsr_node(addr, distance, vtime, name);
+		n = _new_olsr_node(addr, distance, metric, vtime, name);
 
 	if (n == NULL) {
 		puts("ERROR: add_olsr_node failed - out of memory");
 		return;
 	}
 
+	/* we have added a new node */
 	if (n->last_addr == NULL) {
 #ifdef ENABLE_NAME
 		if (n->name == NULL && name != NULL)
 			n->name = strdup(name);
 #endif
-		add_other_route(n, last_addr, vtime);
+		add_other_route(n, last_addr, distance, metric, vtime);
 		add_free_node(n);
 
 		return;
 	}
 
+	struct olsr_node* new_lh = get_node(last_addr);
+
 	/* minimize MPR count */
-	if (distance == 2 && distance == n->distance && netaddr_cmp(last_addr, n->last_addr) != 0) {
+	if (distance == 2 && new_lh->path_metric + metric == n->path_metric &&
+		netaddr_cmp(last_addr, n->last_addr) != 0) {
 		struct nhdp_node* cur_mpr = h1_deriv(get_node(n->last_addr));
-		struct nhdp_node* new_mpr = h1_deriv(get_node(last_addr));
 
 		/* see if the new route is better, that means uses a neighbor that is alreay
 		   used for reaching (more) 2-hop neighbors. */
-		if (cur_mpr == NULL || (new_mpr != NULL &&
-			new_mpr->mpr_neigh + 1 > cur_mpr->mpr_neigh)) {
-			DEBUG("switching MPR");
+		if (cur_mpr == NULL || (new_lh != NULL &&
+			h1_deriv(new_lh)->mpr_neigh_route + 1 > cur_mpr->mpr_neigh_route)) {
+			DEBUG("switching routing MPR");
 			_update_children(n->addr, NULL);
 			push_default_route(n);
 			add_free_node(n);
 		}
 	}
 
-	if (distance >= n->distance) {
-		add_other_route(n, last_addr, vtime);
+	if (new_lh->path_metric + metric >= n->path_metric) {
+		add_other_route(n, last_addr, distance, metric, vtime);
 		return;
 	}
 
-	DEBUG("shorter route found (old: %d hops over %s new: %d hops over %s)",
-		n->distance, netaddr_to_str_s(&nbuf[0], n->last_addr),
-		distance, netaddr_to_str_s(&nbuf[1], last_addr));
+	DEBUG("better route found (old: %d (%d) hops over %s new: %d (%d) hops over %s)",
+		n->distance, n->path_metric, netaddr_to_str_s(&nbuf[0], n->last_addr),
+		distance, new_lh->path_metric + metric, netaddr_to_str_s(&nbuf[1], last_addr));
 
-	n->distance = distance;
+	n->distance = distance; // only to keep free_nodes sorted
 	_update_children(n->addr, NULL);
 	push_default_route(n);
-	add_other_route(n, last_addr, vtime);
+	add_other_route(n, last_addr, distance, metric, vtime);
 	add_free_node(n);
 }
 
 bool is_known_msg(struct netaddr* addr, uint16_t seq_no, uint8_t vtime) {
 	struct olsr_node* node = get_node(addr);
 	if (!node) {
-		node = _new_olsr_node(addr, 255, vtime, NULL);
+		node = _new_olsr_node(addr, 255, METRIC_MAX, vtime, NULL);
 		node->seq_no = seq_no;
 		return false;
 	}
@@ -283,7 +288,7 @@ void print_topology_set(void) {
 	struct olsr_node* node;
 	struct alt_route* route;
 	avl_for_each_element(get_olsr_head(), node, node) {
-		DEBUG("%s (%s)\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d] %s",
+		DEBUG("%s (%s)\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d|%d] %s%s",
 			netaddr_to_str_s(&nbuf[0], node->addr),
 			node->name,
 			netaddr_to_str_s(&nbuf[1], node->last_addr),
@@ -293,8 +298,10 @@ void print_topology_set(void) {
 			node->seq_no,
 			node->type != NODE_TYPE_NHDP ? "" : node->pending ? "pending" : "",
 			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->link_quality,
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh,
-			node->type != NODE_TYPE_NHDP ? "" : node->mpr_selector ? "[S]" : "[ ]"
+			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_flood,
+			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_route,
+			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_flood ? "[F" : "[ ",
+			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_route ? "R]" : " ]"
 			);
 		simple_list_for_each (node->other_routes, route) {
 			DEBUG("\t\t\t=> %s; %ld s",
@@ -319,15 +326,26 @@ void print_routing_graph(void) {
 	}
 	puts("}");
 
-	puts("subgraph mpr {");
+	puts("subgraph mpr_f {");
 	puts("\tedge [ color = blue ]");
-	puts("// BEGIN MPR");
+	puts("// BEGIN FLOODING MPR");
 	avl_for_each_element(get_olsr_head(), node, node) {
-		if (node->distance == 1 && node->mpr_selector) {
+		if (node->distance == 1 && h1_deriv(node)->mpr_slctr_flood) {
 			printf("\t%s -> %s\n", node->name, local_name);
 		}
 	}
-	puts("// END MPR");
+	puts("// END FLOODING MPR");
+	puts("}");
+
+	puts("subgraph mpr_r {");
+	puts("\tedge [ color = green ]");
+	puts("// BEGIN ROUTING MPR");
+	avl_for_each_element(get_olsr_head(), node, node) {
+		if (node->distance == 1 && h1_deriv(node)->mpr_slctr_route) {
+			printf("\t%s -> %s\n", node->name, local_name);
+		}
+	}
+	puts("// END ROUTING MPR");
 	puts("}");
 
 	puts("\n----END ROUTING GRAPH----\n");
@@ -350,9 +368,9 @@ void print_topology_set(void) {
 
 	avl_for_each_element(get_olsr_head(), node, node) {
 #ifdef ENABLE_NAME
-		printf("%s (%s)\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d] %s\n",
+		printf("%s (%s)\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d|%d] %s%s\n",
 #else
-		printf("%s\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d] %s\n",
+		printf("%s\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d|%d] %s%s\n",
 #endif
 			netaddr_to_str_s(&nbuf[0], node->addr),
 #ifdef ENABLE_NAME
@@ -365,8 +383,10 @@ void print_topology_set(void) {
 			node->seq_no,
 			node->type != NODE_TYPE_NHDP ? "" : node->pending ? "pending" : "",
 			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->link_quality,
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh,
-			node->type != NODE_TYPE_NHDP ? "" : node->mpr_selector ? "[S]" : "[ ]"
+			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_flood,
+			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_route,
+			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_flood ? "[F" : "[ ",
+			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_route ? "R]" : " ]"
 			);
 		simple_list_for_each (node->other_routes, route) {
 			printf("\t\t\t=> %s; %ld s\n",

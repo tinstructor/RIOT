@@ -17,8 +17,18 @@ static void _decrease_mpr_neigh(struct olsr_node* node) {
 	/* update MPR information */
 	if (node->distance == 2) {
 		struct nhdp_node* n1 = h1_deriv(get_node(node->last_addr));
-		if (n1 != NULL && n1->mpr_neigh > 0)
-			n1->mpr_neigh--;
+
+		if (n1 == NULL)
+			return;
+
+		if (n1->mpr_neigh_flood > 0)
+			n1->mpr_neigh_flood--;
+
+		if (n1->mpr_neigh_route > 0)
+			n1->mpr_neigh_route--;
+
+		if (n1->flood_neighbors > 0)
+			n1->flood_neighbors--;
 	}
 }
 
@@ -50,7 +60,7 @@ struct olsr_node* get_node(struct netaddr* addr) {
 	return avl_find_element(get_olsr_head(), addr, n, node);
 }
 
-void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t vtime) {
+void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t distance, metric_t metric, uint8_t vtime) {
 	/* make sure the route is not already the default route */
 	if (node->last_addr != NULL && netaddr_cmp(node->last_addr, last_addr) == 0) {
 		node->expires = time_now() + vtime;
@@ -60,6 +70,7 @@ void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t 
 	struct alt_route* route = simple_list_find_memcmp(node->other_routes, last_addr);
 	if (route != NULL) {
 		route->expires = time_now() + vtime;
+		route->link_metric = metric;
 		return;
 	}
 
@@ -72,6 +83,15 @@ void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t 
 
 	route->last_addr = netaddr_reuse(last_addr);
 	route->expires = time_now() + vtime;
+	route->link_metric = metric;
+
+	/* if we add a route for the first time, increment flood_neighbors */
+	if (distance == 2) {
+		struct nhdp_node* n1 = h1_deriv(get_node(last_addr));
+		if (n1 != NULL)
+			n1->flood_neighbors++;
+	}
+
 }
 
 void remove_default_node(struct olsr_node* node) {
@@ -95,6 +115,7 @@ void push_default_route(struct olsr_node* node) {
 	_decrease_mpr_neigh(node);
 	struct alt_route* route = simple_list_find_memcmp(node->other_routes, last_addr);
 
+	/* don't add route if it already exists - this should never happen, right? */
 	if (route != NULL) {
 		node->last_addr = netaddr_free(node->last_addr);
 		return;
@@ -109,6 +130,7 @@ void push_default_route(struct olsr_node* node) {
 
 	route->expires = node->expires;
 	route->last_addr = node->last_addr;
+	route->link_metric = node->link_metric;
 	node->last_addr = NULL;
 }
 
@@ -121,6 +143,7 @@ void pop_other_route(struct olsr_node* node, struct netaddr* last_addr) {
 
 		node->last_addr = route->last_addr;
 		node->expires = route->expires;
+		node->link_metric = route->link_metric;
 		simple_list_for_each_remove(&node->other_routes, route, prev);
 		break;
 	}

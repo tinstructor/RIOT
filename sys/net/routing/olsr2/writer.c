@@ -79,6 +79,7 @@ static void
 _cb_add_nhdp_addresses(struct rfc5444_writer *wr) {
 	struct olsr_node* node, *safe;
 	int value;
+	uint8_t mpr;
 	send_tc_messages = false;
 
 	/* add all neighbors */
@@ -94,16 +95,22 @@ _cb_add_nhdp_addresses(struct rfc5444_writer *wr) {
 		if (node->pending && !node->lost)
 			continue;
 
-		if (!node->pending && node->mpr_selector)
+		if (!node->pending && h1_deriv(node)->mpr_slctr_route)
 			send_tc_messages = true;
 
 		struct rfc5444_writer_address *address = rfc5444_writer_add_address(wr, 
 			_nhdp_message_content_provider.creator, node->addr, false);
+		
+		mpr = 0;
+		if (h1_deriv(node)->mpr_neigh_flood > 0)
+			mpr |= RFC5444_MPR_FLOODING;
 
-		/* node is a mpr */
-		if (h1_deriv(node)->mpr_neigh > 0) 
+		if (h1_deriv(node)->mpr_neigh_route > 0)
+			mpr |= RFC5444_MPR_ROUTING;
+
+		if (mpr > 0) 
 			rfc5444_writer_add_addrtlv(wr, address, &_nhdp_addrtlvs[IDX_ADDRTLV_MPR],
-				&h1_deriv(node)->mpr_neigh, sizeof h1_deriv(node)->mpr_neigh, false);
+				&mpr, sizeof mpr, false);
 
 		if (node->lost) {
 			DEBUG("LINKSTATUS: neighbor %s lost (HELLO) [%d]", node->name, node->lost);
@@ -141,7 +148,7 @@ _cb_add_olsr_addresses(struct rfc5444_writer *wr) {
 
 	/* add all neighbors */
 	avl_for_each_element(get_olsr_head(), node, node) {
-		if (!node->mpr_selector)
+		if (!h1_deriv(node)->mpr_slctr_route)
 			continue;
 
 		if (node->distance != 1 && !node->lost)

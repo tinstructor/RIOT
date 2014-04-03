@@ -27,6 +27,7 @@ static struct olsr_node* current_node;
 static uint8_t vtime;
 static uint8_t hops;
 static uint16_t _seq_no;
+static metric_t metric;
 
 static enum rfc5444_result _cb_nhdp_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont);
 static enum rfc5444_result _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont);
@@ -108,7 +109,7 @@ _cb_nhdp_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont __att
 	}
 #endif
 
-	current_node = add_neighbor(current_src, vtime, name);
+	current_node = add_neighbor(current_src, metric, vtime, name);
 
 	if (current_node == NULL) {
 		puts("ERROR: add_neighbor failed - out of memory");
@@ -116,7 +117,8 @@ _cb_nhdp_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont __att
 	}
 
 	/* reset MPR selector state, will be set by _cb_nhdp_blocktlv_address_okay */
-	current_node->mpr_selector = 0;
+	h1_deriv(current_node)->mpr_slctr_route = 0;
+	h1_deriv(current_node)->mpr_slctr_flood = 0;
 
 	if (current_node->pending)
 		return RFC5444_DROP_PACKET;
@@ -157,11 +159,13 @@ _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 	if (netaddr_cmp(&cont->addr, get_local_addr()) == 0) {
 
 		/* node selected us as mpr */
-		if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_MPR].tlv))
-			current_node->mpr_selector = 1;
+		if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_MPR].tlv)) {
+			h1_deriv(current_node)->mpr_slctr_flood = *tlv->single_value & RFC5444_MPR_FLOODING;
+			h1_deriv(current_node)->mpr_slctr_route = *tlv->single_value & RFC5444_MPR_ROUTING;
+		}
 
 	} else
-		add_olsr_node(&cont->addr, current_src, vtime, 2, name);
+		add_olsr_node(&cont->addr, current_src, vtime, 2, metric, name);
 
 	return RFC5444_OKAY;
 }
@@ -235,7 +239,7 @@ _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 	}
 
 	/* hops is hopcount to orig_addr, addr is one more hop */
-	add_olsr_node(&cont->addr, &cont->orig_addr, vtime, hops + 1, name);
+	add_olsr_node(&cont->addr, &cont->orig_addr, vtime, hops + 1, metric, name);
 
 	return RFC5444_OKAY;
 }
@@ -246,8 +250,8 @@ _cb_olsr_forward_message(struct rfc5444_reader_tlvblock_context *context __attri
 	uint8_t *buffer, size_t length) {
 	struct olsr_node* node = get_node(current_src);
 
-	/* only forward if node selected us as MPR */
-	if (node == NULL || node->mpr_selector == 0)
+	/* only forward if node selected us as flooding MPR */
+	if (node == NULL || h1_deriv(node)->mpr_slctr_flood == 0)
 		return;
 
 	if (RFC5444_OKAY == rfc5444_writer_forward_msg(&writer, buffer, length))
@@ -276,8 +280,9 @@ void reader_init(void) {
 /**
  * Inject a package into the RFC5444 reader
  */
-int reader_handle_packet(void* buffer, size_t length, struct netaddr* src) {
+int reader_handle_packet(void* buffer, size_t length, struct netaddr* src, uint8_t metric_in) {
 	current_src = src;
+	metric = metric_in;
 	return rfc5444_reader_handle_packet(&reader, buffer, length);
 }
 
