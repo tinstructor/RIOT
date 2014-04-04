@@ -62,10 +62,10 @@ void fill_routing_table(void) {
 		char skipped;
 		simple_list_for_each_safe(head, fn, prev, skipped) {
 			/* chose shortest route from the set of availiable routes */
-			uint8_t min_hops = 255;
 			metric_t min_mtrc = METRIC_MAX;
-			struct olsr_node* node = NULL;
-			struct alt_route* route;
+			struct olsr_node* node = NULL; /* chosen route */
+			struct nhdp_node* flood_mpr = NULL;
+			struct alt_route* route; /* current other_route */
 			simple_list_for_each(fn->node->other_routes, route) {
 
 				/* the node is actually a neighbor of ours */
@@ -74,39 +74,61 @@ void fill_routing_table(void) {
 					if (fn->node->pending)
 						continue;
 
-					min_hops = 1;
-					min_mtrc = fn->node->link_metric;
-					break;
+					min_mtrc = route->link_metric;
+					node = fn->node;
+					continue;
 				}
 
 				/* see if we can find a better route */
 				struct olsr_node* _tmp = get_node(route->last_addr);
-				if (_tmp != NULL && _tmp->addr != NULL &&
-					_tmp->path_metric + fn->node->link_metric <= min_mtrc &&
-					_tmp->next_addr != NULL) {
+				if (_tmp == NULL || _tmp->addr == NULL || _tmp->next_addr == NULL)
+					continue;
 
-					if (_tmp->next_addr == NULL)
-						continue;
+				/* ignore pending nodes */
+				if (_tmp->distance == 1 && _tmp->pending)
+					continue;
 
-					/* ignore pending nodes */
-					if (_tmp->distance == 1 && _tmp->pending)
-						continue;
+				/* flooding MPR selection */
+				if (_tmp->type == NODE_TYPE_NHDP) { // is this reliable?
+					if (flood_mpr == NULL) {
+						flood_mpr = h1_deriv(_tmp);
+						flood_mpr->mpr_neigh_flood++;
+					/* flood_neighbors is counted on adding/removing links, no need to +1 */
+					} else if (flood_mpr->flood_neighbors < h1_deriv(_tmp)->flood_neighbors) {
+						flood_mpr->mpr_neigh_flood--;
+						flood_mpr = h1_deriv(_tmp);
+						flood_mpr->mpr_neigh_flood++;
+					}
+				}
 
-					/* try to minimize MPR count */
-					if (min_hops == 2 && min_mtrc == _tmp->path_metric + fn->node->link_metric) {
-						/* use the neighbor with the most 2-hop neighbors */
-						if (h1_deriv(node)->mpr_neigh_route > h1_deriv(_tmp)->mpr_neigh_route + 1)
+				if (_tmp->path_metric + fn->node->link_metric > min_mtrc)
+					continue;
+
+				/* try to minimize MPR count */
+				if (_tmp->type == NODE_TYPE_NHDP && min_mtrc == _tmp->path_metric + route->link_metric) {
+					/* a direct neighbor might be reached over an additional hop, the true MPR */
+					if (netaddr_cmp(_tmp->next_addr, _tmp->addr) != 0) {
+						struct nhdp_node* old_mpr = h1_deriv(get_node(_tmp->next_addr));
+						if (old_mpr->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1)
 							continue;
 					}
 
-					node = _tmp;
-					min_hops = _tmp->distance + 1;
-					min_mtrc = _tmp->path_metric + fn->node->link_metric;
+					/* use the neighbor with the most 2-hop neighbors */
+					if (h1_deriv(node)->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1)
+						continue;
 				}
-			}
+
+				node = _tmp;
+				min_mtrc = _tmp->path_metric + route->link_metric;
+			} /* for each other_route */
+
+			if (flood_mpr != NULL)
+				fn->node->flooding_mpr = flood_mpr->super.addr;
+			else
+				fn->node->flooding_mpr = NULL;
 
 			/* We found a valid route */
-			if (min_hops == 1) {
+			if (node == fn->node) {
 				DEBUG("%s (%s) is a 1-hop neighbor",
 					netaddr_to_str_s(&nbuf[0], fn->node->addr), fn->node->name);
 				noop = false;
@@ -127,13 +149,14 @@ void fill_routing_table(void) {
 
 				noop = false;
 
-				/* update MPR information */
-				if (node->distance == 1) {
-					h1_deriv(node)->mpr_neigh_route++;
+				/* update routing MPR information */
+				if (node->type == NODE_TYPE_NHDP) {
+					struct nhdp_node* mpr = h1_deriv(get_node(node->next_addr));
+					mpr->mpr_neigh_route++;
 				}
 
 				fn->node->distance = node->distance + 1;
-				fn->node->path_metric = node->path_metric + fn->node->link_metric;
+				fn->node->path_metric = min_mtrc;
 				fn->node->next_addr = netaddr_use(node->next_addr);
 
 				pop_other_route(fn->node, node->addr);
