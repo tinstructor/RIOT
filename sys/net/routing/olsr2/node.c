@@ -14,21 +14,18 @@ char* local_name;
 #endif
 
 static void _decrease_mpr_neigh(struct olsr_node* node) {
+	struct nhdp_node* n1 = h1_deriv(get_node(node->last_addr));
+
 	/* update MPR information */
-	if (node->distance == 2) {
-		struct nhdp_node* n1 = h1_deriv(get_node(node->last_addr));
+	if (h1_super(n1)->type == NODE_TYPE_NHDP) {
 
-		if (n1 == NULL)
-			return;
-
-		if (n1->mpr_neigh_flood > 0)
-			n1->mpr_neigh_flood--;
-
-		if (n1->mpr_neigh_route > 0)
+		if (n1 != NULL && n1->mpr_neigh_route > 0)
 			n1->mpr_neigh_route--;
 
-		if (n1->flood_neighbors > 0)
-			n1->flood_neighbors--;
+		struct nhdp_node* n1_f = h1_deriv(get_node(node->flood_mpr));
+
+		if (n1_f != NULL && n1_f->mpr_neigh_flood > 0)
+			n1->mpr_neigh_flood--;
 	}
 }
 
@@ -97,6 +94,11 @@ void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t 
 void remove_default_node(struct olsr_node* node) {
 	if (node->last_addr) {
 		_decrease_mpr_neigh(node);
+
+		struct nhdp_node* mpr = h1_deriv(get_node(node->last_addr));
+		if (mpr != NULL)
+			mpr->flood_neighbors--;
+
 		node->last_addr = netaddr_free(node->last_addr);
 	}
 
@@ -155,6 +157,10 @@ void remove_other_route(struct olsr_node* node, struct netaddr* last_addr) {
 	simple_list_for_each_safe(node->other_routes, route, prev, skipped) {
 		if (netaddr_cmp(route->last_addr, last_addr))
 			continue;
+
+		struct nhdp_node* mpr = h1_deriv(get_node(route->last_addr));
+		if (mpr != NULL)
+			mpr->flood_neighbors--;
 
 		netaddr_free(route->last_addr);
 		simple_list_for_each_remove(&node->other_routes, route, prev);

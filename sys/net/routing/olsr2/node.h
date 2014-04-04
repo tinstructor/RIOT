@@ -44,7 +44,7 @@ struct olsr_node {
 	uint8_t distance;			/* hops between us and the node */
 	metric_t link_metric;
 	metric_t path_metric;
-	struct netaddr* flood_mpr;	/* flooding MPR to broadcast to this node (used for couting flood_neighbors), 2-hop only */
+	struct netaddr* flood_mpr;	/* flooding MPR to broadcast to this node (used for couting mpr_neigh_flood), 2-hop only */
 
 	uint8_t type		: 1;	/* node type */
 	uint8_t pending		: 1;	/* whether the link can already be used - only 1-hop */
