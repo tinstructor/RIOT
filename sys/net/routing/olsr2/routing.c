@@ -67,13 +67,17 @@ void fill_routing_table(void) {
 			struct nhdp_node* flood_mpr = NULL;
 			struct alt_route* route; /* current other_route */
 			simple_list_for_each(fn->node->other_routes, route) {
+				DEBUG("\tconsidering %s (%d)", netaddr_to_string(&nbuf[0], route->last_addr), route->link_metric);
 
 				/* the node is actually a neighbor of ours */
 				if (netaddr_cmp(route->last_addr, get_local_addr()) == 0) {
+					DEBUG("\t\t1-hop neighbor");
 #ifdef ENABLE_HYSTERESIS					
 					/* don't use pending nodes */
-					if (fn->node->pending)
+					if (fn->node->pending) {
+						DEBUG("\t\tpending -> skipped");
 						continue;
+					}
 #endif
 					min_mtrc = route->link_metric;
 					node = fn->node;
@@ -82,56 +86,61 @@ void fill_routing_table(void) {
 
 				/* see if we can find a better route */
 				struct olsr_node* _tmp = get_node(route->last_addr);
-				if (_tmp == NULL || _tmp->addr == NULL || _tmp->next_addr == NULL)
+				if (_tmp == NULL || _tmp->addr == NULL || _tmp->next_addr == NULL) {
+					DEBUG("\t\tnot routable");
 					continue;
+				}
 
 #ifdef ENABLE_HYSTERESIS
 				/* ignore pending nodes */
-				if (_tmp->distance == 1 && _tmp->pending)
+				if (_tmp->distance == 1 && _tmp->pending) {
+					DEBUG("\t\tpending -> skipped");
 					continue;
+				}
 #endif
 				/* flooding MPR selection */
-				if (_tmp->type == NODE_TYPE_NHDP) { // is this reliable?
-					if (flood_mpr == NULL) {
+				if (_tmp->type == NODE_TYPE_NHDP && 
+					(flood_mpr == NULL || flood_mpr->flood_neighbors < h1_deriv(_tmp)->flood_neighbors))
 						flood_mpr = h1_deriv(_tmp);
-						flood_mpr->mpr_neigh_flood++;
-					/* flood_neighbors is counted on adding/removing links, no need to +1 */
-					} else if (flood_mpr->flood_neighbors < h1_deriv(_tmp)->flood_neighbors) {
-						flood_mpr->mpr_neigh_flood--;
-						flood_mpr = h1_deriv(_tmp);
-						flood_mpr->mpr_neigh_flood++;
-					}
-				}
 
-				if (_tmp->path_metric + fn->node->link_metric > min_mtrc)
+				if (_tmp->path_metric + fn->node->link_metric > min_mtrc) {
+					DEBUG("\t\tdoesn't offer a better route, %d + %d > %d", _tmp->path_metric, fn->node->link_metric, min_mtrc);
 					continue;
+				}
 
 				/* try to minimize MPR count */
 				if (_tmp->type == NODE_TYPE_NHDP && min_mtrc == _tmp->path_metric + route->link_metric) {
+					DEBUG("\t\tequaly good route found, try to optimize MPR seleciton");
 					/* a direct neighbor might be reached over an additional hop, the true MPR */
 					if (netaddr_cmp(_tmp->next_addr, _tmp->addr) != 0) {
 						struct nhdp_node* old_mpr = h1_deriv(get_node(_tmp->next_addr));
-						if (old_mpr->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1)
+						if (old_mpr->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1) {
+							DEBUG("\t\told MPR is better");
 							continue;
+						}
 					}
 
 					/* use the neighbor with the most 2-hop neighbors */
-					if (h1_deriv(node)->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1)
+					if (h1_deriv(node)->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1) {
+						DEBUG("\t\told MPR is better");
 						continue;
+					}
 				}
 
+				DEBUG("\t\t[possible candidate]");
 				node = _tmp;
 				min_mtrc = _tmp->path_metric + route->link_metric;
 			} /* for each other_route */
 
-			if (flood_mpr != NULL)
+			if (flood_mpr != NULL) {
 				fn->node->flood_mpr = h1_super(flood_mpr)->addr;
-			else
+				flood_mpr->mpr_neigh_flood++;
+			} else
 				fn->node->flood_mpr = NULL;
 
 			/* We found a valid route */
 			if (node == fn->node) {
-				DEBUG("%s (%s) is a 1-hop neighbor",
+				DEBUG("\t%s (%s) is a 1-hop neighbor",
 					netaddr_to_str_s(&nbuf[0], fn->node->addr), fn->node->name);
 				noop = false;
 				fn->node->next_addr = netaddr_use(fn->node->addr);
@@ -143,7 +152,7 @@ void fill_routing_table(void) {
 				simple_list_for_each_remove(&head, fn, prev);
 
 			} else if (node != NULL) {
-				DEBUG("%s (%s) -> %s (%s) -> […] -> %s",
+				DEBUG("\t%s (%s) -> %s (%s) -> […] -> %s",
 					netaddr_to_str_s(&nbuf[0], fn->node->addr), fn->node->name,
 					netaddr_to_str_s(&nbuf[1], node->addr), node->name,
 					netaddr_to_str_s(&nbuf[2], node->next_addr));
@@ -154,6 +163,7 @@ void fill_routing_table(void) {
 				/* update routing MPR information */
 				if (node->type == NODE_TYPE_NHDP) {
 					struct nhdp_node* mpr = h1_deriv(get_node(node->next_addr));
+					DEBUG("\tincrementing mpr_neigh_route for %s", h1_super(mpr)->name);
 					mpr->mpr_neigh_route++;
 				}
 
@@ -164,7 +174,7 @@ void fill_routing_table(void) {
 				pop_other_route(fn->node, node->addr);
 				simple_list_for_each_remove(&head, fn, prev);
 			} else
-				DEBUG("don't yet know how to route %s", netaddr_to_str_s(&nbuf[0], fn->node->addr));
+				DEBUG("\tdon't yet know how to route %s", netaddr_to_str_s(&nbuf[0], fn->node->addr));
 		}
 	}
 

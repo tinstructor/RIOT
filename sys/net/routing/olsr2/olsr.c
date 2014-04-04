@@ -233,9 +233,9 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 	struct olsr_node* new_lh = get_node(last_addr);
 
 	/* minimize MPR count */
-	if (distance == 2 && new_lh->path_metric + metric == n->path_metric &&
+	if (new_lh->type == NODE_TYPE_NHDP && new_lh->path_metric + metric == n->path_metric &&
 		netaddr_cmp(last_addr, n->last_addr) != 0) {
-		struct nhdp_node* cur_mpr = h1_deriv(get_node(n->last_addr));
+		struct nhdp_node* cur_mpr = h1_deriv(get_node(n->next_addr));
 
 		/* see if the new route is better, that means uses a neighbor that is alreay
 		   used for reaching (more) 2-hop neighbors. */
@@ -292,12 +292,14 @@ void print_topology_set(void) {
 	struct olsr_node* node;
 	struct alt_route* route;
 	avl_for_each_element(get_olsr_head(), node, node) {
-		DEBUG("%s (%s)\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d|%d] %s%s",
+		DEBUG("%s (%s)\t=> %s; %d hops, metric: %d, next: %s (%d), %ld s [%d] %s %.2f [%d|%d] %s%s",
 			netaddr_to_str_s(&nbuf[0], node->addr),
 			node->name,
 			netaddr_to_str_s(&nbuf[1], node->last_addr),
 			node->distance,
+			node->path_metric,
 			netaddr_to_str_s(&nbuf[2], node->next_addr),
+			node->link_metric,
 			node->expires - time_now(),
 			node->seq_no,
 			node->type != NODE_TYPE_NHDP ? "" : node->pending ? "pending" : "",
@@ -308,8 +310,9 @@ void print_topology_set(void) {
 			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_route ? "R]" : " ]"
 			);
 		simple_list_for_each (node->other_routes, route) {
-			DEBUG("\t\t\t=> %s; %ld s",
+			DEBUG("\t\t\t=> %s (%d); %ld s",
 				netaddr_to_str_s(&nbuf[0], route->last_addr),
+				route->link_metric,
 				route->expires - time_now());
 		}
 	}
@@ -331,7 +334,7 @@ void print_routing_graph(void) {
 	puts("}");
 
 	puts("subgraph mpr_f {");
-	puts("\tedge [ color = blue ]");
+	puts("\tedge [ color = green ]");
 	puts("// BEGIN FLOODING MPR");
 	avl_for_each_element(get_olsr_head(), node, node) {
 		if (node->distance == 1 && h1_deriv(node)->mpr_slctr_flood) {
@@ -342,7 +345,7 @@ void print_routing_graph(void) {
 	puts("}");
 
 	puts("subgraph mpr_r {");
-	puts("\tedge [ color = green ]");
+	puts("\tedge [ color = blue ]");
 	puts("// BEGIN ROUTING MPR");
 	avl_for_each_element(get_olsr_head(), node, node) {
 		if (node->distance == 1 && h1_deriv(node)->mpr_slctr_route) {
