@@ -123,9 +123,9 @@ void fill_routing_table(void) {
 			} /* for each other_route */
 
 			if (flood_mpr != NULL)
-				fn->node->flooding_mpr = flood_mpr->super.addr;
+				fn->node->flood_mpr = h1_super(flood_mpr)->addr;
 			else
-				fn->node->flooding_mpr = NULL;
+				fn->node->flood_mpr = NULL;
 
 			/* We found a valid route */
 			if (node == fn->node) {
