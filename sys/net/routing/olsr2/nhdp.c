@@ -54,8 +54,10 @@ struct olsr_node* add_neighbor(struct netaddr* addr, metric_t metric, uint8_t vt
 		n->type = NODE_TYPE_NHDP;
 		n->distance = 1;
 		n->link_metric = metric;
+#ifdef ENABLE_HYSTERESIS
 		h1_deriv(n)->link_quality = HYST_SCALING;
 		n->pending = 1;
+#endif
 #ifdef ENABLE_NAME
 		if (name != NULL)
 			n->name = strdup(name);

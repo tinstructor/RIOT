@@ -47,7 +47,9 @@ struct olsr_node {
 	struct netaddr* flood_mpr;	/* flooding MPR to broadcast to this node (used for couting mpr_neigh_flood), 2-hop only */
 
 	uint8_t type		: 1;	/* node type */
+#ifdef ENABLE_HYSTERESIS
 	uint8_t pending		: 1;	/* whether the link can already be used - only 1-hop */
+#endif
 	uint8_t lost		: 4;	/* [4 bit] if set, the node will be annouced as lost - only 1-hop */
 
 #ifdef ENABLE_NAME
@@ -71,8 +73,10 @@ struct nhdp_node {
 	/* number of 2-hop neighbors reached through this node aka if this value is > 0, it's a routing MPR */
 	uint8_t mpr_neigh_route;
 
+#ifdef ENABLE_HYSTERESIS
 	/* average packet loss, decides if it should be used as 1-hop neigh */
 	float link_quality;
+#endif
 };
 
 static inline struct olsr_node* h1_super(struct nhdp_node* n) { return (struct olsr_node*) n; }

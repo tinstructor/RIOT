@@ -70,10 +70,11 @@ void fill_routing_table(void) {
 
 				/* the node is actually a neighbor of ours */
 				if (netaddr_cmp(route->last_addr, get_local_addr()) == 0) {
+#ifdef ENABLE_HYSTERESIS					
 					/* don't use pending nodes */
 					if (fn->node->pending)
 						continue;
-
+#endif
 					min_mtrc = route->link_metric;
 					node = fn->node;
 					continue;
@@ -84,10 +85,11 @@ void fill_routing_table(void) {
 				if (_tmp == NULL || _tmp->addr == NULL || _tmp->next_addr == NULL)
 					continue;
 
+#ifdef ENABLE_HYSTERESIS
 				/* ignore pending nodes */
 				if (_tmp->distance == 1 && _tmp->pending)
 					continue;
-
+#endif
 				/* flooding MPR selection */
 				if (_tmp->type == NODE_TYPE_NHDP) { // is this reliable?
 					if (flood_mpr == NULL) {

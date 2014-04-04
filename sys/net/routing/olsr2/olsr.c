@@ -122,6 +122,7 @@ static bool _route_expired(struct olsr_node* node, struct netaddr* last_addr) {
 	return time_now() > route->expires;
 }
 
+#ifdef ENABLE_HYSTERESIS
 static void _update_link_quality(struct nhdp_node* node) {
 	TRACE_FUN("%s", netaddr_to_str_s(&nbuf[0], h1_super(node)->addr));
 	if (_route_expired(h1_super(node), get_local_addr()))
@@ -151,12 +152,15 @@ static void _update_link_quality(struct nhdp_node* node) {
 		add_free_node(h1_super(node));
 	}
 }
+#endif
 
 bool remove_expired(struct olsr_node* node) {
 	time_t _now = time_now();
 
+#ifdef ENABLE_HYSTERESIS
 	if (node->type == NODE_TYPE_NHDP)
 		_update_link_quality(h1_deriv(node));
+#endif
 
 	char skipped;
 	struct alt_route *route, *prev;
