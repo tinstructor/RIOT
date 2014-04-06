@@ -232,6 +232,8 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 
 	struct olsr_node* new_lh = get_node(last_addr);
 
+	// TODO: netaddr_cmp(last_addr, n->last_addr)
+
 	/* minimize MPR count */
 	if (new_lh->type == NODE_TYPE_NHDP && new_lh->path_metric + metric == n->path_metric &&
 		netaddr_cmp(last_addr, n->last_addr) != 0) {
@@ -239,9 +241,9 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 
 		/* see if the new route is better, that means uses a neighbor that is alreay
 		   used for reaching (more) 2-hop neighbors. */
-		if (cur_mpr == NULL || (new_lh != NULL &&
+		if (cur_mpr != NULL && (new_lh != NULL &&
 			h1_deriv(new_lh)->mpr_neigh_route + 1 > cur_mpr->mpr_neigh_route)) {
-			DEBUG("switching routing MPR");
+			DEBUG("switching routing MPR (%s -> %s)", h1_super(cur_mpr)->name, new_lh->name);
 			_update_children(n->addr, NULL);
 			push_default_route(n);
 			add_free_node(n);

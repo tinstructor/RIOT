@@ -61,6 +61,7 @@ void fill_routing_table(void) {
 		struct free_node *prev;
 		char skipped;
 		simple_list_for_each_safe(head, fn, prev, skipped) {
+			DEBUG("trying to find a route to %s", fn->node->name);
 			/* chose shortest route from the set of availiable routes */
 			metric_t min_mtrc = METRIC_MAX;
 			struct olsr_node* node = NULL; /* chosen route */
@@ -111,18 +112,15 @@ void fill_routing_table(void) {
 				/* try to minimize MPR count */
 				if (_tmp->type == NODE_TYPE_NHDP && min_mtrc == _tmp->path_metric + route->link_metric) {
 					DEBUG("\t\tequaly good route found, try to optimize MPR seleciton");
+					struct nhdp_node* old_mpr = h1_deriv(node);
+
 					/* a direct neighbor might be reached over an additional hop, the true MPR */
-					if (netaddr_cmp(_tmp->next_addr, _tmp->addr) != 0) {
-						struct nhdp_node* old_mpr = h1_deriv(get_node(_tmp->next_addr));
-						if (old_mpr->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1) {
-							DEBUG("\t\told MPR is better");
-							continue;
-						}
-					}
+					if (netaddr_cmp(_tmp->next_addr, _tmp->addr) != 0)
+						old_mpr = h1_deriv(get_node(_tmp->next_addr));
 
 					/* use the neighbor with the most 2-hop neighbors */
-					if (h1_deriv(node)->mpr_neigh_route < h1_deriv(_tmp)->mpr_neigh_route + 1) {
-						DEBUG("\t\told MPR is better");
+					if (old_mpr->mpr_neigh_route >= h1_deriv(_tmp)->mpr_neigh_route + 1) {
+						DEBUG("\t\told MPR (%d) is better (new: %d)", old_mpr->mpr_neigh_route, h1_deriv(_tmp)->mpr_neigh_route);
 						continue;
 					}
 				}
