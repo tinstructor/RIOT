@@ -25,7 +25,7 @@ static void _decrease_mpr_neigh(struct olsr_node* node) {
 		struct nhdp_node* n1_f = h1_deriv(get_node(node->flood_mpr));
 
 		if (n1_f != NULL && n1_f->mpr_neigh_flood > 0)
-			n1->mpr_neigh_flood--;
+			n1_f->mpr_neigh_flood--;
 	}
 }
 
