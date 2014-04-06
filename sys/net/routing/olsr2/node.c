@@ -16,17 +16,17 @@ char* local_name;
 static void _decrease_mpr_neigh(struct olsr_node* node) {
 	struct nhdp_node* n1 = h1_deriv(get_node(node->last_addr));
 
-	/* update MPR information */
-	if (h1_super(n1)->type == NODE_TYPE_NHDP) {
+	if (n1 == NULL || h1_super(n1)->type != NODE_TYPE_NHDP)
+		return;
 
-		if (n1 != NULL && n1->mpr_neigh_route > 0)
-			n1->mpr_neigh_route--;
+	/* update routing MPR information */
+	if (n1->mpr_neigh_route > 0)
+		n1->mpr_neigh_route--;
 
-		struct nhdp_node* n1_f = h1_deriv(get_node(node->flood_mpr));
-
-		if (n1_f != NULL && n1_f->mpr_neigh_flood > 0)
-			n1_f->mpr_neigh_flood--;
-	}
+	/* update flooding MPR information */
+	struct nhdp_node* n1_f = h1_deriv(get_node(node->flood_mpr));
+	if (n1_f != NULL && n1_f->mpr_neigh_flood > 0)
+		n1_f->mpr_neigh_flood--;
 }
 
 static int _addr_cmp(const void* a, const void* b) {
