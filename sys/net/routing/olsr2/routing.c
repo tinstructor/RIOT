@@ -104,8 +104,8 @@ void fill_routing_table(void) {
 					(flood_mpr == NULL || flood_mpr->flood_neighbors < h1_deriv(_tmp)->flood_neighbors))
 						flood_mpr = h1_deriv(_tmp);
 
-				if (_tmp->path_metric + fn->node->link_metric > min_mtrc) {
-					DEBUG("\t\tdoesn't offer a better route, %d + %d > %d", _tmp->path_metric, fn->node->link_metric, min_mtrc);
+				if (_tmp->path_metric + route->link_metric > min_mtrc) {
+					DEBUG("\t\tdoesn't offer a better route, %d + %d > %d", _tmp->path_metric, route->link_metric, min_mtrc);
 					continue;
 				}
 
