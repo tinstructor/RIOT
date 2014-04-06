@@ -35,6 +35,8 @@ static enum rfc5444_result _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_
 static enum rfc5444_result _cb_olsr_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont);
 static enum rfc5444_result _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont);
 
+static enum rfc5444_result _cb_packet_end(struct rfc5444_reader_tlvblock_context *cont, bool dropped);
+
 /* HELLO message */
 static struct rfc5444_reader_tlvblock_consumer_entry _nhdp_message_tlvs[] = {
 	[IDX_TLV_VTIME] = { .type = RFC5444_MSGTLV_VALIDITY_TIME, .mandatory = true },
@@ -70,6 +72,7 @@ static struct rfc5444_reader_tlvblock_consumer_entry _olsr_address_tlvs[] = {
 static struct rfc5444_reader_tlvblock_consumer _nhdp_consumer = {
 	.msg_id = RFC5444_MSGTYPE_HELLO,
 	.block_callback = _cb_nhdp_blocktlv_packet_okay,
+	.end_callback = _cb_packet_end,
 };
 
 static struct rfc5444_reader_tlvblock_consumer _nhdp_address_consumer = {
@@ -82,6 +85,7 @@ static struct rfc5444_reader_tlvblock_consumer _nhdp_address_consumer = {
 static struct rfc5444_reader_tlvblock_consumer _olsr_consumer = {
 	.msg_id = RFC5444_MSGTYPE_TC,
 	.block_callback = _cb_olsr_blocktlv_packet_okay,
+	.end_callback = _cb_packet_end,
 };
 
 static struct rfc5444_reader_tlvblock_consumer _olsr_address_consumer = {
@@ -241,6 +245,13 @@ _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 
 	/* hops is hopcount to orig_addr, addr is one more hop */
 	add_olsr_node(&cont->addr, &cont->orig_addr, vtime, hops + 1, metric, name);
+
+	return RFC5444_OKAY;
+}
+
+static enum rfc5444_result
+_cb_packet_end(struct rfc5444_reader_tlvblock_context *cont __attribute__((unused)), bool dropped __attribute__((unused))) {
+	fill_routing_table();
 
 	return RFC5444_OKAY;
 }

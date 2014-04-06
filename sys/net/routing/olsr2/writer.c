@@ -251,8 +251,6 @@ void writer_send_hello(void) {
 	/* send message */
 	rfc5444_writer_create_message_alltarget(&writer, RFC5444_MSGTYPE_HELLO);
 	rfc5444_writer_flush(&writer, &interface, false);
-
-	fill_routing_table();
 }
 
 void writer_send_tc(void) {
