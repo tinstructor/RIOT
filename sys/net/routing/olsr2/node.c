@@ -60,6 +60,11 @@ struct olsr_node* get_node(struct netaddr* addr) {
 void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t distance, metric_t metric, uint8_t vtime) {
 	/* make sure the route is not already the default route */
 	if (node->last_addr != NULL && netaddr_cmp(node->last_addr, last_addr) == 0) {
+		if (node->next_addr != NULL) {
+			// TODO: a different route might be better now
+			node->path_metric -= node->link_metric - metric;
+			node->link_metric = metric;
+		}
 		node->expires = time_now() + vtime;
 		return;
 	}

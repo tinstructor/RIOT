@@ -232,8 +232,6 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 
 	struct olsr_node* new_lh = get_node(last_addr);
 
-	// TODO: netaddr_cmp(last_addr, n->last_addr)
-
 	/* minimize MPR count */
 	if (new_lh->type == NODE_TYPE_NHDP && new_lh->path_metric + metric == n->path_metric &&
 		netaddr_cmp(last_addr, n->last_addr) != 0) {
@@ -250,7 +248,8 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 		}
 	}
 
-	if (new_lh->path_metric + metric >= n->path_metric) {
+	/* worse or same route */
+	if (new_lh->path_metric + metric >= n->path_metric || netaddr_cmp(last_addr, n->last_addr) == 0) {
 		add_other_route(n, last_addr, distance, metric, vtime);
 		return;
 	}
