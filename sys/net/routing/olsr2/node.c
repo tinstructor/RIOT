@@ -14,13 +14,14 @@ char* local_name;
 #endif
 
 static void _decrease_mpr_neigh(struct olsr_node* node) {
-	struct nhdp_node* n1 = h1_deriv(get_node(node->last_addr));
 
-	if (n1 == NULL || h1_super(n1)->type != NODE_TYPE_NHDP)
+	/* only consider 2-hop nieghbors (only 2-hop neighbors have flood_mpr set) */
+	if (node->flood_mpr == NULL)
 		return;
 
 	/* update routing MPR information */
-	if (n1->mpr_neigh_route > 0)
+	struct nhdp_node* n1 = h1_deriv(get_node(node->next_addr));
+	if (n1 != NULL && n1->mpr_neigh_route > 0)
 		n1->mpr_neigh_route--;
 
 	/* update flooding MPR information */
