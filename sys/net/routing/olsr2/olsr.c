@@ -303,7 +303,7 @@ void print_routing_graph(void) {
 	puts("\tedge [ color = green ]");
 	puts("// BEGIN FLOODING MPR");
 	avl_for_each_element(get_olsr_head(), node, node) {
-		if (node->distance == 1 && h1_deriv(node)->mpr_slctr_flood) {
+		if (node->type == NODE_TYPE_NHDP && h1_deriv(node)->mpr_slctr_flood) {
 			printf("\t%s -> %s\n", node->name, local_name);
 		}
 	}

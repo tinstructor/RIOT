@@ -94,6 +94,7 @@ struct netaddr* get_local_addr(void);
 struct avl_tree* get_olsr_head(void);
 int olsr_node_cmp(struct olsr_node* a, struct olsr_node* b);
 struct olsr_node* get_node(struct netaddr* addr);
+metric_t get_link_metric(struct olsr_node* node, struct netaddr* last_addr);
 
 void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t distance, metric_t metric, uint8_t vtime);
 void remove_other_route(struct olsr_node* node, struct netaddr* last_addr);

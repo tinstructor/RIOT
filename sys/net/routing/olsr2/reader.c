@@ -177,6 +177,8 @@ _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 		if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_MPR].tlv)) {
 			h1_deriv(current_node)->mpr_slctr_flood = (*tlv->single_value & RFC5444_MPR_FLOODING) > 0;
 			h1_deriv(current_node)->mpr_slctr_route = (*tlv->single_value & RFC5444_MPR_ROUTING) > 0;
+
+			DEBUG("\tflood: %d, route: %d", h1_deriv(current_node)->mpr_slctr_flood, h1_deriv(current_node)->mpr_slctr_route);
 		}
 
 	} else

@@ -91,7 +91,7 @@ _cb_add_nhdp_addresses(struct rfc5444_writer *wr) {
 		if (remove_expired(node))
 			continue;
 
-		if (node->distance != 1 && !node->lost)
+		if (node->type != NODE_TYPE_NHDP && !node->lost)
 			continue;
 
 #ifdef ENABLE_HYSTERESIS
@@ -119,8 +119,9 @@ _cb_add_nhdp_addresses(struct rfc5444_writer *wr) {
 			rfc5444_writer_add_addrtlv(wr, address, &_nhdp_addrtlvs[IDX_ADDRTLV_MPR],
 				&mpr, sizeof mpr, false);
 
-		if (node->link_metric > RFC5444_METRIC_MIN) {
-			uint16_t mtrc = rfc5444_metric_encode(node->link_metric);
+		metric_t link_metric = get_link_metric(node, get_local_addr());
+		if (link_metric > RFC5444_METRIC_MIN) {
+			uint16_t mtrc = rfc5444_metric_encode(link_metric);
 			rfc5444_writer_add_addrtlv(wr, address, &_nhdp_addrtlvs[IDX_ADDRTLV_METRIC],
 					&mtrc, sizeof mtrc, false);
 		}
@@ -164,6 +165,7 @@ _cb_add_olsr_addresses(struct rfc5444_writer *wr) {
 		if (!h1_deriv(node)->mpr_slctr_route)
 			continue;
 
+		/* don't advertise neighbors routed over another hop */
 		if (node->distance != 1 && !node->lost)
 			continue;
 

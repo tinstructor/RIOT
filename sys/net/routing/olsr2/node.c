@@ -5,6 +5,7 @@
 #include "debug.h"
 
 #include "common/netaddr.h"
+#include "rfc5444/rfc5444.h"
 
 static struct netaddr_rc local_addr;
 static struct avl_tree olsr_head;
@@ -56,6 +57,16 @@ struct olsr_node* get_node(struct netaddr* addr) {
 	if (addr == NULL)
 		return NULL;
 	return avl_find_element(get_olsr_head(), addr, n, node);
+}
+
+metric_t get_link_metric(struct olsr_node* node, struct netaddr* last_addr) {
+	if (netaddr_cmp(node->last_addr, last_addr) == 0)
+		return node->link_metric;
+
+	struct alt_route* route = simple_list_find_memcmp(node->other_routes, last_addr);
+	if (route == NULL)
+		return RFC5444_METRIC_INFINITE;
+	return route->link_metric;
 }
 
 void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t distance, metric_t metric, uint8_t vtime) {
