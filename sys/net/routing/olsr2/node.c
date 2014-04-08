@@ -60,12 +60,14 @@ struct olsr_node* get_node(struct netaddr* addr) {
 }
 
 metric_t get_link_metric(struct olsr_node* node, struct netaddr* last_addr) {
-	if (netaddr_cmp(node->last_addr, last_addr) == 0)
+	if (node->last_addr != NULL && netaddr_cmp(node->last_addr, last_addr) == 0)
 		return node->link_metric;
 
 	struct alt_route* route = simple_list_find_memcmp(node->other_routes, last_addr);
+
 	if (route == NULL)
 		return RFC5444_METRIC_INFINITE;
+
 	return route->link_metric;
 }
 
