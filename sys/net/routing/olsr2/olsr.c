@@ -6,6 +6,7 @@
 #endif
 
 #include "common/netaddr.h"
+#include "rfc5444/rfc5444.h"
 
 #include "olsr.h"
 #include "util.h"
@@ -268,7 +269,7 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 bool is_known_msg(struct netaddr* addr, uint16_t seq_no, uint8_t vtime) {
 	struct olsr_node* node = get_node(addr);
 	if (!node) {
-		node = _new_olsr_node(addr, 255, METRIC_MAX, vtime, NULL);
+		node = _new_olsr_node(addr, 255, RFC5444_METRIC_INFINITE, vtime, NULL);
 		node->seq_no = seq_no;
 		return false;
 	}

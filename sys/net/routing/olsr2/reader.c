@@ -48,6 +48,7 @@ static struct rfc5444_reader_tlvblock_consumer_entry _nhdp_message_tlvs[] = {
 static struct rfc5444_reader_tlvblock_consumer_entry _nhdp_address_tlvs[] = {
 	[IDX_ADDRTLV_MPR] = { .type = RFC5444_ADDRTLV_MPR },
 	[IDX_ADDRTLV_LINK_STATUS] = { .type = RFC5444_ADDRTLV_LINK_STATUS },
+	[IDX_ADDRTLV_METRIC] = { .type = RFC5444_ADDRTLV_LINK_METRIC},
 #ifdef ENABLE_NAME
 	[IDX_ADDRTLV_NODE_NAME] = { .type = RFC5444_TLV_NODE_NAME },
 #endif
@@ -63,6 +64,7 @@ static struct rfc5444_reader_tlvblock_consumer_entry _olsr_message_tlvs[] = {
 
 static struct rfc5444_reader_tlvblock_consumer_entry _olsr_address_tlvs[] = {
 	[IDX_ADDRTLV_LINK_STATUS] = { .type = RFC5444_ADDRTLV_LINK_STATUS },
+	[IDX_ADDRTLV_METRIC] = { .type = RFC5444_ADDRTLV_LINK_METRIC},
 #ifdef ENABLE_NAME
 	[IDX_ADDRTLV_NODE_NAME] = { .type = RFC5444_TLV_NODE_NAME },
 #endif
@@ -113,6 +115,8 @@ _cb_nhdp_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont __att
 	}
 #endif
 
+	DEBUG("\tmetric: %d", metric);
+
 	current_node = add_neighbor(current_src, metric, vtime, name);
 
 	if (current_node == NULL) {
@@ -135,6 +139,7 @@ _cb_nhdp_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont __att
 static enum rfc5444_result
 _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 	struct rfc5444_reader_tlvblock_entry* tlv;
+	metric_t link_metric = RFC5444_METRIC_MIN;
 
 	char* name = NULL;
 #ifdef ENABLE_NAME
@@ -143,6 +148,11 @@ _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 		DEBUG("\t2-hop neighbor: %s (%s)", name, netaddr_to_str_s(&nbuf[0], &cont->addr));
 	}
 #endif
+
+	if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_METRIC].tlv)) {
+		link_metric = rfc5444_metric_decode(*((uint16_t*) tlv->single_value));
+		DEBUG("\tmetric: %d", link_metric);
+	}
 
 	if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_LINK_STATUS].tlv)) {
 		switch (* (char*) tlv->single_value) {
@@ -170,7 +180,7 @@ _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 		}
 
 	} else
-		add_olsr_node(&cont->addr, current_src, vtime, 2, metric, name);
+		add_olsr_node(&cont->addr, current_src, vtime, 2, link_metric, name);
 
 	return RFC5444_OKAY;
 }
@@ -215,6 +225,7 @@ _cb_olsr_blocktlv_packet_okay(struct rfc5444_reader_tlvblock_context *cont) {
 static enum rfc5444_result
 _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 	struct rfc5444_reader_tlvblock_entry* tlv __attribute__((unused));
+	metric_t link_metric = RFC5444_METRIC_MIN;
 	char* name = NULL;
 
 	if (netaddr_cmp(get_local_addr(), &cont->addr) == 0)
@@ -243,8 +254,13 @@ _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 		}
 	}
 
+	if ((tlv = _olsr_address_tlvs[IDX_ADDRTLV_METRIC].tlv)) {
+		link_metric = rfc5444_metric_decode(*((uint16_t*) tlv->single_value));
+		DEBUG("\tmetric: %d", link_metric);
+	}
+
 	/* hops is hopcount to orig_addr, addr is one more hop */
-	add_olsr_node(&cont->addr, &cont->orig_addr, vtime, hops + 1, metric, name);
+	add_olsr_node(&cont->addr, &cont->orig_addr, vtime, hops + 1, link_metric, name);
 
 	return RFC5444_OKAY;
 }

@@ -7,6 +7,7 @@
 #include "util.h"
 #include "routing.h"
 #include "constants.h"
+#include "rfc5444/rfc5444.h"
 
 /* sorted list, only for faster access
  * Keeps yet unroutable nodes, so we don't have to traverse the entire list
@@ -63,7 +64,7 @@ void fill_routing_table(void) {
 		simple_list_for_each_safe(head, fn, prev, skipped) {
 			DEBUG("trying to find a route to %s", fn->node->name);
 			/* chose shortest route from the set of availiable routes */
-			metric_t min_mtrc = METRIC_MAX;
+			metric_t min_mtrc = RFC5444_METRIC_INFINITE;
 			struct olsr_node* node = NULL; /* chosen route */
 			struct nhdp_node* flood_mpr = NULL;
 			struct alt_route* route; /* current other_route */

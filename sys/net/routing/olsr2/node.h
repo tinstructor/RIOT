@@ -19,8 +19,7 @@ enum {
 	NODE_TYPE_NHDP
 };
 
-typedef uint8_t metric_t;
-#define METRIC_MAX 255
+typedef uint32_t metric_t;
 
 /* simple list to store alternative routes */
 struct alt_route {

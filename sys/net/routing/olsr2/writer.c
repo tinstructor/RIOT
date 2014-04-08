@@ -44,6 +44,7 @@ static struct rfc5444_writer_content_provider _nhdp_message_content_provider = {
 static struct rfc5444_writer_tlvtype _nhdp_addrtlvs[] = {
 	[IDX_ADDRTLV_MPR] = { .type = RFC5444_ADDRTLV_MPR },
 	[IDX_ADDRTLV_LINK_STATUS] = { .type = RFC5444_ADDRTLV_LINK_STATUS },
+	[IDX_ADDRTLV_METRIC] = { .type = RFC5444_ADDRTLV_LINK_METRIC},
 #ifdef ENABLE_NAME
 	[IDX_ADDRTLV_NODE_NAME] = { .type = RFC5444_TLV_NODE_NAME },
 #endif
@@ -58,6 +59,7 @@ static struct rfc5444_writer_content_provider _olsr_message_content_provider = {
 
 static struct rfc5444_writer_tlvtype _olsr_addrtlvs[] = {
 	[IDX_ADDRTLV_LINK_STATUS] = { .type = RFC5444_ADDRTLV_LINK_STATUS },
+	[IDX_ADDRTLV_METRIC] = { .type = RFC5444_ADDRTLV_LINK_METRIC},
 #ifdef ENABLE_NAME
 	[IDX_ADDRTLV_NODE_NAME] = { .type = RFC5444_TLV_NODE_NAME },
 #endif
@@ -117,6 +119,12 @@ _cb_add_nhdp_addresses(struct rfc5444_writer *wr) {
 			rfc5444_writer_add_addrtlv(wr, address, &_nhdp_addrtlvs[IDX_ADDRTLV_MPR],
 				&mpr, sizeof mpr, false);
 
+		if (node->link_metric > RFC5444_METRIC_MIN) {
+			uint16_t mtrc = rfc5444_metric_encode(node->link_metric);
+			rfc5444_writer_add_addrtlv(wr, address, &_nhdp_addrtlvs[IDX_ADDRTLV_METRIC],
+					&mtrc, sizeof mtrc, false);
+		}
+
 		if (node->lost) {
 			DEBUG("LINKSTATUS: neighbor %s lost (HELLO) [%d]", node->name, node->lost);
 			value = RFC5444_LINKSTATUS_LOST;
@@ -166,6 +174,12 @@ _cb_add_olsr_addresses(struct rfc5444_writer *wr) {
 
 		struct rfc5444_writer_address *address __attribute__((unused));
 		address = rfc5444_writer_add_address(wr, _olsr_message_content_provider.creator, node->addr, false);
+
+		if (node->link_metric > RFC5444_METRIC_MIN) {
+			uint16_t mtrc = rfc5444_metric_encode(node->link_metric);
+			rfc5444_writer_add_addrtlv(wr, address, &_nhdp_addrtlvs[IDX_ADDRTLV_METRIC],
+					&mtrc, sizeof mtrc, false);
+		}
 
 		if (node->lost) {
 			DEBUG("LINKSTATUS: neighbor %s lost (TC) [%d]", node->name, node->lost);
