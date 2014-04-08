@@ -349,10 +349,12 @@ void print_topology_set(void) {
 #ifdef ENABLE_NAME
 		printf("(%s)", node->name);
 #endif
-		printf("\t=> %s; %d hops, next: %s, %lds ",
+		printf("\t=> %s; %d hops, metric: %d, next: %s (%d), %lds ",
 			netaddr_to_str_s(&nbuf[1], node->last_addr),
 			node->distance,
+			node->path_metric,
 			netaddr_to_str_s(&nbuf[2], node->next_addr),
+			node->link_metric,
 			node->expires - time_now());
 		if (node->type == NODE_TYPE_NHDP) {
 #ifdef ENABLE_HYSTERESIS
@@ -370,8 +372,9 @@ void print_topology_set(void) {
 		puts("");
 
 		simple_list_for_each (node->other_routes, route) {
-			printf("\t\t\t=> %s; %ld s\n",
+			printf("\t\t\t=> %s (%d); %ld s\n",
 				netaddr_to_str_s(&nbuf[0], route->last_addr),
+				route->link_metric,
 				route->expires - time_now());
 		}
 	}
