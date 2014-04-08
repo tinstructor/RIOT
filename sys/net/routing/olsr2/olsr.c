@@ -107,6 +107,7 @@ static void _remove_olsr_node(struct olsr_node* node) {
 	free(node);
 }
 
+#ifdef ENABLE_HYSTERESIS
 static bool _route_expired(struct olsr_node* node, struct netaddr* last_addr) {
 	if (node->last_addr != NULL && netaddr_cmp(node->last_addr, last_addr) == 0)
 		return time_now() > node->expires;
@@ -122,7 +123,6 @@ static bool _route_expired(struct olsr_node* node, struct netaddr* last_addr) {
 	return time_now() > route->expires;
 }
 
-#ifdef ENABLE_HYSTERESIS
 static void _update_link_quality(struct nhdp_node* node) {
 	TRACE_FUN("%s", netaddr_to_str_s(&nbuf[0], h1_super(node)->addr));
 	if (_route_expired(h1_super(node), get_local_addr()))
@@ -284,43 +284,7 @@ bool is_known_msg(struct netaddr* addr, uint16_t seq_no, uint8_t vtime) {
 	return true;
 }
 
-#ifdef ENABLE_DEBUG_OLSR
-void print_topology_set(void) {
-	DEBUG();
-	DEBUG("---[ Topology Set ]--");
-	DEBUG(" [ %s | %s ]\n", netaddr_to_str_s(&nbuf[0], get_local_addr()), local_name);
-
-	struct olsr_node* node;
-	struct alt_route* route;
-	avl_for_each_element(get_olsr_head(), node, node) {
-		DEBUG("%s (%s)\t=> %s; %d hops, metric: %d, next: %s (%d), %ld s [%d] %s %.2f [%d|%d] %s%s",
-			netaddr_to_str_s(&nbuf[0], node->addr),
-			node->name,
-			netaddr_to_str_s(&nbuf[1], node->last_addr),
-			node->distance,
-			node->path_metric,
-			netaddr_to_str_s(&nbuf[2], node->next_addr),
-			node->link_metric,
-			node->expires - time_now(),
-			node->seq_no,
-			node->type != NODE_TYPE_NHDP ? "" : node->pending ? "pending" : "",
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->link_quality,
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_flood,
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_route,
-			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_flood ? "[F" : "[ ",
-			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_route ? "R]" : " ]"
-			);
-		simple_list_for_each (node->other_routes, route) {
-			DEBUG("\t\t\t=> %s (%d); %ld s",
-				netaddr_to_str_s(&nbuf[0], route->last_addr),
-				route->link_metric,
-				route->expires - time_now());
-		}
-	}
-	DEBUG("---------------------");
-	DEBUG();
-}
-
+#ifdef ENABLE_NAME
 void print_routing_graph(void) {
 	puts("\n----BEGIN ROUTING GRAPH----\n");
 	puts("subgraph routing {");
@@ -360,8 +324,13 @@ void print_routing_graph(void) {
 
 }
 #else
+void print_routing_graph(void) {}
+#endif
+
 void print_topology_set(void) {
+#ifndef ENABLE_DEBUG_OLSR
 	struct netaddr_str nbuf[3];
+#endif
 
 	struct alt_route* route;
 	struct olsr_node* node;
@@ -375,27 +344,31 @@ void print_topology_set(void) {
 #endif
 
 	avl_for_each_element(get_olsr_head(), node, node) {
+
+		printf("%s ", netaddr_to_str_s(&nbuf[0], node->addr));
 #ifdef ENABLE_NAME
-		printf("%s (%s)\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d|%d] %s%s\n",
-#else
-		printf("%s\t=> %s; %d hops, next: %s, %ld s [%d] %s %.2f [%d|%d] %s%s\n",
+		printf("(%s)", node->name);
 #endif
-			netaddr_to_str_s(&nbuf[0], node->addr),
-#ifdef ENABLE_NAME
-			node->name,
-#endif
+		printf("\t=> %s; %d hops, next: %s, %lds ",
 			netaddr_to_str_s(&nbuf[1], node->last_addr),
 			node->distance,
 			netaddr_to_str_s(&nbuf[2], node->next_addr),
-			node->expires - time_now(),
-			node->seq_no,
-			node->type != NODE_TYPE_NHDP ? "" : node->pending ? "pending" : "",
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->link_quality,
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_flood,
-			node->type != NODE_TYPE_NHDP ? 0 : h1_deriv(node)->mpr_neigh_route,
-			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_flood ? "[F" : "[ ",
-			node->type != NODE_TYPE_NHDP ? "" : h1_deriv(node)->mpr_slctr_route ? "R]" : " ]"
+			node->expires - time_now());
+		if (node->type == NODE_TYPE_NHDP) {
+#ifdef ENABLE_HYSTERESIS
+			printf("%s %.2f ",
+			node->pending ? "pending" : "",
+			h1_deriv(node)->link_quality);
+#endif
+			printf("[%d|%d] [%s%s]",
+			h1_deriv(node)->mpr_neigh_flood,
+			h1_deriv(node)->mpr_neigh_route,
+			h1_deriv(node)->mpr_slctr_flood ? "F" : " ",
+			h1_deriv(node)->mpr_slctr_route ? "R" : " "
 			);
+		}
+		puts("");
+
 		simple_list_for_each (node->other_routes, route) {
 			printf("\t\t\t=> %s; %ld s\n",
 				netaddr_to_str_s(&nbuf[0], route->last_addr),
@@ -403,7 +376,4 @@ void print_topology_set(void) {
 		}
 	}
 	puts("---------------------");
-
 }
-void print_routing_graph(void) {}
-#endif
