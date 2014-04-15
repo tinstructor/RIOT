@@ -81,6 +81,9 @@ void fill_routing_table(void) {
 						continue;
 					}
 #endif
+					if (route->link_metric > min_mtrc)
+						continue;
+
 					min_mtrc = route->link_metric;
 					node = fn->node;
 					continue;
