@@ -44,6 +44,37 @@ static struct olsr_node* _new_olsr_node(struct netaddr* addr,
 	return n;
 }
 
+static void _get_new_flood_mpr(struct netaddr* old_flood_mpr) {
+	TRACE_FUN("%s", netaddr_to_str_s(&nbuf[0], old_flood_mpr));
+	struct olsr_node *node;
+	avl_for_each_element(get_olsr_head(), node, node) {
+		if (node->distance != 2)
+			continue;
+		if (node->flood_mpr != NULL && netaddr_cmp(old_flood_mpr, node->flood_mpr) != 0)
+			continue;
+
+		DEBUG("chosing new flood MPR for %s (%s)", netaddr_to_str_s(&nbuf[0], node->addr), node->name);
+
+		struct nhdp_node *mpr_b, *mpr_a = h1_deriv(get_node(node->last_addr));
+		struct alt_route *route;
+		simple_list_for_each(node->other_routes, route) {
+			mpr_b = h1_deriv(get_node(route->last_addr));
+			if (mpr_b == NULL || h1_super(mpr_b)->pending)
+				continue;
+			if (mpr_a == NULL || h1_super(mpr_a)->pending || mpr_a->flood_neighbors < mpr_b->flood_neighbors)
+				mpr_a = mpr_b;
+		}
+
+		if (mpr_a != NULL) {
+			mpr_a->mpr_neigh_flood++;
+			node->flood_mpr = h1_super(mpr_a)->addr;
+		} else
+			node->flood_mpr = NULL;
+
+		DEBUG("\tnew flood MPR: %s", netaddr_to_str_s(&nbuf[0], node->flood_mpr));
+	}
+}
+
 /*
  * find a new route for nodes that use last_addr as their default route
  * if lost_node_addr is not null, all reference to it will be removed (aka lost node)
@@ -134,6 +165,10 @@ static void _update_link_quality(struct nhdp_node* node) {
 	if (!h1_super(node)->pending && node->link_quality < HYST_LOW) {
 		h1_super(node)->pending = 1;
 		h1_super(node)->lost = LOST_ITER_MAX;
+
+		if (node->mpr_neigh_flood > 0)
+			_get_new_flood_mpr(h1_super(node)->addr);
+
 		node->mpr_neigh_flood = 0;
 		node->mpr_neigh_route = 0;
 
@@ -147,9 +182,7 @@ static void _update_link_quality(struct nhdp_node* node) {
 		h1_super(node)->lost = 0;
 
 		/* node may just have become a 1-hop node */
-		if (h1_super(node)->last_addr != NULL)
-			push_default_route(h1_super(node));
-
+		push_default_route(h1_super(node));
 		add_free_node(h1_super(node));
 	}
 }
@@ -363,8 +396,9 @@ void print_topology_set(void) {
 			node->pending ? "pending" : "",
 			h1_deriv(node)->link_quality);
 #endif
-			printf("[%d|%d] [%s%s]",
+			printf("[%d/%d|%d] [%s%s]",
 			h1_deriv(node)->mpr_neigh_flood,
+			h1_deriv(node)->flood_neighbors,
 			h1_deriv(node)->mpr_neigh_route,
 			h1_deriv(node)->mpr_slctr_flood ? "F" : " ",
 			h1_deriv(node)->mpr_slctr_route ? "R" : " "
