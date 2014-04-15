@@ -163,7 +163,7 @@ void fill_routing_table(void) {
 				noop = false;
 
 				/* update routing MPR information */
-				if (node->type == NODE_TYPE_NHDP) {
+				if (node->type == NODE_TYPE_NHDP || fn->node->flood_mpr != NULL) {
 					struct nhdp_node* mpr = h1_deriv(get_node(node->next_addr));
 					DEBUG("\tincrementing mpr_neigh_route for %s", h1_super(mpr)->name);
 					mpr->mpr_neigh_route++;
