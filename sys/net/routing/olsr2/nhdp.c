@@ -31,6 +31,11 @@ static struct olsr_node* _node_replace(struct olsr_node* old_n) {
 	if (_free_node)
 		add_free_node(new_n);
 
+#ifdef ENABLE_HYSTERESIS
+	new_n->pending = 1;
+	h1_deriv(new_n)->link_quality = HYST_SCALING;
+#endif
+
 	return new_n;
 }
 
