@@ -15,6 +15,7 @@ char* local_name;
 #endif
 
 static void _decrease_mpr_neigh(struct olsr_node* node) {
+	TRACE_FUN("%s (%s)", netaddr_to_str_s(&nbuf[0], node->addr), node->name);
 
 	/* only consider 2-hop nieghbors (only 2-hop neighbors have flood_mpr set) */
 	if (node->flood_mpr == NULL)
@@ -171,6 +172,9 @@ void pop_other_route(struct olsr_node* node, struct netaddr* last_addr) {
 }
 
 void remove_other_route(struct olsr_node* node, struct netaddr* last_addr) {
+	TRACE_FUN("%s (%s), %s", netaddr_to_str_s(&nbuf[0], node->addr), node->name,
+			netaddr_to_str_s(&nbuf[1], last_addr));
+
 	char skipped;
 	struct alt_route *route, *prev;
 	simple_list_for_each_safe(node->other_routes, route, prev, skipped) {

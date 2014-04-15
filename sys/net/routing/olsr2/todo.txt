@@ -1,6 +1,2 @@
-- [ ] new flooding mpr in add_node?
-- [ ] make sure NODE_TYPE_NHDP is only true for 1-hop neighbors
-- [ ] dead nodes keep lingering around
-- [ ] long delays even without hysteresis
-- [ ] -> reintroduce pending (earlier timeout for 1-hop neighbors)
-- [ ] select new flooding mpr when node is lost (B doesn't select A when B<->E is lost)
+- [ ] dead nodes keep lingering around (lost messages not propagating properly?)
+- [ ] make hysteresis mandatory again

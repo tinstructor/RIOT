@@ -151,7 +151,7 @@ _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 
 	if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_METRIC].tlv)) {
 		link_metric = rfc5444_metric_decode(*((uint16_t*) tlv->single_value));
-		DEBUG("\tmetric: %d", link_metric);
+		DEBUG("\t\tmetric: %d", link_metric);
 	}
 
 	if ((tlv = _nhdp_address_tlvs[IDX_ADDRTLV_LINK_STATUS].tlv)) {
@@ -159,14 +159,14 @@ _cb_nhdp_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 		struct olsr_node* lost;
 		case RFC5444_LINKSTATUS_LOST:
 			lost = get_node(&cont->addr);
-			DEBUG("\texpired node reported, removing it (HELLO)%s", lost ? "" : " [not found]");
+			DEBUG("\t\texpired node reported, removing it (HELLO)%s", lost ? "" : " [not found]");
 
 			if (lost != NULL)
 				route_expired(lost, current_node->addr);
 
 			return RFC5444_DROP_ADDRESS;
 		default:
-			DEBUG("\tunknown LINKSTATUS = %d", * (char*) tlv->single_value);
+			DEBUG("\t\tunknown LINKSTATUS = %d", * (char*) tlv->single_value);
 		}
 	}
 
@@ -258,7 +258,7 @@ _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 
 	if ((tlv = _olsr_address_tlvs[IDX_ADDRTLV_METRIC].tlv)) {
 		link_metric = rfc5444_metric_decode(*((uint16_t*) tlv->single_value));
-		DEBUG("\tmetric: %d", link_metric);
+		DEBUG("\t\tmetric: %d", link_metric);
 	}
 
 	/* hops is hopcount to orig_addr, addr is one more hop */
