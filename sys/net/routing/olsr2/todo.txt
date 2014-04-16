@@ -1,2 +1,0 @@
-- [x] dead nodes keep lingering around (lost messages not propagating properly?)
-- [x] make hysteresis mandatory again
