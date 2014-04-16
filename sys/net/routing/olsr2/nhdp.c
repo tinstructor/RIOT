@@ -31,10 +31,8 @@ static struct olsr_node* _node_replace(struct olsr_node* old_n) {
 	if (_free_node)
 		add_free_node(new_n);
 
-#ifdef ENABLE_HYSTERESIS
 	new_n->pending = 1;
 	h1_deriv(new_n)->link_quality = HYST_SCALING;
-#endif
 
 	return new_n;
 }
@@ -59,12 +57,8 @@ struct olsr_node* add_neighbor(struct netaddr* addr, metric_t metric, uint8_t vt
 		n->type = NODE_TYPE_NHDP;
 		n->distance = 1;
 		n->link_metric = metric;
-#ifdef ENABLE_HYSTERESIS
 		h1_deriv(n)->link_quality = HYST_SCALING;
 		n->pending = 1;
-#else
-		add_free_node(n);
-#endif
 #ifdef ENABLE_NAME
 		if (name != NULL)
 			n->name = strdup(name);

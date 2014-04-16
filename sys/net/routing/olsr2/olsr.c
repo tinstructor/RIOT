@@ -139,7 +139,6 @@ static void _remove_olsr_node(struct olsr_node* node) {
 	free(node);
 }
 
-#ifdef ENABLE_HYSTERESIS
 static bool _route_expired(struct olsr_node* node, struct netaddr* last_addr) {
 	if (node->last_addr != NULL && netaddr_cmp(node->last_addr, last_addr) == 0)
 		return time_now() > node->expires;
@@ -186,15 +185,12 @@ static void _update_link_quality(struct nhdp_node* node) {
 		add_free_node(h1_super(node));
 	}
 }
-#endif
 
 bool remove_expired(struct olsr_node* node) {
 	time_t _now = time_now();
 
-#ifdef ENABLE_HYSTERESIS
 	if (node->type == NODE_TYPE_NHDP)
 		_update_link_quality(h1_deriv(node));
-#endif
 
 	char skipped;
 	struct alt_route *route, *prev;
@@ -388,11 +384,9 @@ void print_topology_set(void) {
 			node->link_metric,
 			node->expires - time_now());
 		if (node->type == NODE_TYPE_NHDP) {
-#ifdef ENABLE_HYSTERESIS
 			printf("%s %.2f ",
 			node->pending ? "pending" : "",
 			h1_deriv(node)->link_quality);
-#endif
 			printf("[%d/%d|%d] [%s%s]",
 			h1_deriv(node)->mpr_neigh_flood,
 			h1_deriv(node)->flood_neighbors,

@@ -94,16 +94,11 @@ _cb_add_nhdp_addresses(struct rfc5444_writer *wr) {
 		if (node->type != NODE_TYPE_NHDP && !node->lost)
 			continue;
 
-#ifdef ENABLE_HYSTERESIS
 		if (node->pending && !node->lost)
 			continue;
 
 		if (!node->pending && h1_deriv(node)->mpr_slctr_route)
 			send_tc_messages = true;
-#else
-		if (h1_deriv(node)->mpr_slctr_route)
-			send_tc_messages = true;
-#endif
 
 		struct rfc5444_writer_address *address = rfc5444_writer_add_address(wr, 
 			_nhdp_message_content_provider.creator, node->addr, false);
@@ -169,10 +164,8 @@ _cb_add_olsr_addresses(struct rfc5444_writer *wr) {
 		if (node->distance != 1 && !node->lost)
 			continue;
 
-#ifdef ENABLE_HYSTERESIS
 		if (node->pending && !node->lost)
 			continue;
-#endif
 
 		struct rfc5444_writer_address *address __attribute__((unused));
 		address = rfc5444_writer_add_address(wr, _olsr_message_content_provider.creator, node->addr, false);
