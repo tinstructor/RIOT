@@ -21,7 +21,7 @@
 
 static struct rfc5444_reader reader;
 static struct netaddr* current_src;
-static struct olsr_node* current_node;
+static struct olsr_node* current_node; // only set by _cb_nhdp_blocktlv_packet_okay
 
 /* ughh… these variables are needed in the addr callback, but read in the packet callback */
 static uint8_t vtime;
@@ -248,7 +248,12 @@ _cb_olsr_blocktlv_address_okay(struct rfc5444_reader_tlvblock_context *cont) {
 			DEBUG("\texpired node reported, removing it (TC)%s", lost ? "" : " [not found]");
 
 			if (lost != NULL)
-				route_expired(lost, current_node->addr);
+				route_expired(lost, &cont->orig_addr);
+
+			/* emergency flood */
+			struct nhdp_node* node = h1_deriv(get_node(current_src));
+			if (node != NULL)
+					node->mpr_slctr_flood = 1;
 
 			return RFC5444_DROP_ADDRESS;
 		default:
@@ -284,9 +289,10 @@ _cb_olsr_forward_message(struct rfc5444_reader_tlvblock_context *context __attri
 	if (node == NULL || h1_deriv(node)->mpr_slctr_flood == 0)
 		return;
 
-	if (RFC5444_OKAY == rfc5444_writer_forward_msg(&writer, buffer, length))
+	if (RFC5444_OKAY == rfc5444_writer_forward_msg(&writer, buffer, length)) {
+		DEBUG("\tforwarding");
 		rfc5444_writer_flush(&writer, &interface, true);
-	else
+	} else
 		DEBUG("\tfailed forwarding package");
 }
 
