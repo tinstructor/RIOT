@@ -157,6 +157,9 @@ _cb_add_olsr_addresses(struct rfc5444_writer *wr) {
 
 	/* add all neighbors */
 	avl_for_each_element(get_olsr_head(), node, node) {
+		if (h1_deriv(node) == NULL)
+			continue;
+
 		if (!h1_deriv(node)->mpr_slctr_route)
 			continue;
 
