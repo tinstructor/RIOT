@@ -103,7 +103,7 @@ void add_other_route(struct olsr_node* node, struct netaddr* last_addr, uint8_t 
 	route->link_metric = metric;
 
 	/* if we add a route for the first time, increment flood_neighbors */
-	if (distance == 2) {
+	if (distance == 2 && node->type != NODE_TYPE_NHDP) {
 		struct nhdp_node* n1 = h1_deriv(get_node(last_addr));
 		if (n1 != NULL)
 			n1->flood_neighbors++;
