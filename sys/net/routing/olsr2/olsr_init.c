@@ -44,7 +44,7 @@ static int sock;
 static sockaddr6_t sa_bcast;
 static mutex_t olsr_data;
 
-#ifdef ENABLE_NAME
+#if defined(BOARD_NATIVE) && defined(ENABLE_NAME)
 static char _name[5];
 static char* gen_name(char* dest, const size_t len) {
 	for (int i = 0; i < len - 1; ++i)
@@ -146,10 +146,11 @@ ipv6_addr_t* get_ip_by_name(char* name) {
 void olsr_init(void) {
 
 #ifdef ENABLE_NAME
-	if (sysconfig.radio_channel == 0)
+#ifdef BOARD_NATIVE
 		local_name = gen_name(_name, sizeof _name);
-	else
+#else
 		local_name = sysconfig.name;
+#endif
 #endif
 	mutex_init(&olsr_data);
 	node_init();
