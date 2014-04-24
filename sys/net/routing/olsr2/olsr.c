@@ -410,6 +410,8 @@ void print_topology_set(void) {
 			h1_deriv(node)->mpr_slctr_route ? "R" : " "
 			);
 		}
+		if (node->flood_mpr != NULL)
+			printf(" flood: %s", netaddr_to_str_s(&nbuf[0], node->flood_mpr));
 		puts("");
 
 		simple_list_for_each (node->other_routes, route) {
