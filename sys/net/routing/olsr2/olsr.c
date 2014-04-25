@@ -88,8 +88,11 @@ static void _update_children(struct netaddr* last_addr, struct netaddr* lost_nod
 	struct olsr_node *node;
 	avl_for_each_element(get_olsr_head(), node, node) {
 
-		if (lost_node_addr != NULL)
+		if (lost_node_addr != NULL) {
 			remove_other_route(node, lost_node_addr);
+			if (node->flood_mpr != NULL && netaddr_cmp(lost_node_addr, node->flood_mpr) == 0)
+				node->flood_mpr = netaddr_free(node->flood_mpr);
+		}
 
 		if (node->last_addr != NULL && netaddr_cmp(node->last_addr, last_addr) == 0) {
 
@@ -129,6 +132,8 @@ static void _remove_olsr_node(struct olsr_node* node) {
 		netaddr_free(route->last_addr);
 		simple_list_for_each_remove(&node->other_routes, route, prev);
 	}
+
+	netaddr_free(node->flood_mpr);
 
 	remove_default_node(node);
 	_update_children(node->addr, node->addr);
