@@ -67,9 +67,11 @@ static void _get_new_flood_mpr(struct netaddr* old_flood_mpr) {
 
 		if (mpr_a != NULL) {
 			mpr_a->mpr_neigh_flood++;
-			node->flood_mpr = h1_super(mpr_a)->addr;
+
+			netaddr_switch(&node->flood_mpr, h1_super(mpr_a)->addr);
+			DEBUG("[%s] setting flood MPR to %s", __FUNCTION__, netaddr_to_str_s(&nbuf[0], node->flood_mpr));
 		} else
-			node->flood_mpr = NULL;
+			node->flood_mpr = netaddr_free(node->flood_mpr);
 
 		DEBUG("\tnew flood MPR: %s", netaddr_to_str_s(&nbuf[0], node->flood_mpr));
 	}
@@ -269,7 +271,7 @@ void add_olsr_node(struct netaddr* addr, struct netaddr* last_addr, uint8_t vtim
 				DEBUG("switching flooding MPR (%s -> %s)", h1_super(old_flood_mpr)->name, new_lh->name);
 				old_flood_mpr->mpr_neigh_flood--;
 				h1_deriv(new_lh)->mpr_neigh_flood++;
-				n->flood_mpr = last_addr;
+				netaddr_switch(&n->flood_mpr, last_addr);
 			}
 		}
 

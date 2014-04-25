@@ -134,10 +134,11 @@ void fill_routing_table(void) {
 			} /* for each other_route */
 
 			if (flood_mpr != NULL) {
-				fn->node->flood_mpr = h1_super(flood_mpr)->addr;
+				netaddr_switch(&fn->node->flood_mpr, h1_super(flood_mpr)->addr);
+				DEBUG("[%s] setting flood MPR to %s", __FUNCTION__, netaddr_to_str_s(&nbuf[0], fn->node->flood_mpr));
 				flood_mpr->mpr_neigh_flood++;
 			} else
-				fn->node->flood_mpr = NULL;
+				fn->node->flood_mpr = netaddr_free(fn->node->flood_mpr);
 
 			/* We found a valid route */
 			if (node == fn->node) {
