@@ -1,69 +1,53 @@
-/******************************************************************************
-Copyright (C) 2013, Freie Universitaet Berlin (FUB). All rights reserved.
-
-These sources were developed at the Freie Universitaet Berlin, Computer Systems
-and Telematics group (http://cst.mi.fu-berlin.de).
--------------------------------------------------------------------------------
-This file is part of RIOT.
-
-This file is subject to the terms and conditions of the LGPLv2.
-See the file LICENSE in the top level directory for more details.
-*******************************************************************************/
-
-#ifndef CPUCONF_H_
-#define CPUCONF_H_
-
-#define FEUERWARE_CONF_CPU_NAME			"NXP LPC2387"
+/*
+ * Copyright (C) 2014 Freie Universität Berlin
+ *
+ * This file is subject to the terms and conditions of the GNU Lesser General
+ * Public License v2.1. See the file LICENSE in the top level directory for more
+ * details.
+ */
 
 /**
- * @name CPU capabilities
+ * @defgroup        cpu_stm32f4 STM32F4
+ * @ingroup         cpu
+ * @brief           CPU specific implementations for the STM32F4
  * @{
+ *
+ * @file
+ * @brief           Implementation specific CPU configuration options
+ *
+ * @author          Hauke Petersen <hauke.peterse@fu-berlin.de>
  */
-#define FEUERWARE_CPU_LPC2387					1
-#define FEUERWARE_CONF_CORE_SUPPORTS_TIME		1
-/** @} */
 
-/**
- * @name Stdlib configuration
- * @{
- */
-#define __FOPEN_MAX__		4
-#define __FILENAME_MAX__	12
-/** @} */
+#ifndef __CPU_CONF_H
+#define __CPU_CONF_H
+
+#include "tm4c123gh6pm.h"
 
 /**
  * @name Kernel configuration
+ *
+ * TODO: measure and adjust for the Cortex-M4f
  * @{
  */
-#define KERNEL_CONF_STACKSIZE_PRINTF_FLOAT  (4096)
-#define KERNEL_CONF_STACKSIZE_PRINTF        (2048)
+#define KERNEL_CONF_STACKSIZE_PRINTF    (2500)
 
 #ifndef KERNEL_CONF_STACKSIZE_DEFAULT
-#define KERNEL_CONF_STACKSIZE_DEFAULT	(512)
+#define KERNEL_CONF_STACKSIZE_DEFAULT   (2500)
 #endif
 
-#define KERNEL_CONF_STACKSIZE_IDLE		(160)
+#define KERNEL_CONF_STACKSIZE_IDLE      (512)
 /** @} */
 
 /**
- * @name Compiler specifics
+ * @name UART0 buffer size definition for compatibility reasons
+ *
+ * TODO: remove once the remodeling of the uart0 driver is done
  * @{
  */
-#define CC_CONF_INLINE					inline
-#define CC_CONF_USED					__attribute__((used))
-#define CC_CONF_NONNULL(...)			__attribute__((nonnull(__VA_ARGS__)))
-#define CC_CONF_WARN_UNUSED_RESULT		__attribute__((warn_unused_result))
-/** @} */
-
-#define TRANSCEIVER_BUFFER_SIZE (10)
-#define RX_BUF_SIZE  (10)
-
 #ifndef UART0_BUFSIZE
 #define UART0_BUFSIZE                   (128)
 #endif
-
-#define F_CPU					(20000000)				///< CPU target speed in Hz
-
-
 /** @} */
-#endif /* CPUCONF_H_ */
+
+#endif /* __CPU_CONF_H */
+/** @} */

@@ -1,26 +1,7 @@
-MODULE =cpu
+# define the module that is build
+MODULE = cpu
 
-include $(RIOTCPU)/$(CPU)/Makefile.include
-
-DIRS = $(RIOTCPU)/arm_common
-#ifneq (,$(filter gpioint,$(USEMODULE)))
-	#DIRS += gpioint
-#endif
-#ifneq (,$(filter mci,$(USEMODULE)))
-	#DIRS += mci
-#endif
-#ifneq (,$(filter rtc,$(USEMODULE)))
-	#DIRS += rtc
-#endif
-#ifneq (,$(filter i2c,$(USEMODULE)))
-	#DIRS += i2c
-#endif
-#
-all: $(BINDIR)$(MODULE).a
-	@echo "			TM4C123 MAKEFILE"
-	@for i in $(DIRS) ; do "$(MAKE)" -C $$i ; done ;
+# add a list of subdirectories, that should also be build
+DIRS = $(CORTEX_M4_COMMON)
 
 include $(RIOTBASE)/Makefile.base
-
-#clean::
-	#@for i in $(DIRS) ; do "$(MAKE)" -C $$i clean ; done ;

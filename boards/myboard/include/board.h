@@ -1,47 +1,51 @@
 /*
- * Copyright (C) 2013 Freie Universität Berlin
+ * Copyright (C) 2014 Freie Universität Berlin
  *
- * This file subject to the terms and conditions of the GNU Lesser General
- * Public License. See the file LICENSE in the top level directory for more
+ * This file is subject to the terms and conditions of the GNU Lesser General
+ * Public License v2.1. See the file LICENSE in the top level directory for more
  * details.
  */
 
 /**
- * @defgroup    boards_msba2 MSB-A2
+ * @defgroup    board_stm32f3discovery STM32F3Discovery
  * @ingroup     boards
- * @brief       Support for the MSB-A2 board
+ * @brief       Board specific files for the STM32F3Discovery board
  * @{
  *
- * @file        board.h
- * @brief       Basic definitions for the MSB-A2 board
+ * @file
+ * @brief       Board specific definitions for the STM32F3Discovery evaluation board
  *
- * @author      unknown
+ * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
  */
 
 #ifndef __BOARD_H
 #define __BOARD_H
 
-//#include "msba2_common.h"
-#include "bitarithm.h"
+#include "cpu.h"
 
-//#define LED_RED_PIN (BIT25)
-//#define LED_GREEN_PIN (BIT26)
-//
-//#define LED_GREEN_OFF (FIO3SET = LED_GREEN_PIN)
-//#define LED_GREEN_ON (FIO3CLR = LED_GREEN_PIN)
-//#define LED_GREEN_TOGGLE (FIO3PIN ^= LED_GREEN_PIN)
-//
-//#define LED_RED_OFF (FIO3SET = LED_RED_PIN)
-//#define LED_RED_ON (FIO3CLR = LED_RED_PIN)
-//#define LED_RED_TOGGLE (FIO3PIN ^= LED_RED_PIN)
+/**
+ * Define the nominal CPU core clock in this board
+ */
+#define F_CPU               (72000000UL)
 
-#define LED_RED_ON
-#define LED_RED_TOGGLE
-#define LED_GREEN_TOGGLE
-#define LED_GREEN_OFF
+/**
+ * @name Assign the hardware timer
+ */
+#define HW_TIMER            TIMER_0
 
-void init_clks1(void);
+/**
+ * @name Define the UART used for stdio
+ * @{
+ */
+#define STDIO               UART_0
+#define STDIO_BAUDRATE      (115200U)
+#define STDIO_BUFSIZE       (64U)
+/** @} */
 
-//typedef uint8_t radio_packet_length_t;
+/**
+ * @brief Initialize board specific hardware, including clock, LEDs and std-IO
+ */
+void board_init(void);
 
-#endif /* __BOARD_H */
+#endif /** __BOARD_H */
+/** @} */

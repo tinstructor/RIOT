@@ -3,7 +3,6 @@
 #define __CPU_H
 
 #include <stdbool.h>
-//#include "lpc2387.h"
 #include "arm_cpu.h"
 
 extern uintptr_t __stack_start;     ///< end of user stack memory space

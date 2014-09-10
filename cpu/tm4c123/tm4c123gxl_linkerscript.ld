@@ -101,5 +101,6 @@ SECTIONS
 	{
 		_stack_top = .; /* An index to the end of the stack */
 	}>STACK
-	
+
+    _end = . ;
 }
