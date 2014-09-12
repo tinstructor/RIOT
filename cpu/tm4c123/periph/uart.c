@@ -20,10 +20,17 @@
  */
 
 #include "cpu.h"
+#include "tm4c123gh6pm.h"
 #include "thread.h"
 #include "sched.h"
 #include "periph_conf.h"
 #include "periph/uart.h"
+
+#include "driverlib/rom.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/uart.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/gpio.h"
 
 /* guard file in case no UART device was specified */
 #if UART_NUMOF
@@ -43,7 +50,72 @@ typedef struct {
  * @param uartnum       the number of the UART that triggered the ISR
  * @param uart          the UART device that triggered the ISR
  */
-static inline void irq_handler(uart_t uartnum, USART_TypeDef *uart);
+// static inline void irq_handler(uart_t uartnum, USART_TypeDef *uart);
+
+
+//*****************************************************************************
+//
+// The list of UART peripherals.
+//
+//*****************************************************************************
+static const uint32_t g_ui32UARTPeriph[3] =
+{
+    SYSCTL_PERIPH_UART0, SYSCTL_PERIPH_UART1, SYSCTL_PERIPH_UART2
+};
+
+static const uint32_t g_ui32UARTBase[3] =
+{
+    UART0_BASE, UART1_BASE, UART2_BASE
+};
+
+//*****************************************************************************
+//
+//! Configures the UART console.
+//!
+//! \param ui32PortNum is the number of UART port to use for the serial console
+//! (0-2)
+//! \param ui32Baud is the bit rate that the UART is to be configured to use.
+//! \param ui32SrcClock is the frequency of the source clock for the UART
+//! module.
+//!
+//! This function will configure the specified serial port to be used as a
+//! serial console.  The serial parameters are set to the baud rate
+//! specified by the \e ui32Baud parameter and use 8 bit, no parity, and 1 stop
+//! bit.
+//!
+//! This function must be called prior to using any of the other UART console
+//! functions: UARTprintf() or UARTgets().  This function assumes that the
+//! caller has previously configured the relevant UART pins for operation as a
+//! UART rather than as GPIOs.
+//!
+//! \return None.
+//
+//*****************************************************************************
+void
+UARTStdioConfig(uint32_t ui32PortNum, uint32_t ui32Baud, uint32_t ui32SrcClock)
+{
+    //
+    // Select the base address of the UART.
+    //
+    int g_ui32Base = g_ui32UARTBase[ui32PortNum];
+
+    //
+    // Enable the UART peripheral for use.
+    //
+    ROM_SysCtlPeripheralEnable(g_ui32UARTPeriph[ui32PortNum]);
+
+    //
+    // Configure the UART for 115200, n, 8, 1
+    //
+    ROM_UARTConfigSetExpClk(g_ui32Base, ui32SrcClock, ui32Baud,
+                            (UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
+                             UART_CONFIG_WLEN_8));
+
+   //
+    // Enable the UART operation.
+    //
+    ROM_UARTEnable(g_ui32Base);
+}
 
 /**
  * @brief Allocate memory to store the callback functions.
@@ -64,270 +136,79 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
     uart_config[uart].arg = arg;
 
     /* enable receive interrupt */
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            NVIC_SetPriority(UART_0_IRQ_CHAN, UART_IRQ_PRIO);
-            NVIC_EnableIRQ(UART_0_IRQ_CHAN);
-            UART_0_DEV->CR1 |= USART_CR1_RXNEIE;
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            NVIC_SetPriority(UART_1_IRQ_CHAN, UART_IRQ_PRIO);
-            NVIC_EnableIRQ(UART_1_IRQ_CHAN);
-            UART_1_DEV->CR1 |= USART_CR1_RXNEIE;
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            NVIC_SetPriority(UART_2_IRQ_CHAN, UART_IRQ_PRIO);
-            NVIC_EnableIRQ(UART_2_IRQ_CHAN);
-            UART_2_DEV->CR1 |= USART_CR1_RXNEIE;
-            break;
-#endif
-    }
+    // TODO
 
     return 0;
 }
 
 int uart_init_blocking(uart_t uart, uint32_t baudrate)
 {
-    USART_TypeDef *dev = 0;
-    GPIO_TypeDef *port = 0;
-    uint32_t tx_pin = 0;
-    uint32_t rx_pin = 0;
-    uint8_t af = 0;
-    float clk = 0.0;
-    float divider;
-    uint16_t mantissa;
-    uint8_t fraction;
+    //
+    // Enable the GPIO Peripheral used by the UART.
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            dev = UART_0_DEV;
-            port = UART_0_PORT;
-            clk = UART_0_CLK;
-            tx_pin = UART_0_TX_PIN;
-            rx_pin = UART_0_RX_PIN;
-            af = UART_0_AF;
-            UART_0_CLKEN();
-            UART_0_PORT_CLKEN();
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            dev = UART_1_DEV;
-            port = UART_1_PORT;
-            clk = UART_1_CLK;
-            tx_pin = UART_1_TX_PIN;
-            rx_pin = UART_1_RX_PIN;
-            af = UART_1_AF;
-            UART_1_CLKEN();
-            UART_1_PORT_CLKEN();
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            dev = UART_2_DEV;
-            port = UART_2_PORT;
-            clk = UART_2_CLK;
-            tx_pin = UART_2_TX_PIN;
-            rx_pin = UART_2_RX_PIN;
-            af = UART_2_AF;
-            UART_2_CLKEN();
-            UART_2_PORT_CLKEN();
-            break;
-#endif
-    }
+    //
+    // Enable UART0
+    //
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 
-    /* configure pp mode with no pull for RX and TX pins */
-    port->OTYPER &= ~(1 << rx_pin | 1 << tx_pin);
-    port->PUPDR &= ~(3 << (rx_pin * 2) | 3 << (tx_pin * 2));
+    //
+    // Configure GPIO Pins for UART mode.
+    //
+    ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
+    ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
+    ROM_GPIOPinTypeUART(GPIOA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
-    /* configure RX and TX pins, set pin to use alternative function mode */
-    port->MODER &= ~(3 << (rx_pin * 2) | 3 << (tx_pin * 2));
-    port->MODER |= 2 << (rx_pin * 2) | 2 << (tx_pin * 2);
-    /* and assign alternative function */
-    if (rx_pin < 8) {
-        port->AFR[0] &= ~(0xf << (rx_pin * 4));
-        port->AFR[0] |= af << (rx_pin * 4);
-    }
-    else {
-        port->AFR[1] &= ~(0xf << ((rx_pin - 8) * 4));
-        port->AFR[1] |= af << ((rx_pin - 8) * 4);
-    }
-    if (tx_pin < 8) {
-        port->AFR[0] &= ~(0xf << (tx_pin * 4));
-        port->AFR[0] |= af << (tx_pin * 4);
-    }
-    else {
-        port->AFR[1] &= ~(0xf << ((tx_pin - 8) * 4));
-        port->AFR[1] |= af << ((tx_pin - 8) * 4);
-    }
+    //
+    // Use the internal 16MHz oscillator as the UART clock source.
+    //
+    ROM_UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
 
-    /* configure UART to mode 8N1 with given baudrate */
-    divider = clk / (16 * baudrate);
-    mantissa = (uint16_t)divider;
-    fraction = (uint8_t)((divider - mantissa) * 16);
-    dev->BRR = ((mantissa & 0x0fff) << 4) | (0x0f & fraction);
-
-    /* enable receive and transmit mode */
-    dev->CR3 = 0;
-    dev->CR2 = 0;
-    dev->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
+    //
+    // Initialize the UART for console I/O.
+    //
+    UARTStdioConfig(0, baudrate, 16000000);
 
     return 0;
 }
 
 void uart_tx_begin(uart_t uart)
 {
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            UART_0_DEV->CR1 |= USART_CR1_TXEIE;
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            UART_1_DEV->CR1 |= USART_CR1_TXEIE;
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            UART_2_DEV->CR1 |= USART_CR1_TXEIE;
-            break;
-#endif
-    }
+
 }
 
 int uart_write(uart_t uart, char data)
 {
-    USART_TypeDef *dev = 0;
-
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            dev = UART_0_DEV;
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            dev = UART_1_DEV;
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            dev = UART_2_DEV;
-            break;
-#endif
-    }
-
-    if (dev->SR & USART_SR_TXE) {
-        dev->DR = (uint8_t)data;
-    }
+    ROM_UARTCharPutNonBlocking(UART0_BASE, data);
 
     return 0;
 }
 
 int uart_read_blocking(uart_t uart, char *data)
 {
-    USART_TypeDef *dev = 0;
-
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            dev = UART_0_DEV;
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            dev = UART_1_DEV;
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            dev = UART_2_DEV;
-            break;
-#endif
-    }
-
-    while (!(dev->SR & USART_SR_RXNE));
-    *data = (char)dev->DR;
+    *data = ROM_UARTCharGet(UART0_BASE);
 
     return 1;
 }
 
 int uart_write_blocking(uart_t uart, char data)
 {
-    USART_TypeDef *dev = 0;
-
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            dev = UART_0_DEV;
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            dev = UART_1_DEV;
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            dev = UART_2_DEV;
-            break;
-#endif
-    }
-
-    while (!(dev->SR & USART_SR_TXE));
-    dev->DR = (uint8_t)data;
+    ROM_UARTCharPut(UART0_BASE, data);
 
     return 1;
 }
 
 void uart_poweron(uart_t uart)
 {
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            UART_0_CLKEN();
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            UART_1_CLKEN();
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            UART_2_CLKEN();
-            break;
-#endif
-    }
+
 }
 
 void uart_poweroff(uart_t uart)
 {
-    switch (uart) {
-#if UART_0_EN
-        case UART_0:
-            UART_0_CLKDIS();
-            break;
-#endif
-#if UART_1_EN
-        case UART_1:
-            UART_1_CLKDIS();
-            break;
-#endif
-#if UART_2_EN
-        case UART_2:
-            UART_2_CLKDIS();
-            break;
-#endif
-    }
+
 }
+/*
 
 #if UART_0_EN
 __attribute__((naked)) void UART_0_ISR(void)
@@ -356,7 +237,7 @@ __attribute__((naked)) void UART_2_ISR(void)
 }
 #endif
 
-static inline void irq_handler(uint8_t uartnum, USART_TypeDef *dev)
+static inline void irq_handler(uint8_t uartnum, UART_TypeDef *dev)
 {
     if (dev->SR & USART_SR_RXNE) {
         char data = (char)dev->DR;
@@ -371,5 +252,6 @@ static inline void irq_handler(uint8_t uartnum, USART_TypeDef *dev)
         thread_yield();
     }
 }
+*/
 
 #endif /* UART_NUMOF */

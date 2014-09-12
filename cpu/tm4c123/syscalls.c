@@ -45,7 +45,7 @@ caddr_t heap_top = (caddr_t)&_end + 4;
  */
 void _init(void)
 {
-//    uart_init_blocking(STDIO, STDIO_BAUDRATE);
+    uart_init_blocking(STDIO, STDIO_BAUDRATE);
 }
 
 /**
@@ -67,7 +67,7 @@ void _fini(void)
 void _exit(int n)
 {
     printf("#! exit %i: resetting\n", n);
-//    NVIC_SystemReset();
+    NVIC_SystemReset();
     while(1);
 }
 
@@ -153,7 +153,7 @@ int _read_r(struct _reent *r, int fd, void *buffer, unsigned int count)
 {
     char c;
     char *buff = (char*)buffer;
-//    uart_read_blocking(STDIO, &c);
+    uart_read_blocking(STDIO, &c);
     buff[0] = c;
     return 1;
 }
@@ -177,7 +177,7 @@ int _write_r(struct _reent *r, int fd, const void *data, unsigned int count)
 {
     char *c = (char*)data;
     for (int i = 0; i < count; i++) {
- ;//       uart_write_blocking(STDIO, c[i]);
+        uart_write_blocking(STDIO, c[i]);
     }
     return count;
 }
