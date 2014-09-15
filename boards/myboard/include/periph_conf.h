@@ -22,7 +22,11 @@
 #define TIMER_NUMOF         (1U)
 #define TIMER_0_EN          1
 
-#define UART_NUMOF          (1U)
+#define UART_NUMOF          (2U)
 #define UART_0_EN           1
+#define UART_0_ISR          isr_uart0
+
+#define UART_1_EN           1
+#define UART_1_ISR          isr_uart1
 
 #endif /* __PERIPH_CONF_H */

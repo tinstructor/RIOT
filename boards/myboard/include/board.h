@@ -35,12 +35,18 @@
 
 /**
  * @name Define the UART used for stdio
- * @{
  */
 #define STDIO               UART_0
 #define STDIO_BAUDRATE      (115200U)
 #define STDIO_BUFSIZE       (64U)
-/** @} */
+
+#define GPIO_PIN_2          (0x4)
+
+#define LED_PORT            GPIOF
+
+#define LD1_ON              (LED_PORT->PDR = GPIO_PIN_2)
+#define LD1_OFF             (LED_PORT->PUR = GPIO_PIN_2)
+#define LD1_TOGGLE          (LED_PORT->ODR ^= GPIO_PIN_2)
 
 /**
  * @brief Initialize board specific hardware, including clock, LEDs and std-IO

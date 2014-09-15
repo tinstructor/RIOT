@@ -21,8 +21,12 @@
 
 #include <stdio.h>
 
+#include "board.h"
+
 int main(void)
 {
+    LD1_TOGGLE;
+
     puts("Hello World!");
 
     printf("You are running RIOT on a(n) %s board.\n", RIOT_BOARD);

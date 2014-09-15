@@ -34,8 +34,13 @@
 // 							 Functions declarations
 //-----------------------------------------------------------------------------
 
-// Main should be defined on your main file so it's extern.
-extern int main(void);
+/**
+ * @brief functions for initializing the board, std-lib and kernel
+ */
+extern void board_init(void);
+extern void kernel_init(void);
+extern void __libc_init_array(void);
+
 // rst_handler contains the code to run on reset.
 void rst_handler(void);
 // nmi_handler it's the code for an non maskerable interrupt.
@@ -44,6 +49,9 @@ void nmi_handler(void);
 void empty_def_handler(void);
 // this is the code for an hard fault.
 void hardfault_handler(void);
+
+void isr_uart0(void);
+void isr_uart1(void);
 
 //-----------------------------------------------------------------------------
 // 						     Variables declarations
@@ -94,8 +102,8 @@ void(* myvectors[])(void) = {
 	empty_def_handler,		// GPIO Port C						18
 	empty_def_handler,		// GPIO Port D						19
 	empty_def_handler,		// GPIO Port E						20
-	empty_def_handler,		// UART 0							21
-	empty_def_handler,		// UART 1							22
+	isr_uart0,				// UART 0							21
+	isr_uart1,				// UART 1							22
 	empty_def_handler,		// SSI 0							23
 	empty_def_handler,		// I2C 0							24
 	0,						// Reserved							25
@@ -266,10 +274,12 @@ void rst_handler(void){
 		*dest++ = 0;
 	}
 	
-	// after setting copying .data to ram and "zero-ing" .bss we are good
-	// to start the main() method!
-	// There you go!
-	main();
+    /* initialize the board and startup the kernel */
+    board_init();
+    /* initialize std-c library (this should be done after board_init) */
+    __libc_init_array();
+    /* startup the kernel */
+    kernel_init();
 }
 
 // NMI Exception handler code NVIC 2

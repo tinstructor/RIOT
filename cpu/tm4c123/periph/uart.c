@@ -50,7 +50,7 @@ typedef struct {
  * @param uartnum       the number of the UART that triggered the ISR
  * @param uart          the UART device that triggered the ISR
  */
-// static inline void irq_handler(uart_t uartnum, USART_TypeDef *uart);
+static inline void irq_handler(uint8_t uartnum, void* uart);
 
 
 //*****************************************************************************
@@ -67,55 +67,6 @@ static const uint32_t g_ui32UARTBase[3] =
 {
     UART0_BASE, UART1_BASE, UART2_BASE
 };
-
-//*****************************************************************************
-//
-//! Configures the UART console.
-//!
-//! \param ui32PortNum is the number of UART port to use for the serial console
-//! (0-2)
-//! \param ui32Baud is the bit rate that the UART is to be configured to use.
-//! \param ui32SrcClock is the frequency of the source clock for the UART
-//! module.
-//!
-//! This function will configure the specified serial port to be used as a
-//! serial console.  The serial parameters are set to the baud rate
-//! specified by the \e ui32Baud parameter and use 8 bit, no parity, and 1 stop
-//! bit.
-//!
-//! This function must be called prior to using any of the other UART console
-//! functions: UARTprintf() or UARTgets().  This function assumes that the
-//! caller has previously configured the relevant UART pins for operation as a
-//! UART rather than as GPIOs.
-//!
-//! \return None.
-//
-//*****************************************************************************
-void
-UARTStdioConfig(uint32_t ui32PortNum, uint32_t ui32Baud, uint32_t ui32SrcClock)
-{
-    //
-    // Select the base address of the UART.
-    //
-    int g_ui32Base = g_ui32UARTBase[ui32PortNum];
-
-    //
-    // Enable the UART peripheral for use.
-    //
-    ROM_SysCtlPeripheralEnable(g_ui32UARTPeriph[ui32PortNum]);
-
-    //
-    // Configure the UART for 115200, n, 8, 1
-    //
-    ROM_UARTConfigSetExpClk(g_ui32Base, ui32SrcClock, ui32Baud,
-                            (UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
-                             UART_CONFIG_WLEN_8));
-
-   //
-    // Enable the UART operation.
-    //
-    ROM_UARTEnable(g_ui32Base);
-}
 
 /**
  * @brief Allocate memory to store the callback functions.
@@ -143,6 +94,7 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
 
 int uart_init_blocking(uart_t uart, uint32_t baudrate)
 {
+
     //
     // Enable the GPIO Peripheral used by the UART.
     //
@@ -166,9 +118,21 @@ int uart_init_blocking(uart_t uart, uint32_t baudrate)
     ROM_UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
 
     //
-    // Initialize the UART for console I/O.
+    // Enable the UART peripheral for use.
     //
-    UARTStdioConfig(0, baudrate, 16000000);
+    ROM_SysCtlPeripheralEnable(UART0_BASE);
+
+    //
+    // Configure the UART for 115200, n, 8, 1
+    //
+    ROM_UARTConfigSetExpClk(UART0_BASE, 115200, 16000000,
+                            (UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
+                             UART_CONFIG_WLEN_8));
+
+    //
+    // Enable the UART operation.
+    //
+    ROM_UARTEnable(UART0_BASE);
 
     return 0;
 }
@@ -208,13 +172,12 @@ void uart_poweroff(uart_t uart)
 {
 
 }
-/*
 
 #if UART_0_EN
 __attribute__((naked)) void UART_0_ISR(void)
 {
     ISR_ENTER();
-    irq_handler(UART_0, UART_0_DEV);
+    irq_handler(UART_0, NULL);
     ISR_EXIT();
 }
 #endif
@@ -223,7 +186,7 @@ __attribute__((naked)) void UART_0_ISR(void)
 __attribute__((naked)) void UART_1_ISR(void)
 {
     ISR_ENTER();
-    irq_handler(UART_1, UART_1_DEV);
+    irq_handler(UART_1, NULL);
     ISR_EXIT();
 }
 #endif
@@ -232,13 +195,14 @@ __attribute__((naked)) void UART_1_ISR(void)
 __attribute__((naked)) void UART_2_ISR(void)
 {
     ISR_ENTER();
-    irq_handler(UART_2, UART_2_DEV);
+    irq_handler(UART_2, NULL);
     ISR_EXIT();
 }
 #endif
 
-static inline void irq_handler(uint8_t uartnum, UART_TypeDef *dev)
+static inline void irq_handler(uint8_t uartnum, void *dev)
 {
+/*
     if (dev->SR & USART_SR_RXNE) {
         char data = (char)dev->DR;
         uart_config[uartnum].rx_cb(uart_config[uartnum].arg, data);
@@ -251,7 +215,7 @@ static inline void irq_handler(uint8_t uartnum, UART_TypeDef *dev)
     if (sched_context_switch_request) {
         thread_yield();
     }
-}
 */
+}
 
 #endif /* UART_NUMOF */
