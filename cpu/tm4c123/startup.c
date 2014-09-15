@@ -269,13 +269,13 @@ void reset_handler(void)
 
     /* initialize the board and startup the kernel */
     board_init();
-//	RED_LED_ON;
+	RED_LED_ON;
     /* initialize std-c library (this should be done after board_init) */
     __libc_init_array();
     BLUE_LED_ON;
 
     /* startup the kernel */
-//    kernel_init();
+    kernel_init();
     while (1) {;}
 }
 
