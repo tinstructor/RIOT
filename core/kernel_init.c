@@ -32,6 +32,8 @@
 #include "thread.h"
 #include "hwtimer.h"
 
+#include "board.h"
+
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
@@ -85,7 +87,10 @@ static char idle_stack[KERNEL_CONF_STACKSIZE_IDLE];
 void kernel_init(void)
 {
     dINT();
+
     printf("kernel_init(): This is RIOT! (Version: %s)\n", RIOT_VERSION);
+
+    GREEN_LED_ON;
 
     hwtimer_init();
 
@@ -103,6 +108,7 @@ void kernel_init(void)
 #endif
 
     printf("kernel_init(): jumping into first task...\n");
+
 
     cpu_switch_context_exit();
 }

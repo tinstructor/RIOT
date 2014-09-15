@@ -45,6 +45,7 @@ caddr_t heap_top = (caddr_t)&_end + 4;
  */
 void _init(void)
 {
+    RED_LED_ON;
     uart_init_blocking(STDIO, STDIO_BAUDRATE);
 }
 

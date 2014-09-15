@@ -34,6 +34,9 @@
 // 							 Functions declarations
 //-----------------------------------------------------------------------------
 
+#include "board.h" // for debuging
+#include "driverlib/rom.h"
+
 /**
  * @brief functions for initializing the board, std-lib and kernel
  */
@@ -42,7 +45,7 @@ extern void kernel_init(void);
 extern void __libc_init_array(void);
 
 // rst_handler contains the code to run on reset.
-void rst_handler(void);
+void reset_handler(void);
 // nmi_handler it's the code for an non maskerable interrupt.
 void nmi_handler(void);
 // this is just the default handler.
@@ -57,30 +60,27 @@ void isr_uart1(void);
 // 						     Variables declarations
 //-----------------------------------------------------------------------------
 
-// defined by the linker it's the stack top variable (End of ram)
-extern unsigned long _stack_top;
-// defined by the liker, this are just start and end marker for each section.
-// .text (code)
-extern unsigned long _start_text;
-extern unsigned long _end_text;
-// .data (data to be copied on ram)
-extern unsigned long _start_data;
-extern unsigned long _end_data;
-// .bss (uninitialized data to set to 0);
-extern unsigned long _start_bss;
-extern unsigned long _end_bss;
+extern uint32_t _sfixed;
+extern uint32_t _efixed;
+extern uint32_t _etext;
+extern uint32_t _srelocate;
+extern uint32_t _erelocate;
+extern uint32_t _szero;
+extern uint32_t _ezero;
+extern uint32_t _sstack;
+extern uint32_t _estack;
 
 // NVIC ISR table
 // the funny looking void(* myvectors[])(void) basically it's a way to make cc accept an array of function pointers.
-__attribute__ ((section(".nvic_table")))
+__attribute__ ((section(".vectors")))
 void(* myvectors[])(void) = {
 	// This are the fixed priority interrupts and the stack pointer loaded at startup at R13 (SP).
 	//												VECTOR N (Check Datasheet)
 	// here the compiler it's boring.. have to figure that out
-    (void (*)) &_stack_top, 
+    (void (*)) &_estack,
     						// stack pointer should be 
 							// placed here at startup.			0
-    rst_handler,			// code entry point					1
+    reset_handler,			// code entry point					1
     nmi_handler,			// NMI handler.						2
     hardfault_handler,		// hard fault handler.				3
     // Configurable priority interruts handler start here.
@@ -242,50 +242,52 @@ void(* myvectors[])(void) = {
 // 							Function implementations.
 //-----------------------------------------------------------------------------
 
-/* 
-* System on reset code. NVIC 1
-* Here I prepare the memory for the c compiler.
-* The stack pointer should be set at the beginning with the NVIC table already.
-* Copy the .data segment from flash into ram.
-* 0 to the .bss segment 
-*/
-	
-void rst_handler(void){	
-	// Copy the .data section pointers to ram from flash.
-	// Look at LD manual (Optional Section Attributes).
-	
-	// source and destination pointers
-	unsigned long *src;
-	unsigned long *dest;
-	
-	//this should be good!
-	src = &_end_text;
-	dest = &_start_data;
-	
-	//this too
-    while(dest < &_end_data)
-    {
-        *dest++ = *src++;
+/**
+ * @brief This function is the entry point after a system reset
+ *
+ * After a system reset, the following steps are necessary and carried out:
+ * 1. load data section from flash to ram
+ * 2. overwrite uninitialized data section (BSS) with zeros
+ * 3. initialize the newlib
+ * 4. initialize the board (sync clock, setup std-IO)
+ * 5. initialize and start RIOTs kernel
+ */
+void reset_handler(void)
+{
+    uint32_t *dst;
+    uint32_t *src = &_etext;
+
+    /* load data section from flash to ram */
+    for (dst = &_srelocate; dst < &_erelocate; ) {
+        *(dst++) = *(src++);
     }
-	
-    // now set the .bss segment to 0!
-    dest = &_start_bss;
-	while(dest < &_end_bss){
-		*dest++ = 0;
-	}
-	
+
+    /* default bss section to zero */
+    for (dst = &_szero; dst < &_ezero; ) {
+        *(dst++) = 0;
+    }
+
     /* initialize the board and startup the kernel */
     board_init();
+//	RED_LED_ON;
     /* initialize std-c library (this should be done after board_init) */
     __libc_init_array();
+    BLUE_LED_ON;
+
     /* startup the kernel */
-    kernel_init();
+//    kernel_init();
+    while (1) {;}
 }
 
 // NMI Exception handler code NVIC 2
 void nmi_handler(void){
+    RED_LED_ON;
 	// Just loop forever, so if you want to debug the processor it's running.
     while(1){
+		RED_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		RED_LED_OFF;
+		ROM_SysCtlDelay(5000000);
     }
 }
 
@@ -293,12 +295,20 @@ void nmi_handler(void){
 void hardfault_handler(void){
 	// Just loop forever, so if you want to debug the processor it's running.
     while(1){
+		BLUE_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		BLUE_LED_OFF;
+		ROM_SysCtlDelay(5000000);
     }
 }
 
 // Empty handler used as default.
 void empty_def_handler(void){
 	// Just loop forever, so if you want to debug the processor it's running.
-    while(1){
-    }
+	while(1){
+		GREEN_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		GREEN_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
 }

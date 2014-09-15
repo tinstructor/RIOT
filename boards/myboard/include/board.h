@@ -40,13 +40,12 @@
 #define STDIO_BAUDRATE      (115200U)
 #define STDIO_BUFSIZE       (64U)
 
-#define GPIO_PIN_2          (0x4)
-
-#define LED_PORT            GPIOF
-
-#define LD1_ON              (LED_PORT->PDR = GPIO_PIN_2)
-#define LD1_OFF             (LED_PORT->PUR = GPIO_PIN_2)
-#define LD1_TOGGLE          (LED_PORT->ODR ^= GPIO_PIN_2)
+#define RED_LED_ON          (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))) = 0x2)
+#define RED_LED_OFF         (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))) = 0x0)
+#define BLUE_LED_ON         (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))) = 0x4)
+#define BLUE_LED_OFF        (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))) = 0x0)
+#define GREEN_LED_ON        (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))) = 0x8)
+#define GREEN_LED_OFF       (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))) = 0x0)
 
 /**
  * @brief Initialize board specific hardware, including clock, LEDs and std-IO

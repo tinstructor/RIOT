@@ -20,8 +20,10 @@
 
 #include "arch/hwtimer_arch.h"
 #include "board.h"
-#include "periph/timer.h"
 #include "thread.h"
+
+#include "driverlib/timer.h"
+#include "driverlib/rom.h"
 
 /**
  * @brief Callback function that is given to the low-level timer
@@ -37,18 +39,17 @@ void (*timeout_handler)(int);
 
 void hwtimer_arch_init(void (*handler)(int), uint32_t fcpu)
 {
-//    timeout_handler = handler;
-//    timer_init(HW_TIMER, 1, &irq_handler);
+	ROM_TimerEnable(TIMER0_BASE, TIMER_A);
 }
 
 void hwtimer_arch_enable_interrupt(void)
 {
-//    timer_irq_enable(HW_TIMER);
+    ROM_TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 }
 
 void hwtimer_arch_disable_interrupt(void)
 {
-//    timer_irq_disable(HW_TIMER);
+    ROM_TimerIntDisable(TIMER0_BASE, TIMER_TIMB_TIMEOUT);
 }
 
 void hwtimer_arch_set(unsigned long offset, short timer)
@@ -69,9 +70,10 @@ void hwtimer_arch_unset(short timer)
 unsigned long hwtimer_arch_now(void)
 {
 //    return timer_read(HW_TIMER);
+	return 0;
 }
 
 void irq_handler(int channel)
 {
-//    timeout_handler((short)(channel));
+    // timeout_handler((short)(channel));
 }

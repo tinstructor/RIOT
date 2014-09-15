@@ -22,10 +22,13 @@
 #include <stdio.h>
 
 #include "board.h"
+#include "tm4c123gh6pm.h"
 
 int main(void)
 {
-    LD1_TOGGLE;
+//    ROM_GPIOPinWrite(GPIOF_BASE, GPIO_PIN_2, GPIO_PIN_2);
+
+//   *((volatile uint32_t *)(GPIOF_BASE + ((GPIO_PIN_2 << 2)))) = GPIO_PIN_2;
 
     puts("Hello World!");
 

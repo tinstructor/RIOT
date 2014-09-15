@@ -26,6 +26,8 @@
 #include "periph_conf.h"
 #include "periph/uart.h"
 
+#include "board.h"
+
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
@@ -88,6 +90,7 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
 
     /* enable receive interrupt */
     // TODO
+    BLUE_LED_ON;
 
     return 0;
 }
@@ -133,6 +136,8 @@ int uart_init_blocking(uart_t uart, uint32_t baudrate)
     // Enable the UART operation.
     //
     ROM_UARTEnable(UART0_BASE);
+
+    GREEN_LED_ON;
 
     return 0;
 }
@@ -212,10 +217,10 @@ static inline void irq_handler(uint8_t uartnum, void *dev)
             dev->CR1 &= ~(USART_CR1_TXEIE);
         }
     }
+*/
     if (sched_context_switch_request) {
         thread_yield();
     }
-*/
 }
 
 #endif /* UART_NUMOF */

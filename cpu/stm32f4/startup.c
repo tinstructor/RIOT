@@ -69,6 +69,7 @@ void reset_handler(void)
     board_init();
     /* initialize std-c library (this should be done after board_init) */
     __libc_init_array();
+
     /* startup the kernel */
     kernel_init();
 }
