@@ -1,65 +1,31 @@
 /*
-* Copyright (c) 2012, Mauro Scomparin
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of Mauro Scomparin nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY Mauro Scomparin ``AS IS'' AND ANY
-* EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL Mauro Scomparin BE LIABLE FOR ANY
-* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*
-* File:			LM4F_startup.c.
-* Author:		Mauro Scomparin <http://scompoprojects.worpress.com>.
-* Version:		1.0.0.
-* Description:	LM4F120H5QR startup code.
-*/
+ * Copyright (C) 2014 Freie Universität Berlin
+ *
+ * This file is subject to the terms and conditions of the GNU Lesser General
+ * Public License v2.1. See the file LICENSE in the top level directory for more
+ * details.
+ */
 
-//-----------------------------------------------------------------------------
-// 							 Functions declarations
-//-----------------------------------------------------------------------------
+/**
+ * @ingroup     cpu_tm4c123
+ * @{
+ *
+ * @file
+ * @brief       Startup code and interrupt vector definition
+ *
+ * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ *
+ * @}
+ */
+
+#include <stdint.h>
 
 #include "board.h" // for debuging
 #include "driverlib/rom.h"
 
 /**
- * @brief functions for initializing the board, std-lib and kernel
+ * memory markers as defined in the linker script
  */
-extern void board_init(void);
-extern void kernel_init(void);
-extern void __libc_init_array(void);
-
-// rst_handler contains the code to run on reset.
-void reset_handler(void);
-// nmi_handler it's the code for an non maskerable interrupt.
-void nmi_handler(void);
-// this is just the default handler.
-void empty_def_handler(void);
-// this is the code for an hard fault.
-void hardfault_handler(void);
-
-void isr_uart0(void);
-void isr_uart1(void);
-
-//-----------------------------------------------------------------------------
-// 						     Variables declarations
-//-----------------------------------------------------------------------------
-
 extern uint32_t _sfixed;
 extern uint32_t _efixed;
 extern uint32_t _etext;
@@ -70,177 +36,12 @@ extern uint32_t _ezero;
 extern uint32_t _sstack;
 extern uint32_t _estack;
 
-// NVIC ISR table
-// the funny looking void(* myvectors[])(void) basically it's a way to make cc accept an array of function pointers.
-__attribute__ ((section(".vectors")))
-void(* myvectors[])(void) = {
-	// This are the fixed priority interrupts and the stack pointer loaded at startup at R13 (SP).
-	//												VECTOR N (Check Datasheet)
-	// here the compiler it's boring.. have to figure that out
-    (void (*)) &_estack,
-    						// stack pointer should be 
-							// placed here at startup.			0
-    reset_handler,			// code entry point					1
-    nmi_handler,			// NMI handler.						2
-    hardfault_handler,		// hard fault handler.				3
-    // Configurable priority interruts handler start here.
-    empty_def_handler,		// Memory Management Fault			4
-    empty_def_handler,		// Bus Fault						5
-    empty_def_handler,		// Usage Fault 						6
-    0,						// Reserved							7
-    0,						// Reserved							8
-    0,						// Reserved							9
-    0,						// Reserved							10
-    empty_def_handler,		// SV call							11
-    empty_def_handler,		// Debug monitor					12
-    0,						// Reserved							13
-    empty_def_handler,		// PendSV							14
-    empty_def_handler,		// SysTick							15
-    // Peripherial interrupts start here.
-	empty_def_handler,		// GPIO Port A						16
-	empty_def_handler,		// GPIO Port B						17
-	empty_def_handler,		// GPIO Port C						18
-	empty_def_handler,		// GPIO Port D						19
-	empty_def_handler,		// GPIO Port E						20
-	isr_uart0,				// UART 0							21
-	isr_uart1,				// UART 1							22
-	empty_def_handler,		// SSI 0							23
-	empty_def_handler,		// I2C 0							24
-	0,						// Reserved							25
-	0,						// Reserved							26
-	0,						// Reserved							27
-	0,						// Reserved							28
-	0,						// Reserved							29
-	empty_def_handler,		// ADC 0 Seq 0						30
-	empty_def_handler,		// ADC 0 Seq 1						31
-	empty_def_handler,		// ADC 0 Seq 2						32
-	empty_def_handler,		// ADC 0 Seq 3						33
-	empty_def_handler,		// WDT 0 and 1						34
-	empty_def_handler,		// 16/32 bit timer 0 A				35
-	empty_def_handler,		// 16/32 bit timer 0 B				36
-	empty_def_handler,		// 16/32 bit timer 1 A				37
-	empty_def_handler,		// 16/32 bit timer 1 B				38
-	empty_def_handler,		// 16/32 bit timer 2 A				39
-	empty_def_handler,		// 16/32 bit timer 2 B				40
-	empty_def_handler,		// Analog comparator 0				41
-	empty_def_handler,		// Analog comparator 1				42
-	0,						// Reserved							43
-	empty_def_handler,		// System control					44
-	empty_def_handler,		// Flash + EEPROM control			45
-	empty_def_handler,		// GPIO Port F						46
-	0,						// Reserved							47
-	0,						// Reserved							48
-	empty_def_handler,		// UART 2							49
-	empty_def_handler,		// SSI 1							50
-	empty_def_handler,		// 16/32 bit timer 3 A				51
-	empty_def_handler,		// 16/32 bit timer 3 B				52
-	empty_def_handler,		// I2C 1							53
-	0,						// Reserved							54
-	empty_def_handler,		// CAN 0							55
-	0,						// Reserved							56
-	0,						// Reserved							57
-	0,						// Reserved							58
-	empty_def_handler,		// Hibernation module				59
-	empty_def_handler,		// USB								60
-	0,						// Reserved							61
-	empty_def_handler,		// UDMA SW							62
-	empty_def_handler,		// UDMA Error						63
-	empty_def_handler,		// ADC 1 Seq 0						64
-	empty_def_handler,		// ADC 1 Seq 1						65
-	empty_def_handler,		// ADC 1 Seq 2						66
-	empty_def_handler,		// ADC 1 Seq 3						67
-	0,						// Reserved							68
-	0,						// Reserved							69
-	0,						// Reserved							70
-	0,						// Reserved							71
-	0,						// Reserved							72
-	empty_def_handler,		// SSI 2							73
-	empty_def_handler,		// SSI 2							74
-	empty_def_handler,		// UART 3							75
-	empty_def_handler,		// UART 4							76
-	empty_def_handler,		// UART 5							77
-	empty_def_handler,		// UART 6							78
-	empty_def_handler,		// UART 7							79
-	0,						// Reserved							80
-	0,						// Reserved							81
-	0,						// Reserved							82
-	0,						// Reserved							83
-	empty_def_handler,		// I2C 2							84
-	empty_def_handler,		// I2C 4							85
-	empty_def_handler,		// 16/32 bit timer 4 A				86
-	empty_def_handler,		// 16/32 bit timer 4 B				87
-	0,						// Reserved							88
-	0,						// Reserved							89
-	0,						// Reserved							90
-	0,						// Reserved							91
-	0,						// Reserved							92
-	0,						// Reserved							93
-	0,						// Reserved							94
-	0,						// Reserved							95
-	0,						// Reserved							96
-	0,						// Reserved							97
-	0,						// Reserved							98
-	0,						// Reserved							99
-	0,						// Reserved							100
-	0,						// Reserved							101
-	0,						// Reserved							102
-	0,						// Reserved							103
-	0,						// Reserved							104
-	0,						// Reserved							105
-	0,						// Reserved							106
-	0,						// Reserved							107
-	empty_def_handler,		// 16/32 bit timer 5 A				108
-	empty_def_handler,		// 16/32 bit timer 5 B				109
-	empty_def_handler,		// 32/64 bit timer 0 A				110
-	empty_def_handler,		// 32/64 bit timer 0 B				111
-	empty_def_handler,		// 32/64 bit timer 1 A				112
-	empty_def_handler,		// 32/64 bit timer 1 B				113
-	empty_def_handler,		// 32/64 bit timer 2 A				114
-	empty_def_handler,		// 32/64 bit timer 2 B				115
-	empty_def_handler,		// 32/64 bit timer 3 A				116
-	empty_def_handler,		// 32/64 bit timer 3 B				117
-	empty_def_handler,		// 32/64 bit timer 4 A				118
-	empty_def_handler,		// 32/64 bit timer 4 B				119
-	empty_def_handler,		// 32/64 bit timer 5 A				120
-	empty_def_handler,		// 32/64 bit timer 5 B				121
-	empty_def_handler,		// System Exception					122
-	0,						// Reserved							123
-	0,						// Reserved							124
-	0,						// Reserved							125
-	0,						// Reserved							126
-	0,						// Reserved							127
-	0,						// Reserved							128
-	0,						// Reserved							129
-	0,						// Reserved							130
-	0,						// Reserved							131
-	0,						// Reserved							132
-	0,						// Reserved							133
-	0,						// Reserved							134
-	0,						// Reserved							135
-	0,						// Reserved							136
-	0,						// Reserved							137
-	0,						// Reserved							138
-	0,						// Reserved							139
-	0,						// Reserved							140
-	0,						// Reserved							141
-	0,						// Reserved							142
-	0,						// Reserved							143
-	0,						// Reserved							144
-	0,						// Reserved							145
-	0,						// Reserved							146
-	0,						// Reserved							147
-	0,						// Reserved							148
-	0,						// Reserved							149
-	0,						// Reserved							150
-	0,						// Reserved							151
-	0,						// Reserved							152
-	0,						// Reserved							153
-	0						// Reserved							154
-};
-
-//-----------------------------------------------------------------------------
-// 							Function implementations.
-//-----------------------------------------------------------------------------
+/**
+ * @brief functions for initializing the board, std-lib and kernel
+ */
+extern void board_init(void);
+extern void kernel_init(void);
+extern void __libc_init_array(void);
 
 /**
  * @brief This function is the entry point after a system reset
@@ -269,42 +70,24 @@ void reset_handler(void)
 
     /* initialize the board and startup the kernel */
     board_init();
-	RED_LED_ON;
     /* initialize std-c library (this should be done after board_init) */
+
     __libc_init_array();
+    /* startup the kernel */
+
     BLUE_LED_ON;
 
-    /* startup the kernel */
-    kernel_init();
-    while (1) {;}
-}
-
-// NMI Exception handler code NVIC 2
-void nmi_handler(void){
-    RED_LED_ON;
-	// Just loop forever, so if you want to debug the processor it's running.
-    while(1){
-		RED_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		RED_LED_OFF;
-		ROM_SysCtlDelay(5000000);
+    while (1) {
+    	asm("nop");
     }
+//    kernel_init();
 }
 
-// Hard fault handler code NVIC 3
-void hardfault_handler(void){
-	// Just loop forever, so if you want to debug the processor it's running.
-    while(1){
-		BLUE_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		BLUE_LED_OFF;
-		ROM_SysCtlDelay(5000000);
-    }
-}
-
-// Empty handler used as default.
-void empty_def_handler(void){
-	// Just loop forever, so if you want to debug the processor it's running.
+/**
+ * @brief Default handler is called in case no interrupt handler was defined
+ */
+void dummy_handler(void)
+{
 	while(1){
 		GREEN_LED_ON;
 		ROM_SysCtlDelay(5000000);
@@ -312,3 +95,238 @@ void empty_def_handler(void){
 		ROM_SysCtlDelay(5000000);
 	}
 }
+
+void isr_nmi(void)
+{
+	while(1){
+		RED_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		RED_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
+}
+
+void isr_mem_manage(void)
+{
+	while(1){
+		BLUE_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		BLUE_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
+}
+
+void isr_debug_mon(void)
+{
+	while(1){
+		GREEN_LED_ON;
+		BLUE_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		GREEN_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
+}
+
+void isr_hard_fault(void)
+{
+	while(1){
+		GREEN_LED_ON;
+		RED_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		GREEN_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
+}
+
+void isr_bus_fault(void)
+{
+	while(1){
+		BLUE_LED_ON;
+		RED_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		BLUE_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
+}
+
+void isr_usage_fault(void)
+{
+	while(1){
+		RED_LED_ON;
+		BLUE_LED_ON;
+		ROM_SysCtlDelay(5000000);
+		RED_LED_OFF;
+		ROM_SysCtlDelay(5000000);
+	}
+}
+
+/* Cortex-M specific interrupt vectors */
+void isr_svc(void)                  __attribute__ ((weak, alias("dummy_handler")));
+void isr_pendsv(void)               __attribute__ ((weak, alias("dummy_handler")));
+void isr_systick(void)              __attribute__ ((weak, alias("dummy_handler")));
+
+/* TM4C123 specific interrupt vector */
+
+
+/* interrupt vector table */
+__attribute__ ((section(".vectors")))
+const void *interrupt_vector[] = {
+    /* Stack pointer */
+    (void*) (&_estack),             /* pointer to the top of the empty stack */
+    /* Cortex-M4 handlers */
+    (void*) reset_handler,          /* entry point of the program */
+    (void*) isr_nmi,                /* non maskable interrupt handler */
+    (void*) isr_hard_fault,         /* if you end up here its not good */
+    (void*) isr_mem_manage,         /* memory controller interrupt */
+    (void*) isr_bus_fault,          /* also not good to end up here */
+    (void*) isr_usage_fault,        /* autsch */
+    (void*) (0UL),                  /* Reserved */
+    (void*) (0UL),                  /* Reserved */
+    (void*) (0UL),                  /* Reserved */
+    (void*) (0UL),                  /* Reserved */
+    (void*) isr_svc,                /* system call interrupt */
+    (void*) isr_debug_mon,          /* debug interrupt */
+    (void*) (0UL),                  /* Reserved */
+    (void*) isr_pendsv,             /* pendSV interrupt, used for task switching in RIOT */
+    (void*) isr_systick,            /* SysTick interrupt, not used in RIOT */
+    /* TI specific peripheral handlers */
+    dummy_handler,                      // GPIO Port A
+    dummy_handler,                      // GPIO Port B
+    dummy_handler,                      // GPIO Port C
+    dummy_handler,                      // GPIO Port D
+    dummy_handler,                      // GPIO Port E
+    dummy_handler,                      // UART0 Rx and Tx
+    dummy_handler,                      // UART1 Rx and Tx
+    dummy_handler,                      // SSI0 Rx and Tx
+    dummy_handler,                      // I2C0 Master and Slave
+    dummy_handler,                      // PWM Fault
+    dummy_handler,                      // PWM Generator 0
+    dummy_handler,                      // PWM Generator 1
+    dummy_handler,                      // PWM Generator 2
+    dummy_handler,                      // Quadrature Encoder 0
+    dummy_handler,                      // ADC Sequence 0
+    dummy_handler,                      // ADC Sequence 1
+    dummy_handler,                      // ADC Sequence 2
+    dummy_handler,                      // ADC Sequence 3
+    dummy_handler,                      // Watchdog timer
+    dummy_handler,                      // Timer 0 subtimer A
+    dummy_handler,                      // Timer 0 subtimer B
+    dummy_handler,                      // Timer 1 subtimer A
+    dummy_handler,                      // Timer 1 subtimer B
+    dummy_handler,                      // Timer 2 subtimer A
+    dummy_handler,                      // Timer 2 subtimer B
+    dummy_handler,                      // Analog Comparator 0
+    dummy_handler,                      // Analog Comparator 1
+    dummy_handler,                      // Analog Comparator 2
+    dummy_handler,                      // System Control (PLL, OSC, BO)
+    dummy_handler,                      // FLASH Control
+    dummy_handler,                      // GPIO Port F
+    dummy_handler,                      // GPIO Port G
+    dummy_handler,                      // GPIO Port H
+    dummy_handler,                      // UART2 Rx and Tx
+    dummy_handler,                      // SSI1 Rx and Tx
+    dummy_handler,                      // Timer 3 subtimer A
+    dummy_handler,                      // Timer 3 subtimer B
+    dummy_handler,                      // I2C1 Master and Slave
+    dummy_handler,                      // Quadrature Encoder 1
+    dummy_handler,                      // CAN0
+    dummy_handler,                      // CAN1
+    dummy_handler,                      // CAN2
+    0,                                      // Reserved
+    dummy_handler,                      // Hibernate
+    dummy_handler,                      // USB0
+    dummy_handler,                      // PWM Generator 3
+    dummy_handler,                      // uDMA Software Transfer
+    dummy_handler,                      // uDMA Error
+    dummy_handler,                      // ADC1 Sequence 0
+    dummy_handler,                      // ADC1 Sequence 1
+    dummy_handler,                      // ADC1 Sequence 2
+    dummy_handler,                      // ADC1 Sequence 3
+    0,                                      // Reserved
+    0,                                      // Reserved
+    dummy_handler,                      // GPIO Port J
+    dummy_handler,                      // GPIO Port K
+    dummy_handler,                      // GPIO Port L
+    dummy_handler,                      // SSI2 Rx and Tx
+    dummy_handler,                      // SSI3 Rx and Tx
+    dummy_handler,                      // UART3 Rx and Tx
+    dummy_handler,                      // UART4 Rx and Tx
+    dummy_handler,                      // UART5 Rx and Tx
+    dummy_handler,                      // UART6 Rx and Tx
+    dummy_handler,                      // UART7 Rx and Tx
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    dummy_handler,                      // I2C2 Master and Slave
+    dummy_handler,                      // I2C3 Master and Slave
+    dummy_handler,                      // Timer 4 subtimer A
+    dummy_handler,                      // Timer 4 subtimer B
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    0,                                      // Reserved
+    dummy_handler,                      // Timer 5 subtimer A
+    dummy_handler,                      // Timer 5 subtimer B
+    dummy_handler,                      // Wide Timer 0 subtimer A
+    dummy_handler,                      // Wide Timer 0 subtimer B
+    dummy_handler,                      // Wide Timer 1 subtimer A
+    dummy_handler,                      // Wide Timer 1 subtimer B
+    dummy_handler,                      // Wide Timer 2 subtimer A
+    dummy_handler,                      // Wide Timer 2 subtimer B
+    dummy_handler,                      // Wide Timer 3 subtimer A
+    dummy_handler,                      // Wide Timer 3 subtimer B
+    dummy_handler,                      // Wide Timer 4 subtimer A
+    dummy_handler,                      // Wide Timer 4 subtimer B
+    dummy_handler,                      // Wide Timer 5 subtimer A
+    dummy_handler,                      // Wide Timer 5 subtimer B
+    dummy_handler,                      // FPU
+    0,                                      // Reserved
+    0,                                      // Reserved
+    dummy_handler,                      // I2C4 Master and Slave
+    dummy_handler,                      // I2C5 Master and Slave
+    dummy_handler,                      // GPIO Port M
+    dummy_handler,                      // GPIO Port N
+    dummy_handler,                      // Quadrature Encoder 2
+    0,                                      // Reserved
+    0,                                      // Reserved
+    dummy_handler,                      // GPIO Port P (Summary or P0)
+    dummy_handler,                      // GPIO Port P1
+    dummy_handler,                      // GPIO Port P2
+    dummy_handler,                      // GPIO Port P3
+    dummy_handler,                      // GPIO Port P4
+    dummy_handler,                      // GPIO Port P5
+    dummy_handler,                      // GPIO Port P6
+    dummy_handler,                      // GPIO Port P7
+    dummy_handler,                      // GPIO Port Q (Summary or Q0)
+    dummy_handler,                      // GPIO Port Q1
+    dummy_handler,                      // GPIO Port Q2
+    dummy_handler,                      // GPIO Port Q3
+    dummy_handler,                      // GPIO Port Q4
+    dummy_handler,                      // GPIO Port Q5
+    dummy_handler,                      // GPIO Port Q6
+    dummy_handler,                      // GPIO Port Q7
+    dummy_handler,                      // GPIO Port R
+    dummy_handler,                      // GPIO Port S
+    dummy_handler,                      // PWM 1 Generator 0
+    dummy_handler,                      // PWM 1 Generator 1
+    dummy_handler,                      // PWM 1 Generator 2
+    dummy_handler,                      // PWM 1 Generator 3
+    dummy_handler                       // PWM 1 Fault
+};

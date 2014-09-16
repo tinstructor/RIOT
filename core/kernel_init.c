@@ -88,6 +88,8 @@ void kernel_init(void)
 {
     dINT();
 
+    RED_LED_ON;
+
     printf("kernel_init(): This is RIOT! (Version: %s)\n", RIOT_VERSION);
 
     GREEN_LED_ON;

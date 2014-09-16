@@ -36,12 +36,10 @@ MEMORY
 {
     rom (rx)    : ORIGIN = 0x00000000, LENGTH = 0x40000		/* 256K flash */
     ram (rwx)   : ORIGIN = 0x20000000, LENGTH = 0x8000		/* 32K ram */
-    stack (rwx) : ORIGIN = 0x20007FFF , LENGTH = 0x00000000
 }
 
 /* The stack size used by the application. NOTE: you need to adjust  */
 STACK_SIZE = DEFINED(STACK_SIZE) ? STACK_SIZE : 0xa00 ;
-
 
 /* Section Definitions */
 SECTIONS
