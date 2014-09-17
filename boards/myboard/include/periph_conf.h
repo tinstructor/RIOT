@@ -19,9 +19,6 @@
 #ifndef __PERIPH_CONF_H
 #define __PERIPH_CONF_H
 
-#define TIMER_NUMOF         (1U)
-#define TIMER_0_EN          1
-
 #define UART_NUMOF          (2U)
 #define UART_0_EN           1
 #define UART_0_ISR          isr_uart0

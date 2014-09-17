@@ -18,12 +18,15 @@
  * @}
  */
 
+#define TIMER_0_EN 1
+#define TIMER_1_EN 1
+
 #include "arch/hwtimer_arch.h"
 #include "board.h"
+#include "periph/timer.h"
 #include "thread.h"
 
-#include "driverlib/timer.h"
-#include "driverlib/rom.h"
+#define HW_TIMER            TIMER_0
 
 /**
  * @brief Callback function that is given to the low-level timer
@@ -39,41 +42,41 @@ void (*timeout_handler)(int);
 
 void hwtimer_arch_init(void (*handler)(int), uint32_t fcpu)
 {
-	ROM_TimerEnable(TIMER0_BASE, TIMER_A);
+    timeout_handler = handler;
+    timer_init(HW_TIMER, 1, &irq_handler);
 }
 
 void hwtimer_arch_enable_interrupt(void)
 {
-    ROM_TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    timer_irq_enable(HW_TIMER);
 }
 
 void hwtimer_arch_disable_interrupt(void)
 {
-    ROM_TimerIntDisable(TIMER0_BASE, TIMER_TIMB_TIMEOUT);
+    timer_irq_disable(HW_TIMER);
 }
 
 void hwtimer_arch_set(unsigned long offset, short timer)
 {
-//    timer_set(HW_TIMER, timer, offset);
+    timer_set(HW_TIMER, timer, offset);
 }
 
 void hwtimer_arch_set_absolute(unsigned long value, short timer)
 {
-//    timer_set_absolute(HW_TIMER, timer, value);
+    timer_set_absolute(HW_TIMER, timer, value);
 }
 
 void hwtimer_arch_unset(short timer)
 {
-//    timer_clear(HW_TIMER, timer);
+    timer_clear(HW_TIMER, timer);
 }
 
 unsigned long hwtimer_arch_now(void)
 {
-//    return timer_read(HW_TIMER);
-	return 0;
+    return timer_read(HW_TIMER);
 }
 
 void irq_handler(int channel)
 {
-    // timeout_handler((short)(channel));
+    timeout_handler((short)(channel));
 }

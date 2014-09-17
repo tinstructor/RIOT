@@ -161,7 +161,10 @@ void isr_pendsv(void)               __attribute__ ((weak, alias("dummy_handler")
 void isr_systick(void)              __attribute__ ((weak, alias("dummy_handler")));
 
 /* TM4C123 specific interrupt vector */
-
+void isr_tim0a(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim0b(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim1a(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim1b(void)                 __attribute__ ((weak, alias("dummy_handler")));
 
 /* interrupt vector table */
 __attribute__ ((section(".vectors")))
@@ -204,10 +207,10 @@ const void *interrupt_vector[] = {
     dummy_handler,                      // ADC Sequence 2
     dummy_handler,                      // ADC Sequence 3
     dummy_handler,                      // Watchdog timer
-    dummy_handler,                      // Timer 0 subtimer A
-    dummy_handler,                      // Timer 0 subtimer B
-    dummy_handler,                      // Timer 1 subtimer A
-    dummy_handler,                      // Timer 1 subtimer B
+    isr_tim0a,                          // Timer 0 subtimer A
+    isr_tim0b,                          // Timer 0 subtimer B
+    isr_tim1a,                          // Timer 1 subtimer A
+    isr_tim1b,                          // Timer 1 subtimer B
     dummy_handler,                      // Timer 2 subtimer A
     dummy_handler,                      // Timer 2 subtimer B
     dummy_handler,                      // Analog Comparator 0
