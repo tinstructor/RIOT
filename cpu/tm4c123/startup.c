@@ -75,12 +75,7 @@ void reset_handler(void)
     __libc_init_array();
     /* startup the kernel */
 
-    BLUE_LED_ON;
-
-    while (1) {
-    	asm("nop");
-    }
-//    kernel_init();
+    kernel_init();
 }
 
 /**

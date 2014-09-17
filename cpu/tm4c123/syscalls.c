@@ -45,7 +45,7 @@ caddr_t heap_top = (caddr_t)&_end + 4;
  */
 void _init(void)
 {
-//    uart_init_blocking(STDIO, STDIO_BAUDRATE);
+    uart_init_blocking(STDIO, STDIO_BAUDRATE);
 }
 
 /**

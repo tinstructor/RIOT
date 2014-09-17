@@ -90,14 +90,12 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
 
     /* enable receive interrupt */
     // TODO
-    BLUE_LED_ON;
 
     return 0;
 }
 
 int uart_init_blocking(uart_t uart, uint32_t baudrate)
 {
-
     //
     // Enable the GPIO Peripheral used by the UART.
     //
@@ -121,23 +119,15 @@ int uart_init_blocking(uart_t uart, uint32_t baudrate)
     ROM_UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
 
     //
-    // Enable the UART peripheral for use.
-    //
-    ROM_SysCtlPeripheralEnable(UART0_BASE);
-
-    //
     // Configure the UART for 115200, n, 8, 1
     //
-    ROM_UARTConfigSetExpClk(UART0_BASE, 115200, 16000000,
+    ROM_UARTConfigSetExpClk(UART0_BASE, 16000000, baudrate,
                             (UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_WLEN_8));
-
     //
     // Enable the UART operation.
     //
     ROM_UARTEnable(UART0_BASE);
-
-    GREEN_LED_ON;
 
     return 0;
 }
