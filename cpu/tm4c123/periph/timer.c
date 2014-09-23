@@ -20,13 +20,12 @@
 
 #include <stdlib.h>
 
-#define TIMER_NUMOF 0
- /*
+#define TIMER_NUMOF 4
+
 #define TIMER_0_EN  1
 #define TIMER_1_EN  1
 #define TIMER_2_EN  1
 #define TIMER_3_EN  1
-*/
 
 #include "cpu.h"
 #include "board.h"
@@ -55,7 +54,7 @@
 #define TIMER_3_ISR isr_tim3a
 
 /** Unified IRQ handler for all timers */
-// static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
+static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
 
 /** Type for timer state */
 typedef struct {
@@ -120,20 +119,18 @@ int timer_set(tim_t dev, int channel, unsigned int timeout) {
  * @return                  1 on success, -1 on error
  */
 int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
-//    timer_init(0,0,0);
-/*
     DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
     int timer;
     IRQn_Type irq;
 
     switch(channel) {
         case 0:
-            value = ROM_SysCtlClockGet();
+            value = ROM_SysCtlClockGet() * 10;
             timer = TIMER0_BASE;
             irq = TIMER0A_IRQn;
             break;
         case 1:
-            value = ROM_SysCtlClockGet() * 2;
+            value = ROM_SysCtlClockGet() * 5;
             timer = TIMER1_BASE;
             irq = TIMER1A_IRQn;
             break;
@@ -159,14 +156,14 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
     //
     // Setup the interrupts for the timer timeouts.
     //
-    ROM_IntEnable(irq);
+    NVIC_EnableIRQ(irq);
     ROM_TimerIntEnable(timer, TIMER_TIMA_TIMEOUT);
 
     //
     // Enable the timers.
     //
     ROM_TimerEnable(timer, TIMER_A);
-*/
+
     return 1;
 }
 
@@ -248,23 +245,23 @@ void timer_reset(tim_t dev) {
 #if TIMER_0_EN
 __attribute__ ((naked)) void TIMER_0_ISR(void)
 {
-//    ISR_ENTER();
+    ISR_ENTER();
     ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 
     RED_LED_ON;
     irq_handler(TIMER_0, TIMER_0_DEV);
-//    ISR_EXIT();
+    ISR_EXIT();
 }
 #endif
 #if TIMER_1_EN
 __attribute__ ((naked)) void TIMER_1_ISR(void)
 {
-//    ISR_ENTER();
+    ISR_ENTER();
     ROM_TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
 
     GREEN_LED_ON;
     irq_handler(TIMER_1, TIMER_1_DEV);
-//    ISR_EXIT();
+    ISR_EXIT();
 }
 #endif
 #if TIMER_2_EN
@@ -289,7 +286,7 @@ __attribute__ ((naked)) void TIMER_3_ISR(void)
     ISR_EXIT();
 }
 #endif
-/*
+
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
     ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_TIMEOUT);
@@ -309,4 +306,3 @@ static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
         thread_yield();
     }
 }
-*/
