@@ -20,11 +20,13 @@
 
 #include <stdlib.h>
 
-#define TIMER_NUMOF 4
+#define TIMER_NUMOF 0
+ /*
 #define TIMER_0_EN  1
 #define TIMER_1_EN  1
 #define TIMER_2_EN  1
 #define TIMER_3_EN  1
+*/
 
 #include "cpu.h"
 #include "board.h"
@@ -53,7 +55,7 @@
 #define TIMER_3_ISR isr_tim3a
 
 /** Unified IRQ handler for all timers */
-static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
+// static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
 
 /** Type for timer state */
 typedef struct {
@@ -119,7 +121,7 @@ int timer_set(tim_t dev, int channel, unsigned int timeout) {
  */
 int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
 //    timer_init(0,0,0);
-
+/*
     DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
     int timer;
     IRQn_Type irq;
@@ -164,7 +166,7 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
     // Enable the timers.
     //
     ROM_TimerEnable(timer, TIMER_A);
-
+*/
     return 1;
 }
 
@@ -287,7 +289,7 @@ __attribute__ ((naked)) void TIMER_3_ISR(void)
     ISR_EXIT();
 }
 #endif
-
+/*
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
     ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_TIMEOUT);
@@ -307,3 +309,4 @@ static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
         thread_yield();
     }
 }
+*/

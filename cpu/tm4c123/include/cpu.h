@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 #include "arm_cpu.h"
-// #include "tm4c123gh6pm.h"
+#include "tm4c123gh6pm.h"
 
 extern uintptr_t __stack_start;     ///< end of user stack memory space
 

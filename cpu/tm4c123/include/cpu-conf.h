@@ -21,7 +21,7 @@
 #ifndef __CPU_CONF_H
 #define __CPU_CONF_H
 
-// #include "tm4c123gh6pm.h"
+#include "tm4c123gh6pm.h"
 
 /**
  * @name Kernel configuration
