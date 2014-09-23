@@ -27,6 +27,7 @@
 
 void board_init(void)
 {
+    //
     // Set the clocking to run directly from the crystal.
     //
     ROM_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ |
@@ -34,6 +35,11 @@ void board_init(void)
 
     /* set pendSV interrupt to lowest possible priority */
     NVIC_SetPriority(PendSV_IRQn, 0xff);
+
+    //
+    // Enable the FPU
+    //
+    ROM_FPUEnable();
 
     //
     // Enable the GPIO port that is used for the on-board LED.
