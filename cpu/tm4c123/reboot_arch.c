@@ -28,7 +28,7 @@ int reboot_arch(int mode)
 {
     printf("Going into reboot, mode %i\n", mode);
 
-//    NVIC_SystemReset();
+    NVIC_SystemReset();
 
     return 0;
 }

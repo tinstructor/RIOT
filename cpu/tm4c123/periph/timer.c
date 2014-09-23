@@ -27,7 +27,6 @@
 #define TIMER_2_EN  1
 #define TIMER_3_EN  1
 
-#include "cpu.h"
 #include "board.h"
 #include "sched.h"
 #include "thread.h"
