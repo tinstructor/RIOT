@@ -20,9 +20,11 @@
 
 #include <stdlib.h>
 
-#define TIMER_NUMOF 2
-#define TIMER_0_EN 1
-#define TIMER_1_EN 1
+#define TIMER_NUMOF 4
+#define TIMER_0_EN  1
+#define TIMER_1_EN  1
+#define TIMER_2_EN  1
+#define TIMER_3_EN  1
 
 #include "cpu.h"
 #include "board.h"
@@ -31,21 +33,24 @@
 #include "periph_conf.h"
 #include "periph/timer.h"
 
+#include "board.h"
+
 #include "driverlib/timer.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 
+#define ENABLE_DEBUG 1
+#include "debug.h"
+
 #define TIMER_0_DEV TIMER0
 #define TIMER_1_DEV TIMER1
+#define TIMER_2_DEV TIMER2
+#define TIMER_3_DEV TIMER3
 
 #define TIMER_0_ISR isr_tim0a
 #define TIMER_1_ISR isr_tim1a
-
-#define TIMER_0_IRQ_CHAN TIMER0A_IRQn
-#define TIMER_1_IRQ_CHAN TIMER1A_IRQn
-
-#define TIMER_IRQ_PRIO 1
-
+#define TIMER_2_ISR isr_tim2a
+#define TIMER_3_ISR isr_tim3a
 
 /** Unified IRQ handler for all timers */
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
@@ -59,265 +64,243 @@ typedef struct {
 timer_conf_t config[TIMER_NUMOF];
 
 
-int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int))
-{
-    TIMER0_Type *timer;
+/**
+ * @brief Initialize the given timer
+ *
+ * Each timer device is running with the given speed. Each can contain one or more channels
+ * as defined in periph_conf.h. The timer is configured in up-counting mode and will count
+ * until TIMER_x_MAX_VALUE as defined in used board's periph_conf.h until overflowing.
+ *
+ * The timer will be started automatically after initialization with interrupts enabled.
+ *
+ * @param[in] dev           the timer to initialize
+ * @param[in] ticks_per_us  the timers speed in ticks per us
+ * @param[in] callback      this callback is called in interrupt context, the emitting channel is
+ *                          passed as argument
+ *
+ * @return                  returns 0 on success, -1 if speed not applicable of unknown device given
+ */
+int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
+    DEBUG("timer_init()\n");
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER3);
 
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            /* enable timer peripheral clock */
-            ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-            /* set timer's IRQ priority */
-            NVIC_SetPriority(TIMER_0_IRQ_CHAN, TIMER_IRQ_PRIO);
-            /* select timer */
-            timer = TIMER_0_DEV;
-//            timer->PSC = TIMER_0_PRESCALER * ticks_per_us;
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            /* enable timer peripheral clock */
-            ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-            /* set timer's IRQ priority */
-            NVIC_SetPriority(TIMER_1_IRQ_CHAN, TIMER_IRQ_PRIO);
-            /* select timer */
-            timer = TIMER_1_DEV;
-//            timer->PSC = TIMER_0_PRESCALER * ticks_per_us;
-            break;
-#endif
-        case TIMER_UNDEFINED:
-        default:
-            return -1;
-    }
-
-    /* set callback function */
-    config[dev].cb = callback;
-
-    /* set timer to run in counter mode */
-//    timer->CR1 = 0;
-//    timer->CR2 = 0;
-
-    /* set auto-reload and prescaler values and load new values */
-//    timer->EGR |= TIM_EGR_UG;
-
-    /* enable the timer's interrupt */
-    timer_irq_enable(dev);
-
-    /* start the timer */
-    timer_start(dev);
+    ROM_IntMasterEnable();
 
     return 0;
 }
 
-int timer_set(tim_t dev, int channel, unsigned int timeout)
-{
-    int now = timer_read(dev);
-    return timer_set_absolute(dev, channel, now + timeout - 1);
+/**
+ * @brief Set a given timer channel for the given timer device. The callback given during
+ * initialization is called when timeout ticks have passed after calling this function
+ *
+ * @param[in] dev           the timer device to set
+ * @param[in] channel       the channel to set
+ * @param[in] timeout       timeout in ticks after that the registered callback is executed
+ *
+ * @return                  1 on success, -1 on error
+ */
+int timer_set(tim_t dev, int channel, unsigned int timeout) {
+    // TODO
+
+    return timer_set_absolute(dev, channel, timeout);
 }
 
-int timer_set_absolute(tim_t dev, int channel, unsigned int value)
-{
-    TIMER0_Type *timer;
+/**
+ * @brief Set an absolute timeout value for the given channel of the given timer device
+ *
+ * @param[in] dev           the timer device to set
+ * @param[in] channel       the channel to set
+ * @param[in] value         the absolute compare value when the callback will be triggered
+ *
+ * @return                  1 on success, -1 on error
+ */
+int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
+//    timer_init(0,0,0);
 
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            timer = TIMER_0_DEV;
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            timer = TIMER_1_DEV;
-            break;
-#endif
-        case TIMER_UNDEFINED:
-        default:
-            return -1;
-    }
+    DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
+    int timer;
+    IRQn_Type irq;
 
-    ROM_TimerConfigure((uint32_t) timer, TIMER_CFG_ONE_SHOT);
-    switch (channel) {
+    switch(channel) {
         case 0:
-            ROM_TimerLoadSet((uint32_t) timer, TIMER_A, value);
+            value = ROM_SysCtlClockGet();
+            timer = TIMER0_BASE;
+            irq = TIMER0A_IRQn;
             break;
         case 1:
-            ROM_TimerLoadSet((uint32_t) timer, TIMER_B, value);
+            value = ROM_SysCtlClockGet() * 2;
+            timer = TIMER1_BASE;
+            irq = TIMER1A_IRQn;
+            break;
+        case 2:
+            timer = TIMER2_BASE;
+            irq = TIMER2A_IRQn;
+            return -1; // definies may be wrong?
+            break;
+        case 3:
+            timer = TIMER3_BASE;
+            irq = TIMER3A_IRQn;
+            return -1;
             break;
         default:
             return -1;
     }
+
+    printf("IRQn_Type = %d\n", irq);
+
+    ROM_TimerConfigure(timer, TIMER_CFG_PERIODIC);
+    ROM_TimerLoadSet(timer, TIMER_A, value);
+
+    //
+    // Setup the interrupts for the timer timeouts.
+    //
+    ROM_IntEnable(irq);
+    ROM_TimerIntEnable(timer, TIMER_TIMA_TIMEOUT);
+
+    //
+    // Enable the timers.
+    //
+    ROM_TimerEnable(timer, TIMER_A);
+
+    return 1;
+}
+
+/**
+ * @brief Clear the given channel of the given timer device
+ *
+ * @param[in] dev           the timer device to clear
+ * @param[in] channel       the channel on the given device to clear
+ *
+ * @return                  1 on success, -1 on error
+ */
+int timer_clear(tim_t dev, int channel) {
+    DEBUGF("todo\n");
+
+    return 1;
+}
+
+/**
+ * @brief Read the current value of the given timer device
+ *
+ * @param[in] dev           the timer to read the current value from
+ *
+ * @return                  the timers current value
+ */
+unsigned int timer_read(tim_t dev) {
+    DEBUGF("todo\n");
 
     return 0;
 }
 
-int timer_clear(tim_t dev, int channel)
-{
-    TIMER0_Type *timer;
-
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            timer = TIMER_0_DEV;
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            timer = TIMER_1_DEV;
-            break;
-#endif
-        case TIMER_UNDEFINED:
-        default:
-            return -1;
-    }
-
-    switch (channel) {
-        case 0:
-            ROM_TimerIntClear((uint32_t) timer, TIMER_TIMA_TIMEOUT);
-            break;
-        case 1:
-            ROM_TimerIntClear((uint32_t) timer, TIMER_TIMB_TIMEOUT);
-            break;
-        default:
-            return -1;
-    }
-
-    return 0;
+/**
+ * @brief Start the given timer. This function is only needed if the timer was stopped manually before
+ *
+ * @param[in] dev           the timer device to stop
+ */
+void timer_start(tim_t dev) {
+    DEBUGF("todo\n");
 }
 
-unsigned int timer_read(tim_t dev)
-{
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            return TIMER_0_DEV->TAV;
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            return TIMER_1_DEV->TAV;
-            break;
-#endif
-        case TIMER_UNDEFINED:
-        default:
-            return 0;
-    }
+/**
+ * @brief Stop the given timer - this will effect all of the timer's channels
+ *
+ * @param[in] dev           the timer to stop
+ */
+void timer_stop(tim_t dev) {
+    DEBUGF("todo\n");
 }
 
-void timer_start(tim_t dev)
-{
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            ROM_TimerEnable(TIMER0_BASE, TIMER_A);
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            ROM_TimerEnable(TIMER1_BASE, TIMER_A);
-            break;
-#endif
-        case TIMER_UNDEFINED:
-            break;
-    }
+/**
+ * @brief Enable the interrupts for the given timer
+ *
+ * @param[in] dev           timer to enable interrupts for
+ */
+void timer_irq_enable(tim_t dev) {
+    DEBUGF("todo\n");
 }
 
-void timer_stop(tim_t dev)
-{
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            ROM_TimerDisable(TIMER0_BASE, TIMER_A);
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            ROM_TimerDisable(TIMER1_BASE, TIMER_A);
-            break;
-#endif
-        case TIMER_UNDEFINED:
-            break;
-    }
+/**
+ * @brief Disable interrupts for the given timer
+ *
+ * @param[in] dev           the timer to disable interrupts for
+ */
+void timer_irq_disable(tim_t dev) {
+    DEBUGF("todo\n");
 }
 
-void timer_irq_enable(tim_t dev)
-{
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            NVIC_EnableIRQ(TIMER_0_IRQ_CHAN);
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            NVIC_EnableIRQ(TIMER_1_IRQ_CHAN);
-            break;
-#endif
-        case TIMER_UNDEFINED:
-            break;
-    }
+/**
+ * @brief Reset the up-counting value to zero for the given timer
+ *
+ * Note that this function effects all currently set channels and it can lead to non-deterministic timeouts
+ * if any channel is active when this function is called.
+ *
+ * @param[in] dev           the timer to reset
+ */
+void timer_reset(tim_t dev) {
+    DEBUGF("todo\n");
 }
 
-void timer_irq_disable(tim_t dev)
-{
-    switch (dev) {
 #if TIMER_0_EN
-        case TIMER_0:
-            NVIC_DisableIRQ(TIMER_0_IRQ_CHAN);
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            NVIC_DisableIRQ(TIMER_1_IRQ_CHAN);
-            break;
-#endif
-        case TIMER_UNDEFINED:
-            break;
-    }
-}
-
-void timer_reset(tim_t dev)
-{
-    switch (dev) {
-#if TIMER_0_EN
-        case TIMER_0:
-            TIMER_0_DEV->TAV = 0;
-            // what about TBV? (Value B)
-            break;
-#endif
-#if TIMER_1_EN
-        case TIMER_1:
-            TIMER_1_DEV->TAV = 0;
-            break;
-#endif
-        case TIMER_UNDEFINED:
-            break;
-    }
-}
-
 __attribute__ ((naked)) void TIMER_0_ISR(void)
 {
-    ISR_ENTER();
-    irq_handler(TIMER_0, TIMER_0_DEV);
-    ISR_EXIT();
-}
+//    ISR_ENTER();
+    ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 
+    RED_LED_ON;
+    irq_handler(TIMER_0, TIMER_0_DEV);
+//    ISR_EXIT();
+}
+#endif
+#if TIMER_1_EN
 __attribute__ ((naked)) void TIMER_1_ISR(void)
 {
-    ISR_ENTER();
+//    ISR_ENTER();
+    ROM_TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
+
+    GREEN_LED_ON;
     irq_handler(TIMER_1, TIMER_1_DEV);
+//    ISR_EXIT();
+}
+#endif
+#if TIMER_2_EN
+__attribute__ ((naked)) void TIMER_2_ISR(void)
+{
+    ISR_ENTER();
+    ROM_TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
+
+    BLUE_LED_ON;
+    irq_handler(TIMER_2, TIMER_2_DEV);
     ISR_EXIT();
 }
+#endif
+#if TIMER_3_EN
+__attribute__ ((naked)) void TIMER_3_ISR(void)
+{
+    ISR_ENTER();
+    ROM_TimerIntClear(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
+
+    RED_LED_ON;
+    irq_handler(TIMER_3, TIMER_3_DEV);
+    ISR_EXIT();
+}
+#endif
 
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
     ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_TIMEOUT);
+    RED_LED_ON;
 
     if (dev == TIMER_0_DEV) {
         config[timer].cb(0);
-    }
-    else if (dev == TIMER_1_DEV) {
+    } else if (dev == TIMER_1_DEV) {
         config[timer].cb(1);
+    } else if (dev == TIMER_2_DEV) {
+        config[timer].cb(2);
+    } else if (dev == TIMER_3_DEV) {
+        config[timer].cb(3);
     }
 
     if (sched_context_switch_request) {

@@ -22,6 +22,7 @@
 #define __BOARD_H
 
 #include "cpu.h"
+#include "inc/hw_memmap.h"
 
 /**
  * Define the nominal CPU core clock in this board
@@ -40,12 +41,12 @@
 #define STDIO_BAUDRATE      (115200U)
 #define STDIO_BUFSIZE       (64U)
 
-#define RED_LED_ON          (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))) = 0x2)
-#define RED_LED_OFF         (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))) = 0x0)
-#define BLUE_LED_ON         (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))) = 0x4)
-#define BLUE_LED_OFF        (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))) = 0x0)
-#define GREEN_LED_ON        (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))) = 0x8)
-#define GREEN_LED_OFF       (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))) = 0x0)
+#define RED_LED_ON          (*((volatile unsigned int *)(GPIO_PORTF_BASE + ((0x2 << 2)))) = 0x2)
+#define RED_LED_OFF         (*((volatile unsigned int *)(GPIO_PORTF_BASE + ((0x2 << 2)))) = 0x0)
+#define BLUE_LED_ON         (*((volatile unsigned int *)(GPIO_PORTF_BASE + ((0x4 << 2)))) = 0x4)
+#define BLUE_LED_OFF        (*((volatile unsigned int *)(GPIO_PORTF_BASE + ((0x4 << 2)))) = 0x0)
+#define GREEN_LED_ON        (*((volatile unsigned int *)(GPIO_PORTF_BASE + ((0x8 << 2)))) = 0x8)
+#define GREEN_LED_OFF       (*((volatile unsigned int *)(GPIO_PORTF_BASE + ((0x8 << 2)))) = 0x0)
 
 /**
  * @brief Initialize board specific hardware, including clock, LEDs and std-IO

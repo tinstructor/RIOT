@@ -127,9 +127,9 @@ void isr_hard_fault(void)
 	while(1){
 		GREEN_LED_ON;
 		RED_LED_ON;
-		ROM_SysCtlDelay(5000000);
+		ROM_SysCtlDelay(1000000);
 		GREEN_LED_OFF;
-		ROM_SysCtlDelay(5000000);
+		ROM_SysCtlDelay(1000000);
 	}
 }
 
@@ -165,6 +165,14 @@ void isr_tim0a(void)                 __attribute__ ((weak, alias("dummy_handler"
 void isr_tim0b(void)                 __attribute__ ((weak, alias("dummy_handler")));
 void isr_tim1a(void)                 __attribute__ ((weak, alias("dummy_handler")));
 void isr_tim1b(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim2a(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim2b(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim3a(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim3b(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim4a(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim4b(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim5a(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_tim5b(void)                 __attribute__ ((weak, alias("dummy_handler")));
 
 /* interrupt vector table */
 __attribute__ ((section(".vectors")))
@@ -211,8 +219,8 @@ const void *interrupt_vector[] = {
     isr_tim0b,                          // Timer 0 subtimer B
     isr_tim1a,                          // Timer 1 subtimer A
     isr_tim1b,                          // Timer 1 subtimer B
-    dummy_handler,                      // Timer 2 subtimer A
-    dummy_handler,                      // Timer 2 subtimer B
+    isr_tim2a,                          // Timer 2 subtimer A
+    isr_tim2b,                          // Timer 2 subtimer B
     dummy_handler,                      // Analog Comparator 0
     dummy_handler,                      // Analog Comparator 1
     dummy_handler,                      // Analog Comparator 2
@@ -223,14 +231,14 @@ const void *interrupt_vector[] = {
     dummy_handler,                      // GPIO Port H
     dummy_handler,                      // UART2 Rx and Tx
     dummy_handler,                      // SSI1 Rx and Tx
-    dummy_handler,                      // Timer 3 subtimer A
-    dummy_handler,                      // Timer 3 subtimer B
+    isr_tim3a,                          // Timer 3 subtimer A
+    isr_tim3b,                          // Timer 3 subtimer B
     dummy_handler,                      // I2C1 Master and Slave
     dummy_handler,                      // Quadrature Encoder 1
     dummy_handler,                      // CAN0
     dummy_handler,                      // CAN1
     dummy_handler,                      // CAN2
-    0,                                      // Reserved
+    0,                                  // Reserved
     dummy_handler,                      // Hibernate
     dummy_handler,                      // USB0
     dummy_handler,                      // PWM Generator 3
@@ -240,8 +248,8 @@ const void *interrupt_vector[] = {
     dummy_handler,                      // ADC1 Sequence 1
     dummy_handler,                      // ADC1 Sequence 2
     dummy_handler,                      // ADC1 Sequence 3
-    0,                                      // Reserved
-    0,                                      // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
     dummy_handler,                      // GPIO Port J
     dummy_handler,                      // GPIO Port K
     dummy_handler,                      // GPIO Port L
@@ -256,10 +264,10 @@ const void *interrupt_vector[] = {
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
-    dummy_handler,                      // I2C2 Master and Slave
-    dummy_handler,                      // I2C3 Master and Slave
-    dummy_handler,                      // Timer 4 subtimer A
-    dummy_handler,                      // Timer 4 subtimer B
+    dummy_handler,                          // I2C2 Master and Slave
+    dummy_handler,                          // I2C3 Master and Slave
+    isr_tim4a,                              // Timer 4 subtimer A
+    isr_tim4b,                              // Timer 4 subtimer B
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
@@ -280,8 +288,8 @@ const void *interrupt_vector[] = {
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
-    dummy_handler,                      // Timer 5 subtimer A
-    dummy_handler,                      // Timer 5 subtimer B
+    isr_tim5a,                          // Timer 5 subtimer A
+    isr_tim5b,                          // Timer 5 subtimer B
     dummy_handler,                      // Wide Timer 0 subtimer A
     dummy_handler,                      // Wide Timer 0 subtimer B
     dummy_handler,                      // Wide Timer 1 subtimer A

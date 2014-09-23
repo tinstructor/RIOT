@@ -70,9 +70,9 @@ int main(void)
     puts("All timers set.");
     puts("");
 
-    hwtimer_wait(HWTIMER_TICKS(BASE_DELAY));
+//    hwtimer_wait(HWTIMER_TICKS(BASE_DELAY));
 
     puts("hwtimer set.");
-    thread_sleep();
+//    thread_sleep();
     return 0;
 }
