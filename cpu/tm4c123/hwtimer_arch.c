@@ -20,6 +20,8 @@
 
 #define TIMER_0_EN 1
 #define TIMER_1_EN 1
+#define TIMER_2_EN 1
+#define TIMER_3_EN 1
 
 #include "arch/hwtimer_arch.h"
 #include "board.h"
