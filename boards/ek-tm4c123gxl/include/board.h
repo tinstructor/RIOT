@@ -33,6 +33,15 @@
  */
 #define HW_TIMER            TIMER_0
 
+#define TIMER_NUMOF         6
+
+#define TIMER_0_EN          1
+#define TIMER_1_EN          1
+#define TIMER_2_EN          1
+#define TIMER_3_EN          1
+#define TIMER_4_EN          1
+#define TIMER_5_EN          1
+
 /**
  * @name Define the UART used for stdio
  */

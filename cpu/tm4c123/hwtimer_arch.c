@@ -18,18 +18,29 @@
  * @}
  */
 
-#define TIMER_0_EN 1
-#define TIMER_1_EN 1
-#define TIMER_2_EN 1
-#define TIMER_3_EN 1
-
 #include "arch/hwtimer_arch.h"
 #include "board.h"
 #include "periph/timer.h"
 #include "thread.h"
 
-#define HW_TIMER            TIMER_0
-
+static tim_t get_timer(short timer) {
+    switch (timer) {
+        case 0:
+        return TIMER_0;
+        case 1:
+        return TIMER_1;
+        case 2:
+        return TIMER_2;
+        case 3:
+        return TIMER_3;
+        case 4:
+        return TIMER_4;
+        case 5:
+        return TIMER_5;
+        default:
+        return TIMER_UNDEFINED;
+    }
+}
 /**
  * @brief Callback function that is given to the low-level timer
  *
@@ -44,33 +55,37 @@ void (*timeout_handler)(int);
 
 void hwtimer_arch_init(void (*handler)(int), uint32_t fcpu)
 {
+	unsigned int ticks_per_us = 1;
+
     timeout_handler = handler;
-    timer_init(HW_TIMER, 1, &irq_handler);
+
+    for (int i=0; i < TIMER_NUMOF; ++i)
+        timer_init(get_timer(i), ticks_per_us, &irq_handler);
 }
 
 void hwtimer_arch_enable_interrupt(void)
 {
-    timer_irq_enable(HW_TIMER);
+	// This function is never useds
 }
 
 void hwtimer_arch_disable_interrupt(void)
 {
-    timer_irq_disable(HW_TIMER);
+	// This function is never useds
 }
 
 void hwtimer_arch_set(unsigned long offset, short timer)
 {
-    timer_set(HW_TIMER, timer, offset);
+    timer_set(get_timer(timer), 0, offset);
 }
 
 void hwtimer_arch_set_absolute(unsigned long value, short timer)
 {
-    timer_set_absolute(HW_TIMER, timer, value);
+    timer_set_absolute(get_timer(timer), 0, value);
 }
 
 void hwtimer_arch_unset(short timer)
 {
-    timer_clear(HW_TIMER, timer);
+    timer_clear(get_timer(timer), 0);
 }
 
 unsigned long hwtimer_arch_now(void)

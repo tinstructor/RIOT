@@ -20,13 +20,6 @@
 
 #include <stdlib.h>
 
-#define TIMER_NUMOF 4
-
-#define TIMER_0_EN  1
-#define TIMER_1_EN  1
-#define TIMER_2_EN  1
-#define TIMER_3_EN  1
-
 #include "board.h"
 #include "sched.h"
 #include "thread.h"
@@ -63,6 +56,62 @@ typedef struct {
 /** Timer state memory */
 timer_conf_t config[TIMER_NUMOF];
 
+static int get_timer_base(tim_t dev) {
+    switch(dev) {
+        case TIMER_0:
+        return TIMER0_BASE;
+        case TIMER_1:
+        return TIMER1_BASE;
+        case TIMER_2:
+        return TIMER2_BASE;
+        case TIMER_3:
+        return TIMER3_BASE;
+        case TIMER_4:
+        return TIMER4_BASE;
+        case TIMER_5:
+        return TIMER5_BASE;
+        default:
+        return -1;
+    }
+}
+
+static int get_timer_num(tim_t dev) {
+    switch(dev) {
+        case TIMER_0:
+        return 0;
+        case TIMER_1:
+        return 1;
+        case TIMER_2:
+        return 2;
+        case TIMER_3:
+        return 3;
+        case TIMER_4:
+        return 4;
+        case TIMER_5:
+        return 5;
+        default:
+        return -1;
+    }
+}
+
+static IRQn_Type get_timer_irq(tim_t dev) {
+    switch(dev) {
+        case TIMER_0:
+        return TIMER0A_IRQn;
+        case TIMER_1:
+        return TIMER1A_IRQn;
+        case TIMER_2:
+        return TIMER2A_IRQn;
+        case TIMER_3:
+        return TIMER3A_IRQn;
+        case TIMER_4:
+        return TIMER4A_IRQn;
+        case TIMER_5:
+        return TIMER5A_IRQn;
+        default:
+        return -1;
+    }
+}
 
 /**
  * @brief Initialize the given timer
@@ -81,17 +130,10 @@ timer_conf_t config[TIMER_NUMOF];
  * @return                  returns 0 on success, -1 if speed not applicable of unknown device given
  */
 int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
-    DEBUG("timer_init()\n");
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER1);
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER3);
+    DEBUG("timer_init(%d)\n", dev);
 
-    int i;
-    for (i = 0; i < TIMER_NUMOF; ++i)
-        config[i].cb = callback;
-
-    ROM_IntMasterEnable();
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0 + get_timer_num(dev));
+    config[get_timer_num(dev)].cb = callback;
 
     return 0;
 }
@@ -123,29 +165,9 @@ int timer_set(tim_t dev, int channel, unsigned int timeout) {
  */
 int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
     DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
-    int timer;
-    IRQn_Type irq;
+    int timer = get_timer_base(dev);
+    IRQn_Type irq = get_timer_irq(dev);
 
-    switch(channel) {
-        case 0:
-            timer = TIMER0_BASE;
-            irq = TIMER0A_IRQn;
-            break;
-        case 1:
-            timer = TIMER1_BASE;
-            irq = TIMER1A_IRQn;
-            break;
-        case 2:
-            timer = TIMER2_BASE;
-            irq = TIMER2A_IRQn;
-            break;
-        case 3:
-            timer = TIMER3_BASE;
-            irq = TIMER3A_IRQn;
-            break;
-        default:
-            return -1;
-    }
 
     printf("IRQn_Type = %d\n", irq);
 
