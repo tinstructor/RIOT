@@ -19,6 +19,7 @@
  */
 
 #include "arch/hwtimer_arch.h"
+#include "hwtimer_cpu.h"
 #include "board.h"
 #include "periph/timer.h"
 #include "thread.h"
@@ -59,7 +60,7 @@ void hwtimer_arch_init(void (*handler)(int), uint32_t fcpu)
 
     timeout_handler = handler;
 
-    for (int i=0; i < TIMER_NUMOF; ++i)
+    for (int i=0; i < HWTIMER_MAXTIMERS; ++i)
         timer_init(get_timer(i), ticks_per_us, &irq_handler);
 }
 

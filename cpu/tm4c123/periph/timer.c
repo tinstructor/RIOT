@@ -39,11 +39,15 @@
 #define TIMER_1_DEV TIMER1
 #define TIMER_2_DEV TIMER2
 #define TIMER_3_DEV TIMER3
+#define TIMER_4_DEV TIMER4
+#define TIMER_5_DEV TIMER5
 
 #define TIMER_0_ISR isr_tim0a
 #define TIMER_1_ISR isr_tim1a
 #define TIMER_2_ISR isr_tim2a
 #define TIMER_3_ISR isr_tim3a
+#define TIMER_4_ISR isr_tim4a
+#define TIMER_5_ISR isr_tim5a
 
 /** Unified IRQ handler for all timers */
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
@@ -94,20 +98,20 @@ static int get_timer_num(tim_t dev) {
     }
 }
 
-static IRQn_Type get_timer_irq(tim_t dev) {
+static IRQn_Type get_timer_irq(tim_t dev, int chan) {
     switch(dev) {
         case TIMER_0:
-        return TIMER0A_IRQn;
+        return chan ? TIMER0B_IRQn : TIMER0A_IRQn;
         case TIMER_1:
-        return TIMER1A_IRQn;
+        return chan ? TIMER1B_IRQn : TIMER1A_IRQn;
         case TIMER_2:
-        return TIMER2A_IRQn;
+        return chan ? TIMER2B_IRQn : TIMER2A_IRQn;
         case TIMER_3:
-        return TIMER3A_IRQn;
+        return chan ? TIMER3B_IRQn : TIMER3A_IRQn;
         case TIMER_4:
-        return TIMER4A_IRQn;
+        return chan ? TIMER4B_IRQn : TIMER4A_IRQn;
         case TIMER_5:
-        return TIMER5A_IRQn;
+        return chan ? TIMER5B_IRQn : TIMER5A_IRQn;
         default:
         return -1;
     }
@@ -166,7 +170,7 @@ int timer_set(tim_t dev, int channel, unsigned int timeout) {
 int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
     DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
     int timer = get_timer_base(dev);
-    IRQn_Type irq = get_timer_irq(dev);
+    IRQn_Type irq = get_timer_irq(dev, channel);
 
 
     printf("IRQn_Type = %d\n", irq);
@@ -267,8 +271,6 @@ void timer_reset(tim_t dev) {
 void TIMER_0_ISR(void)
 {
     ISR_ENTER();
-    ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-
     irq_handler(TIMER_0, TIMER_0_DEV);
     ISR_EXIT();
 }
@@ -277,8 +279,6 @@ void TIMER_0_ISR(void)
 __attribute__ ((naked)) void TIMER_1_ISR(void)
 {
     ISR_ENTER();
-    ROM_TimerIntClear(TIMER1_BASE, TIMER_TIMA_TIMEOUT);
-
     irq_handler(TIMER_1, TIMER_1_DEV);
     ISR_EXIT();
 }
@@ -287,8 +287,6 @@ __attribute__ ((naked)) void TIMER_1_ISR(void)
 __attribute__ ((naked)) void TIMER_2_ISR(void)
 {
     ISR_ENTER();
-    ROM_TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
-
     irq_handler(TIMER_2, TIMER_2_DEV);
     ISR_EXIT();
 }
@@ -297,9 +295,23 @@ __attribute__ ((naked)) void TIMER_2_ISR(void)
 __attribute__ ((naked)) void TIMER_3_ISR(void)
 {
     ISR_ENTER();
-    ROM_TimerIntClear(TIMER3_BASE, TIMER_TIMA_TIMEOUT);
-
     irq_handler(TIMER_3, TIMER_3_DEV);
+    ISR_EXIT();
+}
+#endif
+#if TIMER_4_EN
+__attribute__ ((naked)) void TIMER_4_ISR(void)
+{
+    ISR_ENTER();
+    irq_handler(TIMER_4, TIMER_4_DEV);
+    ISR_EXIT();
+}
+#endif
+#if TIMER_5_EN
+__attribute__ ((naked)) void TIMER_5_ISR(void)
+{
+    ISR_ENTER();
+    irq_handler(TIMER_5, TIMER_5_DEV);
     ISR_EXIT();
 }
 #endif
@@ -308,15 +320,7 @@ static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
     ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_TIMEOUT);
 
-    if (dev == TIMER_0_DEV) {
-        config[timer].cb(0);
-    } else if (dev == TIMER_1_DEV) {
-        config[timer].cb(1);
-    } else if (dev == TIMER_2_DEV) {
-        config[timer].cb(2);
-    } else if (dev == TIMER_3_DEV) {
-        config[timer].cb(3);
-    }
+    config[timer].cb(get_timer_num(timer));
 
     if (sched_context_switch_request) {
         thread_yield();
