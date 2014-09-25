@@ -26,7 +26,7 @@
 /**
  * Define the nominal CPU core clock in this board
  */
-#define F_CPU               (72000000UL)
+#define F_CPU               (50000000UL)
 
 /**
  * @name Assign the hardware timer

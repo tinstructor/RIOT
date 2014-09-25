@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Freie Universität Berlin
+ * Copyright (C) 2014 volatiles
  *
  * This file is subject to the terms and conditions of the GNU Lesser General
  * Public License v2.1. See the file LICENSE in the top level directory for more
@@ -7,13 +7,13 @@
  */
 
 /**
- * @ingroup     cpu_stm32f4
+ * @ingroup     cpu_tm4c123
  * @{
  *
  * @file
- * @brief       Low-level timer driver implementation
+ * @brief       Low-level timer driver implementation, uses full-with (32 bit) timers
  *
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Benjamin Valentin <benjamin.valentin@volatiles.de>
  *
  * @}
  */
@@ -98,20 +98,20 @@ static int get_timer_num(tim_t dev) {
     }
 }
 
-static IRQn_Type get_timer_irq(tim_t dev, int chan) {
+static IRQn_Type get_timer_irq(tim_t dev) {
     switch(dev) {
         case TIMER_0:
-        return chan ? TIMER0B_IRQn : TIMER0A_IRQn;
+        return TIMER0A_IRQn;
         case TIMER_1:
-        return chan ? TIMER1B_IRQn : TIMER1A_IRQn;
+        return TIMER1A_IRQn;
         case TIMER_2:
-        return chan ? TIMER2B_IRQn : TIMER2A_IRQn;
+        return TIMER2A_IRQn;
         case TIMER_3:
-        return chan ? TIMER3B_IRQn : TIMER3A_IRQn;
+        return TIMER3A_IRQn;
         case TIMER_4:
-        return chan ? TIMER4B_IRQn : TIMER4A_IRQn;
+        return TIMER4A_IRQn;
         case TIMER_5:
-        return chan ? TIMER5B_IRQn : TIMER5A_IRQn;
+        return TIMER5A_IRQn;
         default:
         return -1;
     }
@@ -170,7 +170,7 @@ int timer_set(tim_t dev, int channel, unsigned int timeout) {
 int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
     DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
     int timer = get_timer_base(dev);
-    IRQn_Type irq = get_timer_irq(dev, channel);
+    IRQn_Type irq = get_timer_irq(dev);
 
 
     printf("IRQn_Type = %d\n", irq);
@@ -214,9 +214,7 @@ int timer_clear(tim_t dev, int channel) {
  * @return                  the timers current value
  */
 unsigned int timer_read(tim_t dev) {
-    DEBUGF("todo\n");
-
-    return 0;
+    return ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
 }
 
 /**
