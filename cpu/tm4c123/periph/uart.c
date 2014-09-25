@@ -88,7 +88,22 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
     uart_config[uart].arg = arg;
 
     /* enable receive interrupt */
-    // TODO
+    switch (uart) {
+#if UART_0_EN
+        case UART_0:
+            NVIC_SetPriority(UART_0_IRQ_CHAN, UART_IRQ_PRIO);
+            NVIC_EnableIRQ(UART_0_IRQ_CHAN);
+//            UART_0_DEV->CR1 |= USART_CR1_RXNEIE;
+            break;
+#endif
+#if UART_1_EN
+        case UART_1:
+            NVIC_SetPriority(UART_1_IRQ_CHAN, UART_IRQ_PRIO);
+            NVIC_EnableIRQ(UART_1_IRQ_CHAN);
+//            UART_1_DEV->CR1 |= USART_CR1_RXNEIE;
+            break;
+#endif
+    }
 
     return 0;
 }
@@ -196,6 +211,7 @@ __attribute__((naked)) void UART_2_ISR(void)
 
 static inline void irq_handler(uint8_t uartnum, void *dev)
 {
+    puts("UART irq_hanlder(): TODO");
 /*
     if (dev->SR & USART_SR_RXNE) {
         char data = (char)dev->DR;

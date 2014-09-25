@@ -19,11 +19,18 @@
 #ifndef __PERIPH_CONF_H
 #define __PERIPH_CONF_H
 
+#define UART_IRQ_PRIO       1
 #define UART_NUMOF          (2U)
 #define UART_0_EN           1
 #define UART_0_ISR          isr_uart0
 
 #define UART_1_EN           1
 #define UART_1_ISR          isr_uart1
+
+#define UART_0_IRQ_CHAN     UART0_IRQn
+#define UART_1_IRQ_CHAN     UART1_IRQn
+
+#define UART_0_DEV          UART0
+#define UART_1_DEV          UART1
 
 #endif /* __PERIPH_CONF_H */

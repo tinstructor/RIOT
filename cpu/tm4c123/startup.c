@@ -161,6 +161,8 @@ void isr_pendsv(void)               __attribute__ ((weak, alias("dummy_handler")
 void isr_systick(void)              __attribute__ ((weak, alias("dummy_handler")));
 
 /* TM4C123 specific interrupt vector */
+void isr_uart0(void)                 __attribute__ ((weak, alias("dummy_handler")));
+void isr_uart1(void)                 __attribute__ ((weak, alias("dummy_handler")));
 void isr_tim0a(void)                 __attribute__ ((weak, alias("dummy_handler")));
 void isr_tim0b(void)                 __attribute__ ((weak, alias("dummy_handler")));
 void isr_tim1a(void)                 __attribute__ ((weak, alias("dummy_handler")));
@@ -201,8 +203,8 @@ const void *interrupt_vector[] = {
     dummy_handler,                      // GPIO Port C
     dummy_handler,                      // GPIO Port D
     dummy_handler,                      // GPIO Port E
-    dummy_handler,                      // UART0 Rx and Tx
-    dummy_handler,                      // UART1 Rx and Tx
+    isr_uart0,                          // UART0 Rx and Tx
+    isr_uart1,                          // UART1 Rx and Tx
     dummy_handler,                      // SSI0 Rx and Tx
     dummy_handler,                      // I2C0 Master and Slave
     dummy_handler,                      // PWM Fault
