@@ -70,11 +70,6 @@
 #warning "HWTIMER_MAXTICKS undefined. Set HWTIMER_MAXTICKS to maximum number of ticks countable on the current architecture."
 #endif
 
-/**
- * @brief   microseconds before hwtimer overflow
- */
-#define HWTIMER_OVERFLOW_MICROS()        (1000000L / HWTIMER_SPEED * HWTIMER_MAXTICKS)
-
 typedef uint32_t timer_tick_t; /**< data type for hwtimer ticks */
 
 /**
