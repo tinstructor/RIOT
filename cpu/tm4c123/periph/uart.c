@@ -88,6 +88,7 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
     uart_config[uart].arg = arg;
 
     /* enable receive interrupt */
+    // TODO
     switch (uart) {
 #if UART_0_EN
         case UART_0:

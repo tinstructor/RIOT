@@ -48,6 +48,7 @@ typedef enum {
 #if TIMER_5_EN
     TIMER_5,                /**< 6th timer */
 #endif
+    TIMER_SYSTICK,
     TIMER_UNDEFINED         /**< fall-back if no timer is defined */
 } tim_t; /* named tim instead of timer to avoid conflicts with vendor libraries */
 

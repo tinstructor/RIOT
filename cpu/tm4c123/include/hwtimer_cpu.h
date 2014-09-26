@@ -24,7 +24,8 @@
  * @{
  */
 #define HWTIMER_MAXTIMERS   4               /**< the CPU implementation supports 6 HW timers */
-#define HWTIMER_SPEED       (50000000UL)    /**< the HW timer runs with 1MHz */
+#define HWTIMER_PRESCALE    (63)            /**< CPU clock divided by 64 */
+#define HWTIMER_SPEED       (50000000UL / (HWTIMER_PRESCALE + 1)) /**< the HW timer runs with 1MHz */
 #define HWTIMER_MAXTICKS    (0xFFFFFFFF)    /**< 32-bit timer */
 /** @} */
 

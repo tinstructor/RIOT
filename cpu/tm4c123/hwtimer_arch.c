@@ -60,6 +60,7 @@ void hwtimer_arch_init(void (*handler)(int), uint32_t fcpu)
 
     timeout_handler = handler;
 
+    timer_init(TIMER_SYSTICK, ticks_per_us, NULL);
     for (int i=0; i < HWTIMER_MAXTIMERS; ++i)
         timer_init(get_timer(i), ticks_per_us, &irq_handler);
 }
@@ -91,7 +92,7 @@ void hwtimer_arch_unset(short timer)
 
 unsigned long hwtimer_arch_now(void)
 {
-    return timer_read(HW_TIMER);
+    return timer_read(TIMER_SYSTICK);
 }
 
 void irq_handler(int channel)

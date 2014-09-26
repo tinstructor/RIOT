@@ -25,6 +25,7 @@
 #include "thread.h"
 #include "periph_conf.h"
 #include "periph/timer.h"
+#include "hwtimer_cpu.h"
 
 #include "board.h"
 
@@ -32,7 +33,7 @@
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #include "debug.h"
 
 #define TIMER_0_DEV TIMER0
@@ -48,6 +49,8 @@
 #define TIMER_3_ISR isr_tim3a
 #define TIMER_4_ISR isr_tim4a
 #define TIMER_5_ISR isr_tim5a
+
+#define TIMER_MODE TIMER_CFG_ONE_SHOT_UP
 
 /** Unified IRQ handler for all timers */
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
@@ -136,8 +139,13 @@ static IRQn_Type get_timer_irq(tim_t dev) {
 int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
     DEBUG("timer_init(%d)\n", dev);
 
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0 + get_timer_num(dev));
-    config[get_timer_num(dev)].cb = callback;
+    if (dev == TIMER_SYSTICK) {
+        ROM_SysTickPeriodSet(HWTIMER_MAXTICKS / (HWTIMER_PRESCALE + 1));
+        ROM_SysTickEnable();
+    } else {
+        ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0 + get_timer_num(dev));
+        config[get_timer_num(dev)].cb = callback;
+    }
 
     return 0;
 }
@@ -153,7 +161,7 @@ int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
  * @return                  1 on success, -1 on error
  */
 int timer_set(tim_t dev, int channel, unsigned int timeout) {
-    // TODO
+    DEBUG("timer_set(%d, %d)\n", dev, timeout);
 
     return timer_set_absolute(dev, channel, timeout);
 }
@@ -168,21 +176,22 @@ int timer_set(tim_t dev, int channel, unsigned int timeout) {
  * @return                  1 on success, -1 on error
  */
 int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
-    DEBUG("timer_set_absolute(%d, %d (%d))\n", channel, value, ROM_SysCtlClockGet());
+    DEBUG("timer_set_absolute(%d, %d)\n", dev, value);
     int timer = get_timer_base(dev);
     IRQn_Type irq = get_timer_irq(dev);
 
 
-    printf("IRQn_Type = %d\n", irq);
+    DEBUG("IRQn_Type = %d\n", irq);
 
-    ROM_TimerConfigure(timer, TIMER_CFG_ONE_SHOT_UP);
+    ROM_TimerConfigure(timer, TIMER_MODE);
+    ROM_TimerPrescaleSet(timer, TIMER_A, HWTIMER_PRESCALE);
     ROM_TimerLoadSet(timer, TIMER_A, value);
 
     //
     // Setup the interrupts for the timer timeouts.
     //
     NVIC_EnableIRQ(irq);
-    ROM_TimerIntEnable(timer, TIMER_CFG_ONE_SHOT_UP);
+    ROM_TimerIntEnable(timer, TIMER_MODE);
 
     //
     // Enable the timers.
@@ -201,7 +210,8 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
  * @return                  1 on success, -1 on error
  */
 int timer_clear(tim_t dev, int channel) {
-    DEBUGF("todo\n");
+    DEBUG("timer_clear(%d, %d)\n", dev, channel);
+    ROM_TimerIntDisable(get_timer_base(dev), TIMER_MODE);
 
     return 1;
 }
@@ -214,7 +224,14 @@ int timer_clear(tim_t dev, int channel) {
  * @return                  the timers current value
  */
 unsigned int timer_read(tim_t dev) {
-    return ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
+    uint32_t value;
+    if (dev == TIMER_SYSTICK)
+        value = ROM_SysTickValueGet();
+    else
+        value = ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
+
+    DEBUG("timer_read(%d) = %d\n", dev, value);
+    return value;
 }
 
 /**
@@ -241,7 +258,7 @@ void timer_stop(tim_t dev) {
  * @param[in] dev           timer to enable interrupts for
  */
 void timer_irq_enable(tim_t dev) {
-    DEBUGF("todo\n");
+    ROM_TimerEnable(get_timer_base(dev), TIMER_MODE);
 }
 
 /**
@@ -250,7 +267,7 @@ void timer_irq_enable(tim_t dev) {
  * @param[in] dev           the timer to disable interrupts for
  */
 void timer_irq_disable(tim_t dev) {
-    DEBUGF("todo\n");
+    ROM_TimerDisable(get_timer_base(dev), TIMER_MODE);
 }
 
 /**
@@ -262,7 +279,7 @@ void timer_irq_disable(tim_t dev) {
  * @param[in] dev           the timer to reset
  */
 void timer_reset(tim_t dev) {
-    DEBUGF("todo\n");
+    ((TIMER0_Type *) get_timer_base(dev))->TAV = 0;
 }
 
 #if TIMER_0_EN

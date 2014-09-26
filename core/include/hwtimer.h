@@ -60,7 +60,7 @@
  * @param[in]   ticks   number of ticks
  * @return      microseconds
  */
-#define HWTIMER_TICKS_TO_US(ticks)        ((ticks) * 1000000L / HWTIMER_SPEED)
+#define HWTIMER_TICKS_TO_US(ticks)        ((ticks) * (1000000L / HWTIMER_SPEED))
 
 /**
  * @brief   Maximum hwtimer tick count (before overflow)
