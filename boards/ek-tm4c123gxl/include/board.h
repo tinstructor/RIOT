@@ -49,12 +49,21 @@
 #define STDIO_BAUDRATE      (115200U)
 #define STDIO_BUFSIZE       (64U)
 
-#define RED_LED_ON          (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))) = 0x2)
-#define RED_LED_OFF         (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))) = 0x0)
-#define BLUE_LED_ON         (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))) = 0x4)
-#define BLUE_LED_OFF        (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))) = 0x0)
-#define GREEN_LED_ON        (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))) = 0x8)
-#define GREEN_LED_OFF       (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))) = 0x0)
+#define _RED_LED            (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))))
+#define _GREEN_LED          (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))))
+#define _BLUE_LED           (*((volatile unsigned int *)(GPIOF_BASE + ((0x8 << 2)))))
+
+#define RED_LED_ON          (_RED_LED = 0x2)
+#define RED_LED_OFF         (_RED_LED = 0x0)
+#define RED_LED_TOGGLE      (_RED_LED^= 0x2)
+
+#define GREEN_LED_ON        (_GREEN_LED = 0x4)
+#define GREEN_LED_OFF       (_GREEN_LED = 0x0)
+#define GREEN_LED_TOGGLE    (_GREEN_LED^= 0x4)
+
+#define BLUE_LED_ON         (_BLUE_LED = 0x8)
+#define BLUE_LED_OFF        (_BLUE_LED = 0x0)
+#define BLUE_LED_TOGGLE     (_BLUE_LED^= 0x8)
 
 /**
  * @brief Initialize board specific hardware, including clock, LEDs and std-IO
