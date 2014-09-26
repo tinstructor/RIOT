@@ -92,7 +92,7 @@ void hwtimer_arch_unset(short timer)
 
 unsigned long hwtimer_arch_now(void)
 {
-    return timer_read(TIMER_SYSTICK);
+    return timer_read(TIMER_3);
 }
 
 void irq_handler(int channel)
