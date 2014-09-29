@@ -202,7 +202,11 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
  * @return                  1 on success, -1 on error
  */
 int timer_clear(tim_t dev, int channel) {
-    DEBUG("timer_clear(%d, %d): TODO\n", dev, channel);
+    DEBUG("timer_clear(%d, %d)\n", dev, channel);
+
+    // since we don't have channels in 32bit mode, just disable the interrupt
+
+    timer_irq_disable(dev);
 
     return 1;
 }
