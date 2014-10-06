@@ -50,8 +50,6 @@
 #define TIMER_4_ISR isr_tim4a
 #define TIMER_5_ISR isr_tim5a
 
-#define TIMER_INT_MODE TIMER_CFG_PERIODIC_UP
-
 /** Unified IRQ handler for all timers */
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev);
 
@@ -139,21 +137,17 @@ static IRQn_Type get_timer_irq(tim_t dev) {
 int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
     DEBUG("timer_init(%d)\n", dev);
 
-    if (dev == TIMER_SYSTICK) {
-        ROM_SysTickPeriodSet(HWTIMER_MAXTICKS / (TIMER_0_PRESCALER + 1));
-        ROM_SysTickEnable();
-    } else {
-        config[get_timer_num(dev)].cb = callback;
+    config[get_timer_num(dev)].cb = callback;
 
-        ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0 + get_timer_num(dev));
-        ROM_TimerConfigure(get_timer_base(dev), TIMER_INT_MODE);
-//        ROM_TimerPrescaleSet(get_timer_base(dev), TIMER_A, TIMER_0_PRESCALER);
-        ROM_TimerLoadSet(get_timer_base(dev), TIMER_A, HWTIMER_MAXTICKS);
+    uint32_t timer = get_timer_base(dev);
 
-        NVIC_EnableIRQ(get_timer_irq(dev));
+    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0 + get_timer_num(dev));
+    ROM_TimerConfigure(timer, TIMER_CFG_PERIODIC_UP);
+    ROM_TimerLoadSet(timer, TIMER_A, HWTIMER_MAXTICKS);
 
-        timer_start(dev);
-    }
+    NVIC_EnableIRQ(get_timer_irq(dev));
+
+    timer_start(dev);
 
     return 0;
 }
@@ -202,11 +196,11 @@ int timer_set_absolute(tim_t dev, int channel, unsigned int value) {
  * @return                  1 on success, -1 on error
  */
 int timer_clear(tim_t dev, int channel) {
-    DEBUG("timer_clear(%d, %d)\n", dev, channel);
+    DEBUG("TODO: timer_clear(%d, %d)\n", dev, channel);
 
     // since we don't have channels in 32bit mode, just disable the interrupt
 
-    timer_irq_disable(dev);
+    // timer_irq_disable(dev);
 
     return 1;
 }
@@ -220,10 +214,8 @@ int timer_clear(tim_t dev, int channel) {
  */
 unsigned int timer_read(tim_t dev) {
     uint32_t value;
-    if (dev == TIMER_SYSTICK)
-        value = ROM_SysTickValueGet();
-    else
-        value = ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
+
+    value = ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
 
     DEBUG("timer_read(%d) = %u\n", dev, value);
     return value;
@@ -256,7 +248,7 @@ void timer_stop(tim_t dev) {
  */
 void timer_irq_enable(tim_t dev) {
     DEBUG("%s(%d)\n", __FUNCTION__, dev);
-    ROM_TimerIntEnable(get_timer_base(dev), TIMER_INT_MODE);
+    ROM_TimerIntEnable(get_timer_base(dev), TIMER_TIMA_MATCH);
 }
 
 /**
@@ -266,7 +258,7 @@ void timer_irq_enable(tim_t dev) {
  */
 void timer_irq_disable(tim_t dev) {
     DEBUG("%s(%d)\n", __FUNCTION__, dev);
-    ROM_TimerIntDisable(get_timer_base(dev), TIMER_INT_MODE);
+    ROM_TimerIntDisable(get_timer_base(dev), TIMER_TIMA_MATCH);
 }
 
 /**
@@ -333,7 +325,7 @@ __attribute__ ((naked)) void TIMER_5_ISR(void)
 
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
-    ROM_TimerIntClear((uint32_t) dev, TIMER_INT_MODE);
+    ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_MATCH);
     timer_irq_disable(timer);
 
     config[timer].cb(get_timer_num(timer));
