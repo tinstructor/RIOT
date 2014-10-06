@@ -176,6 +176,19 @@ void isr_tim4b(void)                 __attribute__ ((weak, alias("dummy_handler"
 void isr_tim5a(void)                 __attribute__ ((weak, alias("dummy_handler")));
 void isr_tim5b(void)                 __attribute__ ((weak, alias("dummy_handler")));
 
+void isr_wtim0a(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim0b(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim1a(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim1b(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim2a(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim2b(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim3a(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim3b(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim4a(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim4b(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim5a(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_wtim5b(void)                __attribute__ ((weak, alias("dummy_handler")));
+
 /* interrupt vector table */
 __attribute__ ((section(".vectors")))
 const void *interrupt_vector[] = {
@@ -262,14 +275,14 @@ const void *interrupt_vector[] = {
     dummy_handler,                      // UART5 Rx and Tx
     dummy_handler,                      // UART6 Rx and Tx
     dummy_handler,                      // UART7 Rx and Tx
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    dummy_handler,                          // I2C2 Master and Slave
-    dummy_handler,                          // I2C3 Master and Slave
-    isr_tim4a,                              // Timer 4 subtimer A
-    isr_tim4b,                              // Timer 4 subtimer B
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    dummy_handler,                      // I2C2 Master and Slave
+    dummy_handler,                      // I2C3 Master and Slave
+    isr_tim4a,                          // Timer 4 subtimer A
+    isr_tim4b,                          // Timer 4 subtimer B
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
@@ -292,19 +305,19 @@ const void *interrupt_vector[] = {
     0,                                      // Reserved
     isr_tim5a,                          // Timer 5 subtimer A
     isr_tim5b,                          // Timer 5 subtimer B
-    dummy_handler,                      // Wide Timer 0 subtimer A
-    dummy_handler,                      // Wide Timer 0 subtimer B
-    dummy_handler,                      // Wide Timer 1 subtimer A
-    dummy_handler,                      // Wide Timer 1 subtimer B
-    dummy_handler,                      // Wide Timer 2 subtimer A
-    dummy_handler,                      // Wide Timer 2 subtimer B
-    dummy_handler,                      // Wide Timer 3 subtimer A
-    dummy_handler,                      // Wide Timer 3 subtimer B
-    dummy_handler,                      // Wide Timer 4 subtimer A
-    dummy_handler,                      // Wide Timer 4 subtimer B
-    dummy_handler,                      // Wide Timer 5 subtimer A
-    dummy_handler,                      // Wide Timer 5 subtimer B
-    dummy_handler,                      // FPU
+    isr_wtim0a,                         // Wide Timer 0 subtimer A
+    isr_wtim0b,                         // Wide Timer 0 subtimer B
+    isr_wtim1a,                         // Wide Timer 1 subtimer A
+    isr_wtim1b,                         // Wide Timer 1 subtimer B
+    isr_wtim2a,                         // Wide Timer 2 subtimer A
+    isr_wtim2b,                         // Wide Timer 2 subtimer B
+    isr_wtim3a,                         // Wide Timer 3 subtimer A
+    isr_wtim3b,                         // Wide Timer 3 subtimer B
+    isr_wtim4a,                         // Wide Timer 4 subtimer A
+    isr_wtim4b,                         // Wide Timer 4 subtimer B
+    isr_wtim5a,                         // Wide Timer 5 subtimer A
+    isr_wtim5b,                         // Wide Timer 5 subtimer B
+    dummy_handler,                          // FPU
     0,                                      // Reserved
     0,                                      // Reserved
     dummy_handler,                      // I2C4 Master and Slave
