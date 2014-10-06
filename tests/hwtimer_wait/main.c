@@ -41,6 +41,7 @@ int main(void)
 
     for (unsigned long r = iterations; r > 0; r--) {
         for (unsigned long i = start_duration; i; i = i >> 1) {
+	    printf("hwtimer_wait(%d)\n", i);
             hwtimer_wait(i);
         }
     }

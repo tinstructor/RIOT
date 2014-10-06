@@ -33,7 +33,7 @@
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #include "debug.h"
 
 #define TIMER_0_DEV TIMER0
@@ -61,7 +61,7 @@ typedef struct {
 /** Timer state memory */
 timer_conf_t config[TIMER_NUMOF];
 
-static int get_timer_base(tim_t dev) {
+static inline int get_timer_base(tim_t dev) {
     switch(dev) {
         case TIMER_0:
         return TIMER0_BASE;
@@ -80,7 +80,7 @@ static int get_timer_base(tim_t dev) {
     }
 }
 
-static int get_timer_num(tim_t dev) {
+static inline int get_timer_num(tim_t dev) {
     switch(dev) {
         case TIMER_0:
         return 0;
@@ -99,7 +99,7 @@ static int get_timer_num(tim_t dev) {
     }
 }
 
-static IRQn_Type get_timer_irq(tim_t dev) {
+static inline IRQn_Type get_timer_irq(tim_t dev) {
     switch(dev) {
         case TIMER_0:
         return TIMER0A_IRQn;
@@ -213,9 +213,7 @@ int timer_clear(tim_t dev, int channel) {
  * @return                  the timers current value
  */
 unsigned int timer_read(tim_t dev) {
-    uint32_t value;
-
-    value = ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
+    uint32_t value = ROM_TimerValueGet(get_timer_base(dev), TIMER_A);
 
     DEBUG("timer_read(%d) = %u\n", dev, value);
     return value;
