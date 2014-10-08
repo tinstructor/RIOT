@@ -79,10 +79,7 @@ void _exit(int n)
  *
  * The current heap implementation is very rudimentary, it is only able to allocate
  * memory. But it does not
- * - check if the returned address is valid (no check if the memory very exists)
  * - have any means to free memory again
- *
- * TODO: check if the requested memory is really available
  *
  * @return [description]
  */
@@ -91,12 +88,12 @@ caddr_t _sbrk_r(struct _reent *r, size_t incr)
     unsigned int state = disableIRQ();
     caddr_t res = heap_top;
 
-    if (heap_top + incr > heap_end)
-    {
+    if (heap_top + incr > heap_end) {
         r->_errno = ENOMEM;
         res = NULL;
-    } else
+    } else {
         heap_top += incr;
+    }
 
     restoreIRQ(state);
     return res;
