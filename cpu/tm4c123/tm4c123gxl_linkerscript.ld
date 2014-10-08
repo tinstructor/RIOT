@@ -139,4 +139,13 @@ SECTIONS
 
     . = ALIGN(4);
     _end = . ;
+
+    /* heap section */
+    .heap (NOLOAD):
+    {
+        . = LENGTH(ram) - SIZEOF(.stack) - SIZEOF(.bss) - SIZEOF(.relocate);
+    } > ram
+
+    . = ALIGN(4);
+    _end_real = . ;
 }

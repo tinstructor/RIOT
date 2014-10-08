@@ -40,6 +40,21 @@
 extern uint32_t _end;                       /* address of last used memory cell */
 caddr_t heap_top = (caddr_t)&_end + 4;
 
+extern uint32_t _end_real;                  /* address of last used memory cell */
+caddr_t heap_end = (caddr_t)&_end_real;
+
+/*
+extern uintptr_t __heap_start;      ///< start of heap memory space
+static const caddr_t heap_start = (caddr_t)&__heap_start;
+extern uintptr_t __heap_max;        ///< maximum for end of heap memory space
+caddr_t heap_max = (caddr_t)&__heap_max;
+
+void heap_stats(void) {
+    printf("# heap: %p -- %p -> %p (%li of %li free)\n", heap_start, heap_top, heap_max,
+        (uint32_t)heap_max - (uint32_t)heap_top, (uint32_t)heap_max - (uint32_t)heap_start);
+}
+*/
+
 /**
  * @brief Initialize NewLib, called by __libc_init_array() from the startup script
  */
@@ -87,7 +102,14 @@ caddr_t _sbrk_r(struct _reent *r, size_t incr)
 {
     unsigned int state = disableIRQ();
     caddr_t res = heap_top;
-    heap_top += incr;
+
+    if (heap_top + incr > heap_end)
+    {
+        r->_errno = ENOMEM;
+        res = NULL;
+    } else
+        heap_top += incr;
+
     restoreIRQ(state);
     return res;
 }
