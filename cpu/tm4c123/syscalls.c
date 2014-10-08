@@ -37,23 +37,11 @@
 /**
  * manage the heap
  */
-extern uint32_t _end;                       /* address of last used memory cell */
-caddr_t heap_top = (caddr_t)&_end + 4;
+extern uint32_t _sheap;                 /* start of the heap */
+caddr_t heap_top = (caddr_t)&_sheap;
 
-extern uint32_t _end_real;                  /* address of last used memory cell */
-caddr_t heap_end = (caddr_t)&_end_real;
-
-/*
-extern uintptr_t __heap_start;      ///< start of heap memory space
-static const caddr_t heap_start = (caddr_t)&__heap_start;
-extern uintptr_t __heap_max;        ///< maximum for end of heap memory space
-caddr_t heap_max = (caddr_t)&__heap_max;
-
-void heap_stats(void) {
-    printf("# heap: %p -- %p -> %p (%li of %li free)\n", heap_start, heap_top, heap_max,
-        (uint32_t)heap_max - (uint32_t)heap_top, (uint32_t)heap_max - (uint32_t)heap_start);
-}
-*/
+extern uint32_t _eheap;                 /* end of the heap */
+caddr_t heap_end = (caddr_t)&_eheap;
 
 /**
  * @brief Initialize NewLib, called by __libc_init_array() from the startup script
