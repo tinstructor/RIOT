@@ -136,6 +136,7 @@ static inline IRQn_Type get_timer_irq(tim_t dev) {
  */
 int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
     DEBUG("timer_init(%d)\n", dev);
+    DEBUG("Running at %d Hz\n", ROM_SysCtlClockGet());
 
     config[get_timer_num(dev)].cb = callback;
 
@@ -146,6 +147,9 @@ int timer_init(tim_t dev, unsigned int ticks_per_us, void (*callback)(int)) {
     ROM_TimerLoadSet(timer, TIMER_A, HWTIMER_MAXTICKS);
 
     NVIC_EnableIRQ(get_timer_irq(dev));
+
+    // enable timeout interrupt, just because
+    ROM_TimerIntDisable(get_timer_base(dev), TIMER_TIMA_TIMEOUT);
 
     timer_start(dev);
 
@@ -323,10 +327,17 @@ __attribute__ ((naked)) void TIMER_5_ISR(void)
 
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
-    ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_MATCH);
-    timer_irq_disable(timer);
+    if (ROM_TimerIntStatus(dev, 0) & TIMER_TIMA_TIMEOUT) {
+        BLUE_LED_TOGGLE;
+        ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_TIMEOUT);
+    }
 
-    config[timer].cb(get_timer_num(timer));
+    if (ROM_TimerIntStatus(dev, 0) & TIMER_TIMA_MATCH) {
+        ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_MATCH);
+        timer_irq_disable(timer);
+
+        config[timer].cb(get_timer_num(timer));
+    }
 
     if (sched_context_switch_request) {
         thread_yield();
