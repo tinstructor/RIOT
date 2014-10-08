@@ -327,13 +327,13 @@ __attribute__ ((naked)) void TIMER_5_ISR(void)
 
 static inline void irq_handler(tim_t timer, TIMER0_Type *dev)
 {
-    if (ROM_TimerIntStatus(dev, 0) & TIMER_TIMA_TIMEOUT) {
+    if (ROM_TimerIntStatus((uint32_t) dev, 0) & TIMER_TIMA_TIMEOUT) {
         BLUE_LED_TOGGLE;
-        ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_TIMEOUT);
+        ROM_TimerIntClear ((uint32_t) dev, TIMER_TIMA_TIMEOUT);
     }
 
-    if (ROM_TimerIntStatus(dev, 0) & TIMER_TIMA_MATCH) {
-        ROM_TimerIntClear((uint32_t) dev, TIMER_TIMA_MATCH);
+    if (ROM_TimerIntStatus((uint32_t) dev, 0) & TIMER_TIMA_MATCH) {
+        ROM_TimerIntClear ((uint32_t) dev, TIMER_TIMA_MATCH);
         timer_irq_disable(timer);
 
         config[timer].cb(get_timer_num(timer));

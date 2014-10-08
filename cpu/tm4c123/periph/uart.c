@@ -212,7 +212,7 @@ __attribute__((naked)) void UART_2_ISR(void)
 
 static inline void irq_handler(uint8_t uartnum, void *dev)
 {
-    puts("UART irq_hanlder(): TODO");
+	// TOOD
 /*
     if (dev->SR & USART_SR_RXNE) {
         char data = (char)dev->DR;
