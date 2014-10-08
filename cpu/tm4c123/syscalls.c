@@ -28,10 +28,10 @@
 #include <sys/unistd.h>
 #include <stdint.h>
 
+#include "board.h"
 #include "thread.h"
 #include "kernel.h"
 #include "irq.h"
-#include "board.h"
 #include "periph/uart.h"
 
 /**
