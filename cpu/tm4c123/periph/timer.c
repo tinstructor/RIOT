@@ -49,18 +49,30 @@ timer_conf_t config[TIMER_NUMOF];
 
 static inline int get_timer_base(tim_t dev) {
     switch(dev) {
+#if TIMER_0_EN
         case TIMER_0:
         return TIMER0_BASE;
+#endif
+#if TIMER_1_EN
         case TIMER_1:
         return TIMER1_BASE;
+#endif
+#if TIMER_2_EN
         case TIMER_2:
         return TIMER2_BASE;
+#endif
+#if TIMER_3_EN
         case TIMER_3:
         return TIMER3_BASE;
+#endif
+#if TIMER_4_EN
         case TIMER_4:
         return TIMER4_BASE;
+#endif
+#if TIMER_5_EN
         case TIMER_5:
         return TIMER5_BASE;
+#endif
         default:
         return -1;
     }
@@ -68,18 +80,30 @@ static inline int get_timer_base(tim_t dev) {
 
 static inline int get_timer_num(tim_t dev) {
     switch(dev) {
+#if TIMER_0_EN
         case TIMER_0:
         return 0;
+#endif
+#if TIMER_1_EN
         case TIMER_1:
         return 1;
+#endif
+#if TIMER_2_EN
         case TIMER_2:
         return 2;
+#endif
+#if TIMER_3_EN
         case TIMER_3:
         return 3;
+#endif
+#if TIMER_4_EN
         case TIMER_4:
         return 4;
+#endif
+#if TIMER_5_EN
         case TIMER_5:
         return 5;
+#endif
         default:
         return -1;
     }
@@ -87,18 +111,30 @@ static inline int get_timer_num(tim_t dev) {
 
 static inline IRQn_Type get_timer_irq(tim_t dev) {
     switch(dev) {
+#if TIMER_0_EN
         case TIMER_0:
         return TIMER0A_IRQn;
+#endif
+#if TIMER_1_EN
         case TIMER_1:
         return TIMER1A_IRQn;
+#endif
+#if TIMER_2_EN
         case TIMER_2:
         return TIMER2A_IRQn;
+#endif
+#if TIMER_3_EN
         case TIMER_3:
         return TIMER3A_IRQn;
+#endif
+#if TIMER_4_EN
         case TIMER_4:
         return TIMER4A_IRQn;
+#endif
+#if TIMER_5_EN
         case TIMER_5:
         return TIMER5A_IRQn;
+#endif
         default:
         return -1;
     }
