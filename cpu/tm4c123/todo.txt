@@ -1,7 +1,0 @@
-- [ ] generic hwtimer_arch.c
-- [ ] implement cpu.c
-- [ ] generic io_arch.c
-- [ ] generic lpm_arch.c/implement lpm_arch.c
-- [ ] generic reboot_arch.c
-- [ ] implement startup.c
-- [ ] generic syscalls.c - already exists in arm_common?

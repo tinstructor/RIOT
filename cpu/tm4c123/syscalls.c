@@ -7,15 +7,17 @@
  */
 
 /**
- * @ingroup     cpu_stm32f4
+ * @ingroup     cpu_tm4c123
  * @{
  *
  * @file
- * @brief       NewLib system call implementations for STM32F4
+ * @brief       NewLib system call implementations
+ *              based on STM32F4
  *
  * @author      Michael Baar <michael.baar@fu-berlin.de>
  * @author      Stefan Pfeiffer <pfeiffer@inf.fu-berlin.de>
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Benjamin Valentin <benjamin.valentin@volatiles.de>
  *
  * @}
  */

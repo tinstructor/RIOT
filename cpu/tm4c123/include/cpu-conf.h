@@ -7,9 +7,9 @@
  */
 
 /**
- * @defgroup        cpu_stm32f4 STM32F4
+ * @defgroup        cpu_tm4c123 TM4C123
  * @ingroup         cpu
- * @brief           CPU specific implementations for the STM32F4
+ * @brief           CPU specific implementations for the TM4C123
  * @{
  *
  * @file
