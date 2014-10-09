@@ -37,11 +37,10 @@
 /**
  * manage the heap
  */
-extern uint32_t _sheap;                 /* start of the heap */
+extern char _sheap;                 /* start of the heap */
 caddr_t heap_top = (caddr_t)&_sheap;
 
-extern uint32_t _eheap;                 /* end of the heap */
-caddr_t heap_end = (caddr_t)&_eheap;
+extern char _eheap;                 /* end of the heap */
 
 /**
  * @brief Initialize NewLib, called by __libc_init_array() from the startup script
@@ -88,9 +87,10 @@ caddr_t _sbrk_r(struct _reent *r, size_t incr)
     unsigned int state = disableIRQ();
     caddr_t res = heap_top;
 
-    if (heap_top + incr > heap_end) {
+    if (((incr > 0) && ((heap_top + incr > &_eheap) || (heap_top + incr < res))) ||
+        ((incr < 0) && ((heap_top + incr < &_sheap) || (heap_top + incr > res)))) {
         r->_errno = ENOMEM;
-        res = NULL;
+        res = (void *) -1;
     } else {
         heap_top += incr;
     }

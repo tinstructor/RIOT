@@ -138,15 +138,7 @@ SECTIONS
     } > ram
 
     /* heap section */
-    .heap (NOLOAD):
-    {
-        . = ALIGN(8);
-        _sheap = .;
-        . = LENGTH(ram) - SIZEOF(.stack) - SIZEOF(.bss) - SIZEOF(.relocate);
-        . = ALIGN(8);
-        _eheap = .;
-    } > ram
-
     . = ALIGN(4);
-    _end = . ;
+    _sheap = . ;
+    _eheap = ORIGIN(ram) + LENGTH(ram);
 }
