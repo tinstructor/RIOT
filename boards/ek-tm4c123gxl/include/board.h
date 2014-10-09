@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Freie Universität Berlin
+ * Copyright (C) 2014 volatiles
  *
  * This file is subject to the terms and conditions of the GNU Lesser General
  * Public License v2.1. See the file LICENSE in the top level directory for more
@@ -7,15 +7,15 @@
  */
 
 /**
- * @defgroup    board_stm32f3discovery STM32F3Discovery
+ * @defgroup    board_ek-tm4c123gxl
  * @ingroup     boards
- * @brief       Board specific files for the STM32F3Discovery board
+ * @brief       Board specific files for the EK-TM4C123GXL Launchpad evaluation board
  * @{
  *
  * @file
- * @brief       Board specific definitions for the STM32F3Discovery evaluation board
+ * @brief       Board specific definitions for the EK-TM4C123GXL Launchpad evaluation board
  *
- * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Benjamin Valentin <benjamin.valentin@volatiles.de>
  */
 
 #ifndef __BOARD_H
@@ -33,21 +33,11 @@
  */
 #define HW_TIMER            TIMER_0
 
-#define TIMER_NUMOF         6
-
-#define TIMER_0_EN          1
-#define TIMER_1_EN          1
-#define TIMER_2_EN          1
-#define TIMER_3_EN          1
-#define TIMER_4_EN          1
-#define TIMER_5_EN          1
-
 /**
  * @name Define the UART used for stdio
  */
 #define STDIO               UART_0
 #define STDIO_BAUDRATE      (115200U)
-#define STDIO_BUFSIZE       (64U)
 
 #define _RED_LED            (*((volatile unsigned int *)(GPIOF_BASE + ((0x2 << 2)))))
 #define _BLUE_LED           (*((volatile unsigned int *)(GPIOF_BASE + ((0x4 << 2)))))
