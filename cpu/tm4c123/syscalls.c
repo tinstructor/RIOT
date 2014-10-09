@@ -38,9 +38,8 @@
  * manage the heap
  */
 extern char _sheap;                 /* start of the heap */
-caddr_t heap_top = (caddr_t)&_sheap;
-
 extern char _eheap;                 /* end of the heap */
+caddr_t heap_top = (caddr_t)&_sheap;
 
 /**
  * @brief Initialize NewLib, called by __libc_init_array() from the startup script
