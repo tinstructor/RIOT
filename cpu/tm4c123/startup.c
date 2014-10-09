@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014 Freie Universität Berlin
+ * Copyright (C) 2014 volatiles
  *
  * This file is subject to the terms and conditions of the GNU Lesser General
  * Public License v2.1. See the file LICENSE in the top level directory for more
@@ -14,6 +15,7 @@
  * @brief       Startup code and interrupt vector definition
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Benjamin Valentin <benjamin.valentin@volatiles.de>
  *
  * @}
  */
@@ -91,37 +93,6 @@ void dummy_handler(void)
 	}
 }
 
-void isr_nmi(void)
-{
-	while(1){
-		RED_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		RED_LED_OFF;
-		ROM_SysCtlDelay(5000000);
-	}
-}
-
-void isr_mem_manage(void)
-{
-	while(1){
-		BLUE_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		BLUE_LED_OFF;
-		ROM_SysCtlDelay(5000000);
-	}
-}
-
-void isr_debug_mon(void)
-{
-	while(1){
-		GREEN_LED_ON;
-		BLUE_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		GREEN_LED_OFF;
-		ROM_SysCtlDelay(5000000);
-	}
-}
-
 void isr_hard_fault(void)
 {
 	while(1){
@@ -133,32 +104,15 @@ void isr_hard_fault(void)
 	}
 }
 
-void isr_bus_fault(void)
-{
-	while(1){
-		BLUE_LED_ON;
-		RED_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		BLUE_LED_OFF;
-		ROM_SysCtlDelay(5000000);
-	}
-}
-
-void isr_usage_fault(void)
-{
-	while(1){
-		RED_LED_ON;
-		BLUE_LED_ON;
-		ROM_SysCtlDelay(5000000);
-		RED_LED_OFF;
-		ROM_SysCtlDelay(5000000);
-	}
-}
-
 /* Cortex-M specific interrupt vectors */
-void isr_svc(void)                  __attribute__ ((weak, alias("dummy_handler")));
-void isr_pendsv(void)               __attribute__ ((weak, alias("dummy_handler")));
-void isr_systick(void)              __attribute__ ((weak, alias("dummy_handler")));
+void isr_nmi(void)                   __attribute__ ((weak, alias("dummy_handler")));
+void isr_mem_manage(void)            __attribute__ ((weak, alias("dummy_handler")));
+void isr_bus_fault(void)             __attribute__ ((weak, alias("dummy_handler")));
+void isr_usage_fault(void)           __attribute__ ((weak, alias("dummy_handler")));
+void isr_svc(void)                   __attribute__ ((weak, alias("dummy_handler")));
+void isr_debug_mon(void)             __attribute__ ((weak, alias("dummy_handler")));
+void isr_pendsv(void)                __attribute__ ((weak, alias("dummy_handler")));
+void isr_systick(void)               __attribute__ ((weak, alias("dummy_handler")));
 
 /* TM4C123 specific interrupt vector */
 void isr_uart0(void)                 __attribute__ ((weak, alias("dummy_handler")));
@@ -193,24 +147,24 @@ void isr_wtim5b(void)                __attribute__ ((weak, alias("dummy_handler"
 __attribute__ ((section(".vectors")))
 const void *interrupt_vector[] = {
     /* Stack pointer */
-    (void*) (&_estack),             /* pointer to the top of the empty stack */
+    (void*) (&_estack),                 /* pointer to the top of the empty stack */
     /* Cortex-M4 handlers */
-    (void*) reset_handler,          /* entry point of the program */
-    (void*) isr_nmi,                /* non maskable interrupt handler */
-    (void*) isr_hard_fault,         /* if you end up here its not good */
-    (void*) isr_mem_manage,         /* memory controller interrupt */
-    (void*) isr_bus_fault,          /* also not good to end up here */
-    (void*) isr_usage_fault,        /* autsch */
-    (void*) (0UL),                  /* Reserved */
-    (void*) (0UL),                  /* Reserved */
-    (void*) (0UL),                  /* Reserved */
-    (void*) (0UL),                  /* Reserved */
-    (void*) isr_svc,                /* system call interrupt */
-    (void*) isr_debug_mon,          /* debug interrupt */
-    (void*) (0UL),                  /* Reserved */
-    (void*) isr_pendsv,             /* pendSV interrupt, used for task switching in RIOT */
-    (void*) isr_systick,            /* SysTick interrupt, not used in RIOT */
-    /* TI specific peripheral handlers */
+    (void*) reset_handler,              /* entry point of the program */
+    (void*) isr_nmi,                    /* non maskable interrupt handler */
+    (void*) isr_hard_fault,             /* if you end up here its not good */
+    (void*) isr_mem_manage,             /* memory controller interrupt */
+    (void*) isr_bus_fault,              /* also not good to end up here */
+    (void*) isr_usage_fault,            /* autsch */
+    (void*) (0UL),                      /* Reserved */
+    (void*) (0UL),                      /* Reserved */
+    (void*) (0UL),                      /* Reserved */
+    (void*) (0UL),                      /* Reserved */
+    (void*) isr_svc,                    /* system call interrupt */
+    (void*) isr_debug_mon,              /* debug interrupt */
+    (void*) (0UL),                      /* Reserved */
+    (void*) isr_pendsv,                 /* pendSV interrupt, used for task switching in RIOT */
+    (void*) isr_systick,                /* SysTick interrupt, not used in RIOT */
+    /* tiva specific peripheral handlers */
     dummy_handler,                      // GPIO Port A
     dummy_handler,                      // GPIO Port B
     dummy_handler,                      // GPIO Port C
@@ -283,26 +237,25 @@ const void *interrupt_vector[] = {
     dummy_handler,                      // I2C3 Master and Slave
     isr_tim4a,                          // Timer 4 subtimer A
     isr_tim4b,                          // Timer 4 subtimer B
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
-    0,                                      // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
     isr_tim5a,                          // Timer 5 subtimer A
     isr_tim5b,                          // Timer 5 subtimer B
     isr_wtim0a,                         // Wide Timer 0 subtimer A
@@ -317,16 +270,16 @@ const void *interrupt_vector[] = {
     isr_wtim4b,                         // Wide Timer 4 subtimer B
     isr_wtim5a,                         // Wide Timer 5 subtimer A
     isr_wtim5b,                         // Wide Timer 5 subtimer B
-    dummy_handler,                          // FPU
-    0,                                      // Reserved
-    0,                                      // Reserved
+    dummy_handler,                      // FPU
+    0,                                  // Reserved
+    0,                                  // Reserved
     dummy_handler,                      // I2C4 Master and Slave
     dummy_handler,                      // I2C5 Master and Slave
     dummy_handler,                      // GPIO Port M
     dummy_handler,                      // GPIO Port N
     dummy_handler,                      // Quadrature Encoder 2
-    0,                                      // Reserved
-    0,                                      // Reserved
+    0,                                  // Reserved
+    0,                                  // Reserved
     dummy_handler,                      // GPIO Port P (Summary or P0)
     dummy_handler,                      // GPIO Port P1
     dummy_handler,                      // GPIO Port P2

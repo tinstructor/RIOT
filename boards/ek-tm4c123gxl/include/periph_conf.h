@@ -33,4 +33,18 @@
 #define UART_0_DEV          UART0
 #define UART_1_DEV          UART1
 
+#define TIMER_0_DEV TIMER0
+#define TIMER_1_DEV TIMER1
+#define TIMER_2_DEV TIMER2
+#define TIMER_3_DEV TIMER3
+#define TIMER_4_DEV TIMER4
+#define TIMER_5_DEV TIMER5
+
+#define TIMER_0_ISR isr_tim0a
+#define TIMER_1_ISR isr_tim1a
+#define TIMER_2_ISR isr_tim2a
+#define TIMER_3_ISR isr_tim3a
+#define TIMER_4_ISR isr_tim4a
+#define TIMER_5_ISR isr_tim5a
+
 #endif /* __PERIPH_CONF_H */

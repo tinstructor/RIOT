@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2014 Freie Universität Berlin
+ * Copyright (C) 2014 volatiles
  *
  * This file is subject to the terms and conditions of the GNU Lesser General
  * Public License v2.1. See the file LICENSE in the top level directory for more
@@ -14,6 +15,7 @@
  * @brief       Implementation of the kernels hwtimer interface
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
+ * @author      Benjamin Valentin <benjamin.valentin@volatiles.de>
  *
  * @}
  */
@@ -24,7 +26,7 @@
 #include "periph/timer.h"
 #include "thread.h"
 
-static tim_t get_timer(short timer) {
+static inline tim_t get_timer(short timer) {
     switch (timer) {
         case 0:
         return TIMER_0;
@@ -56,8 +58,7 @@ void (*timeout_handler)(int);
 
 void hwtimer_arch_init(void (*handler)(int), uint32_t fcpu)
 {
-	unsigned int ticks_per_us = 1;
-
+    unsigned int ticks_per_us = 1;
     timeout_handler = handler;
 
     for (int i = 0; i < HWTIMER_MAXTIMERS; ++i)
