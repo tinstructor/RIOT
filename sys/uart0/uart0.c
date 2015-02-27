@@ -36,7 +36,11 @@
 #endif
 
 /* increase when ENABLE_DEBUG in chardev_thread is set to 1! */
+#if ENABLE_DEBUG
+#define UART0_STACKSIZE     (KERNEL_CONF_STACKSIZE_PRINTF_FLOAT)
+#else // ENABLE_DEBUG
 #define UART0_STACKSIZE     (KERNEL_CONF_STACKSIZE_DEFAULT)
+#endif // ENABLE_DEBUG
 
 ringbuffer_t uart0_ringbuffer;
 kernel_pid_t uart0_handler_pid = KERNEL_PID_UNDEF;
