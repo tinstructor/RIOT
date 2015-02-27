@@ -269,7 +269,7 @@ void timer_reset(tim_t dev) {
 }
 
 #if TIMER_0_EN
-void TIMER_0_ISR(void)
+__attribute__ ((naked)) void TIMER_0_ISR(void)
 {
     irq_handler(TIMER_0, TIMER_0_DEV);
 }
