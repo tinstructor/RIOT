@@ -53,16 +53,19 @@ static void print_echo(int argc, char **argv)
 static int shell_readc(void)
 {
     char c;
+    puts("hallo");
     int result = posix_read(uart0_handler_pid, &c, 1);
     if (result != 1) {
         return -1;
     }
     return (unsigned char) c;
+    // return getc(stdin);
 }
 
 static void shell_putchar(int c)
 {
     putchar(c);
+    fflush(stdout);
 }
 
 static const shell_command_t shell_commands[] = {
@@ -75,17 +78,22 @@ static const shell_command_t shell_commands[] = {
 int main(void)
 {
 
-    printf("test_shell.\n");
-
     board_uart0_init();
 
     posix_open(uart0_handler_pid, 0);
 
-    /* define own shell commands */
-    shell_t shell;
-    shell_init(&shell, shell_commands, SHELL_BUFSIZE, shell_readc,
-               shell_putchar);
-    shell_run(&shell);
+    printf("test_shell.\n");
+
+    while(1) {
+        char c = getchar();
+        putchar(c);
+    }
+
+    // /* define own shell commands */
+    // shell_t shell;
+    // shell_init(&shell, shell_commands, SHELL_BUFSIZE, shell_readc,
+    //            shell_putchar);
+    // shell_run(&shell);
 
     /* or use only system shell commands */
     /*

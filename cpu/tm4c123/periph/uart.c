@@ -21,6 +21,8 @@
  * @}
  */
 
+#include <stdio.h>
+
 #include "thread.h"
 #include "sched.h"
 #include "periph_conf.h"
@@ -28,6 +30,7 @@
 
 #include "board.h"
 
+#include "driverlib/hw_ints.h"
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
@@ -117,9 +120,16 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
 
     /* enable receive interrupt */
     // TODO
-    NVIC_SetPriority(get_uart_irq(uart), UART_IRQ_PRIO);
-    NVIC_EnableIRQ(get_uart_irq(uart));
+    // NVIC_SetPriority(get_uart_irq(uart), UART_IRQ_PRIO);
+    // NVIC_EnableIRQ(get_uart_irq(uart));
+
+
+    ROM_UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
+    ROM_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+    ROM_IntEnable(INT_UART0);
     //  UART_0_DEV->CR1 |= USART_CR1_RXNEIE;
+
+    puts("uart_init");
 
     return 0;
 }
@@ -139,6 +149,7 @@ int uart_init_blocking(uart_t uart, uint32_t baudrate)
 
     /* Enable the UART operation */
     ROM_UARTEnable(get_uart_base(uart));
+    puts("uart_init_blocking");
 
     return 0;
 }
@@ -195,18 +206,12 @@ __attribute__((naked)) void UART_1_ISR(void)
 
 static inline void irq_handler(uint8_t uartnum, void *dev)
 {
-	// TOOD
-/*
-    if (dev->SR & USART_SR_RXNE) {
-        char data = (char)dev->DR;
+    puts("INTERRUPT");
+    if (ROM_UARTCharsAvail(get_uart_base(uartnum))) {
+        puts("char available.");
+        char data = (char) ROM_UARTCharGetNonBlocking(get_uart_base(uartnum));
         uart_config[uartnum].rx_cb(uart_config[uartnum].arg, data);
     }
-    else if (dev->SR & USART_SR_TXE) {
-        if (uart_config[uartnum].tx_cb(uart_config[uartnum].arg) == 0) {
-            dev->CR1 &= ~(USART_CR1_TXEIE);
-        }
-    }
-*/
     if (sched_context_switch_request) {
         thread_yield();
     }

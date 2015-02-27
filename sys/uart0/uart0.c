@@ -69,6 +69,7 @@ void uart0_handle_incoming(int c)
 
 void uart0_notify_thread(void)
 {
+    puts("uart0_notify_thread");
     msg_t m;
     m.type = 0;
     msg_send_int(&m, uart0_handler_pid);
@@ -76,6 +77,7 @@ void uart0_notify_thread(void)
 
 int uart0_readc(void)
 {
+    puts("uart0_readc");
     char c = 0;
     posix_read(uart0_handler_pid, &c, 1);
     return c;
