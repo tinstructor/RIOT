@@ -58,6 +58,9 @@ void uart0_notify_thread(void);
  */
 int uart0_readc(void);
 
+
+int uart0_read(void *buffer, unsigned int count);
+
 /**
  * @brief Wrapper to putchar.
  *

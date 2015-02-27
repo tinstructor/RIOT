@@ -52,7 +52,7 @@ static char uart0_thread_stack[UART0_STACKSIZE];
 void board_uart0_init(void)
 {
     ringbuffer_init(&uart0_ringbuffer, buffer, UART0_BUFSIZE);
-    kernel_pid_t pid = thread_create(
+    uart0_handler_pid = thread_create(
                   uart0_thread_stack,
                   sizeof(uart0_thread_stack),
                   PRIORITY_MAIN - 1,
@@ -61,8 +61,7 @@ void board_uart0_init(void)
                   &uart0_ringbuffer,
                   "uart0"
               );
-    uart0_handler_pid = pid;
-    thread_wakeup(pid);
+    thread_wakeup(uart0_handler_pid);
     puts("uart0_init() [OK]");
 }
 
@@ -73,7 +72,6 @@ void uart0_handle_incoming(int c)
 
 void uart0_notify_thread(void)
 {
-    puts("uart0_notify_thread");
     msg_t m;
     m.type = 0;
     msg_send_int(&m, uart0_handler_pid);
@@ -81,10 +79,13 @@ void uart0_notify_thread(void)
 
 int uart0_readc(void)
 {
-    puts("uart0_readc");
     char c = 0;
     posix_read(uart0_handler_pid, &c, 1);
     return c;
+}
+
+int uart0_read(void *buffer, unsigned int count) {
+    return posix_read(uart0_handler_pid, buffer, count);
 }
 
 void uart0_putc(int c)

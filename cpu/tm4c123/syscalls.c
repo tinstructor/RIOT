@@ -70,9 +70,7 @@ void rx_cb(void *arg, char data)
     mutex_unlock(&uart_rx_mutex);
 #else
     if (uart0_handler_pid) {
-        puts("rx_cb");
         uart0_handle_incoming(data);
-
         uart0_notify_thread();
     }
 #endif
@@ -88,7 +86,7 @@ void _init(void)
     mutex_init(&uart_rx_mutex);
     ringbuffer_init(&rx_buf, rx_buf_mem, STDIO_RX_BUFSIZE);
 #endif
-    uart_init(STDIO, STDIO_BAUDRATE, rx_cb, 0, 0);
+    uart_init(STDIO, STDIO_BAUDRATE, rx_cb, NULL, 0);
 }
 
 /**
@@ -199,21 +197,13 @@ int _open_r(struct _reent *r, const char *name, int mode)
  */
 int _read_r(struct _reent *r, int fd, void *buffer, unsigned int count)
 {
-    // char c;
-    // char *buff = (char*)buffer;
-    // uart_read_blocking(STDIO, &c);
-    // buff[0] = c;
-    // return 1;
-    // TODO: (JK) count arg should be considered!
 #ifndef MODULE_UART0
     while (rx_buf.avail == 0) {
         mutex_lock(&uart_rx_mutex);
     }
     return ringbuffer_get(&rx_buf, (char*)buffer, rx_buf.avail);
 #else
-    char *res = (char*)buffer;
-    res[0] = (char)uart0_readc();
-    return 1;
+    return uart0_read(buffer, count);
 #endif
 }
 
