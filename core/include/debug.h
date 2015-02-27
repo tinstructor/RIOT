@@ -88,6 +88,7 @@
 # endif
 
 #define DEBUG(...) DEBUG_PRINT(__VA_ARGS__)
+#ifdef DEVELHELP
 #define DEBUGF(...) \
     do { \
         DEBUG_PRINT("DEBUG(%s): %s:%d in %s: ", \
@@ -95,10 +96,19 @@
                 __FILE__, __LINE__, DEBUG_FUNC); \
         DEBUG_PRINT(__VA_ARGS__); \
     } while (0)
-#else
+#else // DEVELHELP
+#define DEBUGF(...) \
+    do { \
+        DEBUG_PRINT("DEBUG(%s): %s:%d in %s: ", \
+                sched_active_thread ? "UNKNOWN" : "NO THREAD", \
+                __FILE__, __LINE__, DEBUG_FUNC); \
+        DEBUG_PRINT(__VA_ARGS__); \
+    } while (0)
+#endif // DEVELHELP
+#else // ENABLE_DEBUG
 #define DEBUG(...)
 #define DEBUGF(...)
-#endif
+#endif // ENABLE_DEBUG
 /** @} */
 
 #ifdef __cplusplus
