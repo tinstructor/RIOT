@@ -45,7 +45,7 @@ static void print_testend(int argc, char **argv)
 static void print_echo(int argc, char **argv)
 {
     for (int i = 0; i < argc; ++i) {
-        printf("“%s” ", argv[i]);
+        printf("\"%s\" ", argv[i]);
     }
     puts("");
 }
@@ -53,13 +53,11 @@ static void print_echo(int argc, char **argv)
 static int shell_readc(void)
 {
     char c;
-    puts("hallo");
     int result = posix_read(uart0_handler_pid, &c, 1);
     if (result != 1) {
         return -1;
     }
     return (unsigned char) c;
-    // return getc(stdin);
 }
 
 static void shell_putchar(int c)
@@ -82,18 +80,11 @@ int main(void)
 
     posix_open(uart0_handler_pid, 0);
 
-    printf("test_shell.\n");
-
-    while(1) {
-        char c = getchar();
-        putchar(c);
-    }
-
-    // /* define own shell commands */
-    // shell_t shell;
-    // shell_init(&shell, shell_commands, SHELL_BUFSIZE, shell_readc,
-    //            shell_putchar);
-    // shell_run(&shell);
+    /* define own shell commands */
+    shell_t shell;
+    shell_init(&shell, shell_commands, SHELL_BUFSIZE, shell_readc,
+               shell_putchar);
+    shell_run(&shell);
 
     /* or use only system shell commands */
     /*
