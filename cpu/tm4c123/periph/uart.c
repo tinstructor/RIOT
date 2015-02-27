@@ -68,6 +68,21 @@ static inline int get_uart_num(uart_t uart) {
     }
 }
 
+static inline int get_uart_int(uart_t uart) {
+    switch(uart) {
+#if UART_0_EN
+        case UART_0:
+        return INT_UART0;
+#endif
+#if UART_1_EN
+        case UART_1:
+        return INT_UART1;
+#endif
+        default:
+        return -1;
+    }
+}
+
 static inline int get_uart_irq(uart_t uart) {
     switch(uart) {
 #if UART_0_EN
@@ -119,17 +134,9 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, uart_tx_cb_t t
     uart_config[uart].arg = arg;
 
     /* enable receive interrupt */
-    // TODO
-    // NVIC_SetPriority(get_uart_irq(uart), UART_IRQ_PRIO);
-    // NVIC_EnableIRQ(get_uart_irq(uart));
-
-
-    ROM_UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
-    ROM_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-    ROM_IntEnable(INT_UART0);
-    //  UART_0_DEV->CR1 |= USART_CR1_RXNEIE;
-
-    puts("uart_init");
+    // TODO: et 
+    ROM_IntEnable(get_uart_int(uart));
+    ROM_UARTIntEnable(get_uart_base(uart), UART_INT_RX | UART_INT_RT);
 
     return 0;
 }
@@ -149,7 +156,6 @@ int uart_init_blocking(uart_t uart, uint32_t baudrate)
 
     /* Enable the UART operation */
     ROM_UARTEnable(get_uart_base(uart));
-    puts("uart_init_blocking");
 
     return 0;
 }
@@ -191,14 +197,16 @@ void uart_poweroff(uart_t uart)
 }
 
 #if UART_0_EN
-__attribute__((naked)) void UART_0_ISR(void)
+// __attribute__((naked))
+void UART_0_ISR(void)
 {
     irq_handler(UART_0, NULL);
 }
 #endif
 
 #if UART_1_EN
-__attribute__((naked)) void UART_1_ISR(void)
+// __attribute__((naked))
+void UART_1_ISR(void)
 {
     irq_handler(UART_1, NULL);
 }
@@ -206,12 +214,16 @@ __attribute__((naked)) void UART_1_ISR(void)
 
 static inline void irq_handler(uint8_t uartnum, void *dev)
 {
-    puts("INTERRUPT");
-    if (ROM_UARTCharsAvail(get_uart_base(uartnum))) {
-        puts("char available.");
+    // Get and clear the current interrupt source(s)
+    uint32_t int_flags = ROM_UARTIntStatus(get_uart_base(uartnum), true);
+    ROM_UARTIntClear(get_uart_base(uartnum), int_flags);
+
+    // TODO: Is it really safe/good practice to have a while loop in ISR?
+    while (ROM_UARTCharsAvail(get_uart_base(uartnum))) {
         char data = (char) ROM_UARTCharGetNonBlocking(get_uart_base(uartnum));
         uart_config[uartnum].rx_cb(uart_config[uartnum].arg, data);
     }
+
     if (sched_context_switch_request) {
         thread_yield();
     }
