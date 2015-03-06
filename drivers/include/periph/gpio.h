@@ -130,6 +130,54 @@ typedef enum {
 #if GPIO_31_EN
     GPIO_31,                /**< GPIO device 31 */
 #endif
+#if GPIO_32_EN
+    GPIO_32,                /**< GPIO device 32 */
+#endif
+#if GPIO_33_EN
+    GPIO_33,                /**< GPIO device 33 */
+#endif
+#if GPIO_34_EN
+    GPIO_34,                /**< GPIO device 34 */
+#endif
+#if GPIO_35_EN
+    GPIO_35,                /**< GPIO device 35 */
+#endif
+#if GPIO_36_EN
+    GPIO_36,                /**< GPIO device 36 */
+#endif
+#if GPIO_37_EN
+    GPIO_37,                /**< GPIO device 37 */
+#endif
+#if GPIO_38_EN
+    GPIO_38,                /**< GPIO device 38 */
+#endif
+#if GPIO_39_EN
+    GPIO_39,                /**< GPIO device 39 */
+#endif
+#if GPIO_40_EN
+    GPIO_40,                /**< GPIO device 40 */
+#endif
+#if GPIO_41_EN
+    GPIO_41,                /**< GPIO device 41 */
+#endif
+#if GPIO_42_EN
+    GPIO_42,                /**< GPIO device 42 */
+#endif
+#if GPIO_43_EN
+    GPIO_43,                /**< GPIO device 43 */
+#endif
+#if GPIO_44_EN
+    GPIO_44,                /**< GPIO device 44 */
+#endif
+#if GPIO_45_EN
+    GPIO_45,                /**< GPIO device 45 */
+#endif
+#if GPIO_46_EN
+    GPIO_46,                /**< GPIO device 46 */
+#endif
+#if GPIO_47_EN
+    GPIO_47,                /**< GPIO device 47 */
+#endif
 } gpio_t;
 
 /**
