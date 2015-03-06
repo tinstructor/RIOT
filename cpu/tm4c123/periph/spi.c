@@ -18,6 +18,8 @@
  * @}
  */
 
+#include "mutex.h"
+
 #include "tm4c123gh6pm.h"
 #include "periph/spi.h"
 #include "driverlib/rom.h"
@@ -25,6 +27,39 @@
 
 /* guard this file in case no SPI device is defined */
 #if SPI_NUMOF
+
+/**
+ * @brief Array holding one pre-initialized mutex for each SPI device
+ */
+static mutex_t locks[] =  {
+#if SPI_0_EN
+	[SPI_0] = MUTEX_INIT,
+#endif
+#if SPI_1_EN
+	[SPI_1] = MUTEX_INIT,
+#endif
+#if SPI_2_EN
+	[SPI_2] = MUTEX_INIT
+#endif
+#if SPI_3_EN
+	[SPI_3] = MUTEX_INIT
+#endif
+};
+
+static inline uint32_t get_spi_dev(spi_t dev) {
+	switch (dev) {
+		case SPI_0:
+			return SSI0_BASE;
+		case SPI_1:
+			return SSI1_BASE;
+		case SPI_2:
+			return SSI2_BASE;
+		case SPI_3:
+			return SSI3_BASE;
+		default:
+			return 0;
+		}
+}
 
 int spi_init_master(spi_t dev, spi_conf_t conf, spi_speed_t speed) {
 
@@ -45,27 +80,19 @@ int spi_init_master(spi_t dev, spi_conf_t conf, spi_speed_t speed) {
 		case SPI_SPEED_10MHZ:
 			_speed = 10000000;
 			break;
+		default:
+			return -2;
 	}
 
-	uint32_t _dev;
-	switch (dev) {
-		case SPI_0:
-			_dev = SSI0_BASE;
-			break;
-		case SPI_1:
-			_dev = SSI1_BASE;
-			break;
-		case SPI_2:
-			_dev = SSI2_BASE;
-			break;
-		case SPI_3:
-			_dev = SSI3_BASE;
-			break;
-	}
+	uint32_t _dev = get_spi_dev(dev);
+	if (_dev == 0)
+		return -1;
 
 	spi_conf_pins(dev);
 	ROM_SSIConfigSetExpClk(_dev, ROM_SysCtlClockGet(), conf, SSI_MODE_MASTER, _speed, 8);
 	ROM_SSIEnable(_dev);
+
+	return 0;
 }
 
 int spi_init_slave(spi_t dev, spi_conf_t conf, char (*cb)(char data)) {
@@ -131,27 +158,88 @@ int spi_conf_pins(spi_t dev) {
 }
 
 int spi_acquire(spi_t dev) {
-
+	if (dev >= SPI_NUMOF) {
+		return -1;
+	}
+	mutex_lock(&locks[dev]);
+	return 0;
 }
 
 int spi_release(spi_t dev) {
-
+	if (dev >= SPI_NUMOF) {
+		return -1;
+	}
+	mutex_unlock(&locks[dev]);
+	return 0;
 }
 
 int spi_transfer_byte(spi_t dev, char out, char *in) {
+	uint32_t data_in;
+	uint32_t _dev = get_spi_dev(dev);
 
+	if (_dev == 0)
+		return -1;
+
+	ROM_SSIDataPut(_dev, out);
+	ROM_SSIDataGet(_dev, &data_in)
+
+	if (in)
+		*in = (char) (data_in & 0xff);
+
+	return 1;
 }
 
 int spi_transfer_bytes(spi_t dev, char *out, char *in, unsigned int length) {
+	uint32_t data_in;
+	uint32_t data_out = 0;
 
+	uint32_t _dev = get_spi_dev(dev);
+
+	if (_dev == 0)
+		return -1;
+
+	for (unsigned int i = 0; i < length; ++i) {
+		if (out)
+			data_out = out[i];
+
+		ROM_SSIDataPut(_dev, data_out);
+		ROM_SSIDataGet(_dev, &data_in)
+
+		if (in)
+			in[i] = data_in;
+	}
+
+	return length;
 }
 
 int spi_transfer_reg(spi_t dev, uint8_t reg, char out, char *in) {
+	int trans_ret;
 
+	trans_ret = spi_transfer_byte(dev, reg, in);
+	if (trans_ret < 0) {
+		return -1;
+	}
+	trans_ret = spi_transfer_byte(dev, out, in);
+	if (trans_ret < 0) {
+		return -1;
+	}
+
+	return 1;
 }
 
 int spi_transfer_regs(spi_t dev, uint8_t reg, char *out, char *in, unsigned int length) {
+	int trans_ret;
 
+	trans_ret = spi_transfer_byte(dev, reg, in);
+	if (trans_ret < 0) {
+		return -1;
+	}
+	trans_ret = spi_transfer_bytes(dev, out, in, length);
+	if (trans_ret < 0) {
+		return -1;
+	}
+
+	return trans_ret;
 }
 
 void spi_transmission_begin(spi_t dev, char reset_val) {

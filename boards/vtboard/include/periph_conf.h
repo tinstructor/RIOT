@@ -56,4 +56,10 @@
 #define TIMER_4_ISR         isr_tim4a
 #define TIMER_5_ISR         isr_tim5a
 
+#define SPI_NUMOF           4
+#define SPI_0_EN            1
+#define SPI_1_EN            1
+#define SPI_2_EN            1
+#define SPI_3_EN            1
+
 #endif /* __PERIPH_CONF_H */
