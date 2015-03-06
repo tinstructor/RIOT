@@ -18,14 +18,54 @@
  * @}
  */
 
+#include "tm4c123gh6pm.h"
 #include "periph/spi.h"
 #include "driverlib/rom.h"
+#include "driverlib/gpio.h"
 
 /* guard this file in case no SPI device is defined */
 #if SPI_NUMOF
 
 int spi_init_master(spi_t dev, spi_conf_t conf, spi_speed_t speed) {
 
+	uint32_t _speed;
+	switch (speed) {
+		case SPI_SPEED_100KHZ:
+			_speed = 100000;
+			break;
+		case SPI_SPEED_400KHZ:
+			_speed = 400000;
+			break;
+		case SPI_SPEED_1MHZ:
+			_speed = 1000000;
+			break;
+		case SPI_SPEED_5MHZ:
+			_speed = 5000000;
+			break;
+		case SPI_SPEED_10MHZ:
+			_speed = 10000000;
+			break;
+	}
+
+	uint32_t _dev;
+	switch (dev) {
+		case SPI_0:
+			_dev = SSI0_BASE;
+			break;
+		case SPI_1:
+			_dev = SSI1_BASE;
+			break;
+		case SPI_2:
+			_dev = SSI2_BASE;
+			break;
+		case SPI_3:
+			_dev = SSI3_BASE;
+			break;
+	}
+
+	spi_conf_pins(dev);
+	ROM_SSIConfigSetExpClk(_dev, ROM_SysCtlClockGet(), conf, SSI_MODE_MASTER, _speed, 8);
+	ROM_SSIEnable(_dev);
 }
 
 int spi_init_slave(spi_t dev, spi_conf_t conf, char (*cb)(char data)) {
