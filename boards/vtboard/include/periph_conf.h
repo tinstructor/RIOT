@@ -62,4 +62,14 @@
 #define SPI_2_EN            1
 #define SPI_3_EN            1
 
+#define GPIO_NUMOF		2
+#define GPIO_0_EN		1
+#define GPIO_0_PORT		GPIOC_BASE	/* Button */
+#define GPIO_0_PIN		GPIO_PIN_6
+#define GPIO_0_IRQ		0
+#define GPIO_1_EN		1
+#define GPIO_1_PORT		GPIOC_BASE	/* Button */
+#define GPIO_1_PIN		GPIO_PIN_6
+#define GPIO_1_IRQ		0
+
 #endif /* __PERIPH_CONF_H */

@@ -19,11 +19,15 @@
  */
 
 #include "mutex.h"
+#include <stdbool.h>
 
 #include "tm4c123gh6pm.h"
 #include "periph/spi.h"
 #include "driverlib/rom.h"
 #include "driverlib/gpio.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/ssi.h"
+#include "driverlib/pin_map.h"
 
 /* guard this file in case no SPI device is defined */
 #if SPI_NUMOF
@@ -39,7 +43,7 @@ static mutex_t locks[] =  {
 	[SPI_1] = MUTEX_INIT,
 #endif
 #if SPI_2_EN
-	[SPI_2] = MUTEX_INIT
+	[SPI_2] = MUTEX_INIT,
 #endif
 #if SPI_3_EN
 	[SPI_3] = MUTEX_INIT
@@ -96,7 +100,9 @@ int spi_init_master(spi_t dev, spi_conf_t conf, spi_speed_t speed) {
 }
 
 int spi_init_slave(spi_t dev, spi_conf_t conf, char (*cb)(char data)) {
+	// TODO
 
+	return 0;
 }
 
 int spi_conf_pins(spi_t dev) {
@@ -106,12 +112,12 @@ int spi_conf_pins(spi_t dev) {
 			ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
 			ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
 
-			ROM_GPIOPinConfigure(GPIO_PA2_SSI0RX);
-			ROM_GPIOPinConfigure(GPIO_PA4_SSI0TX);
-			ROM_GPIOPinConfigure(GPIO_PA5_SSI0CLK);
+			ROM_GPIOPinConfigure(GPIO_PA4_SSI0RX);
+			ROM_GPIOPinConfigure(GPIO_PA5_SSI0TX);
+			ROM_GPIOPinConfigure(GPIO_PA2_SSI0CLK);
 
-			ROM_GPIOPinTypeGPIOOutput(GPIO_PORTA_BASE, GPIO_PIN_3);
-			ROM_GPIOPinTypeSSI(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
+			ROM_GPIOPinTypeGPIOOutput(GPIOA_BASE, GPIO_PIN_3);
+			ROM_GPIOPinTypeSSI(GPIOA_BASE, GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
 			break;
 #endif
 #if SPI_1_EN
@@ -123,8 +129,8 @@ int spi_conf_pins(spi_t dev) {
 			ROM_GPIOPinConfigure(GPIO_PF1_SSI1TX);
 			ROM_GPIOPinConfigure(GPIO_PF2_SSI1CLK);
 
-			ROM_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3);
-			ROM_GPIOPinTypeSSI(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2);
+			ROM_GPIOPinTypeGPIOOutput(GPIOF_BASE, GPIO_PIN_3);
+			ROM_GPIOPinTypeSSI(GPIOF_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2);
 			break;
 #endif
 #if SPI_2_EN
@@ -136,8 +142,8 @@ int spi_conf_pins(spi_t dev) {
 			ROM_GPIOPinConfigure(GPIO_PB7_SSI2TX);
 			ROM_GPIOPinConfigure(GPIO_PB4_SSI2CLK);
 
-			ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_5);
-			ROM_GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_6 | GPIO_PIN_7);
+			ROM_GPIOPinTypeGPIOOutput(GPIOB_BASE, GPIO_PIN_5);
+			ROM_GPIOPinTypeSSI(GPIOB_BASE, GPIO_PIN_4 | GPIO_PIN_6 | GPIO_PIN_7);
 			break;
 #endif
 #if SPI_3_EN
@@ -149,12 +155,13 @@ int spi_conf_pins(spi_t dev) {
 			ROM_GPIOPinConfigure(GPIO_PD3_SSI1TX);
 			ROM_GPIOPinConfigure(GPIO_PD0_SSI1CLK);
 
-			ROM_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_1);
-			ROM_GPIOPinTypeSSI(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_2 | GPIO_PIN_3);
+			ROM_GPIOPinTypeGPIOOutput(GPIOD_BASE, GPIO_PIN_1);
+			ROM_GPIOPinTypeSSI(GPIOD_BASE, GPIO_PIN_0 | GPIO_PIN_2 | GPIO_PIN_3);
 			break;
 #endif
 	}
 
+	return 0;
 }
 
 int spi_acquire(spi_t dev) {
@@ -181,7 +188,7 @@ int spi_transfer_byte(spi_t dev, char out, char *in) {
 		return -1;
 
 	ROM_SSIDataPut(_dev, out);
-	ROM_SSIDataGet(_dev, &data_in)
+	ROM_SSIDataGet(_dev, &data_in);
 
 	if (in)
 		*in = (char) (data_in & 0xff);
@@ -203,7 +210,7 @@ int spi_transfer_bytes(spi_t dev, char *out, char *in, unsigned int length) {
 			data_out = out[i];
 
 		ROM_SSIDataPut(_dev, data_out);
-		ROM_SSIDataGet(_dev, &data_in)
+		ROM_SSIDataGet(_dev, &data_in);
 
 		if (in)
 			in[i] = data_in;
