@@ -22,6 +22,7 @@
 #define __BOARD_H
 
 #include "cpu.h"
+#include "periph_conf.h"
 
 /**
  * Define the nominal CPU core clock in this board

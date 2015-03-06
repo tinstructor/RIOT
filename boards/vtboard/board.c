@@ -19,6 +19,7 @@
  */
 
 #include "board.h"
+#include "periph/gpio.h"
 
 #include "driverlib/rom.h"
 #include "driverlib/sysctl.h"
@@ -36,4 +37,7 @@ void board_init(void)
     ROM_GPIOPinConfigure(GPIO_PA0_U0RX);
     ROM_GPIOPinConfigure(GPIO_PA1_U0TX);
     ROM_GPIOPinTypeUART(GPIOA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+	gpio_init_out(GPIO_1, 0);
+	gpio_set(GPIO_1);
 }
