@@ -24,6 +24,8 @@
 #include "cpu_conf_common.h"
 #if defined(CPU_SAML1X)
 #include "vendor/sam23.h"
+#elif defined(CPU_SAMD5X)
+#include "vendor/samd5x.h"
 #else
 #include "vendor/sam0.h"
 #endif

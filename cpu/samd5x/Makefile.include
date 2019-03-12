@@ -1,0 +1,7 @@
+export CPU_ARCH = cortex-m4f
+export CPU_FAM  = samd5x
+
+USEMODULE += pm_layered
+
+include $(RIOTCPU)/sam0_common/Makefile.include
+include $(RIOTMAKE)/arch/cortexm.inc.mk
