@@ -3,3 +3,7 @@ FEATURES_PROVIDED += periph_cpuid
 FEATURES_PROVIDED += periph_hwrng
 FEATURES_PROVIDED += periph_pm
 FEATURES_PROVIDED += periph_pwm
+# Hardware SPI access is only available on Linux hosts
+ifeq ($(OS),Linux)
+  FEATURES_PROVIDED += periph_spi
+endif
