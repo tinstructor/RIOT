@@ -76,6 +76,7 @@ static void _test_window(unsigned int window, unsigned period) {
     puts("You should not see this!");
 }
 
+#ifdef MODULE_PERIPH_WDT_CB
 static void _early_warning(void* arg)
 {
     uint8_t* count = arg;
@@ -98,6 +99,7 @@ static void _test_callback(unsigned int period)
 
     thread_sleep();
 }
+#endif /* MODULE_PERIPH_WDT_CB */
 
 int main(void)
 {
@@ -124,11 +126,13 @@ int main(void)
              _test_normal(2500);
             break;
         case 2:
-            _test_callback(1000);
-            break;
-        case 3:
             _test_window(100, 2500);
             break;
+        case 3:
+#ifdef MODULE_PERIPH_WDT_CB
+            _test_callback(1000);
+            break;
+#endif
         default:
             puts("Test done.");
             test_state = 0;
