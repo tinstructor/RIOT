@@ -198,14 +198,17 @@ void wdt_kick(void)
 static wdt_cb_t cb;
 static void* cb_arg;
 
-static int _setup_callback(uint32_t per, wdt_cb_t wdt_callback, void *arg)
+void wdt_setup_reboot_with_callback(uint32_t min_time, uint32_t max_time,
+                                    wdt_cb_t wdt_cb, void *arg)
 {
-    if (per == WDT_CONFIG_PER_8_Val && wdt_callback) {
+    uint32_t per = ms_to_per(max_time);
+
+    if (per == WDT_CONFIG_PER_8_Val && wdt_cb) {
         DEBUG("period too short for early warning\n");
-        return -1;
+        return;
     }
 
-    cb = wdt_callback;
+    cb = wdt_cb;
     cb_arg = arg;
 
     if (cb != NULL) {
@@ -225,15 +228,7 @@ static int _setup_callback(uint32_t per, wdt_cb_t wdt_callback, void *arg)
         WDT->INTENCLR.reg = WDT_INTENCLR_EW;
     }
 
-    return 0;
-}
-
-void wdt_setup_reboot_with_callback(uint32_t min_time, uint32_t max_time,
-                                    wdt_cb_t wdt_cb, void *arg)
-{
-    if (_setup_callback(ms_to_per(max_time), wdt_cb, arg) == 0) {
-        wdt_setup_reboot(min_time, max_time);
-    }
+    wdt_setup_reboot(min_time, max_time);
 }
 
 void isr_wdt(void)
