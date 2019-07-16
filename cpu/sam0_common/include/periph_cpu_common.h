@@ -496,6 +496,12 @@ typedef struct {
 } sam0_common_usb_config_t;
 #endif /* USB_INST_NUM */
 
+/**
+ * @brief Watchdog Configuration
+ */
+#define WDT_HAS_STOP 1
+#define WDT_HAS_INIT 1
+
 #ifdef __cplusplus
 }
 #endif

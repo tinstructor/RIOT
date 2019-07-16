@@ -41,9 +41,6 @@
 #define WDT_CONFIG_PER_16K_Val WDT_CONFIG_PER_CYC16384_Val
 #endif
 
-static wdt_cb_t cb;
-static void* cb_arg;
-
 static inline void _set_enable(bool on)
 {
 #ifdef WDT_CTRLA_ENABLE
@@ -121,33 +118,27 @@ void wdt_init(void)
     NVIC_EnableIRQ(WDT_IRQn);
 }
 
-void wdt_setup_reboot_with_callback(uint32_t period_min, uint32_t period_max,
-                                    wdt_cb_t wdt_callback, void *arg)
+void wdt_setup_reboot(uint32_t min_time, uint32_t max_time)
 {
     uint32_t per, win;
 
-    if (period_max == 0) {
-        DEBUG("invalid period: period_max = %lu\n", period_max);
+    if (max_time == 0) {
+        DEBUG("invalid period: max_time = %lu\n", max_time);
         return;
     }
 
-    per = ms_to_per(period_max);
-
-    if (per == WDT_CONFIG_PER_8_Val && wdt_callback) {
-        DEBUG("period too short for early warning\n");
-        return;
-    }
+    per = ms_to_per(max_time);
 
     if (per > WDT_CONFIG_PER_16K_Val) {
-        DEBUG("invalid period: period_max = %lu\n", period_max);
+        DEBUG("invalid period: max_time = %lu\n", max_time);
         return;
     }
 
-    if (period_min) {
-        win = ms_to_per(period_min);
+    if (min_time) {
+        win = ms_to_per(min_time);
 
         if (win > WDT_CONFIG_PER_8K_Val) {
-            DEBUG("invalid period: period_min = %lu\n", period_min);
+            DEBUG("invalid period: min_time = %lu\n", min_time);
             return;
         }
 
@@ -167,6 +158,42 @@ void wdt_setup_reboot_with_callback(uint32_t period_min, uint32_t period_max,
 #else
         WDT->CTRL.bit.WEN = 0;
 #endif
+    }
+
+    WDT->INTFLAG.reg = WDT_INTFLAG_EW;
+
+    DEBUG("watchdog window: %lx, period: %lx\n", win, per);
+
+    WDT->CONFIG.reg = WDT_CONFIG_WINDOW(win) | WDT_CONFIG_PER(per);
+    _wait_syncbusy();
+}
+
+void wdt_stop(void)
+{
+    _set_enable(0);
+    _wait_syncbusy();
+}
+
+void wdt_start(void)
+{
+    _set_enable(1);
+    _wait_syncbusy();
+}
+
+void wdt_kick(void)
+{
+    WDT->CLEAR.reg = WDT_CLEAR_CLEAR_KEY_Val;
+}
+
+#ifdef MODULE_PERIPH_WDT_CB
+static wdt_cb_t cb;
+static void* cb_arg;
+
+static int _setup_callback(uint32_t per, wdt_cb_t wdt_callback, void *arg)
+{
+    if (per == WDT_CONFIG_PER_8_Val && wdt_callback) {
+        DEBUG("period too short for early warning\n");
+        return -1;
     }
 
     cb = wdt_callback;
@@ -189,36 +216,15 @@ void wdt_setup_reboot_with_callback(uint32_t period_min, uint32_t period_max,
         WDT->INTENCLR.reg = WDT_INTENCLR_EW;
     }
 
-    WDT->INTFLAG.reg = WDT_INTFLAG_EW;
-
-    DEBUG("watchdog window: %lx, period: %lx\n", win, per);
-
-    WDT->CONFIG.reg = WDT_CONFIG_WINDOW(win) | WDT_CONFIG_PER(per);
-    _wait_syncbusy();
-
-    return;
+    return 0;
 }
 
-void wdt_setup_reboot(uint32_t min_time, uint32_t max_time)
+void wdt_setup_reboot_with_callback(uint32_t min_time, uint32_t max_time,
+                                    wdt_cb_t wdt_cb, void *arg)
 {
-    wdt_setup_reboot_with_callback(min_time, max_time, NULL, NULL);
-}
-
-void wdt_stop(void)
-{
-    _set_enable(0);
-    _wait_syncbusy();
-}
-
-void wdt_start(void)
-{
-    _set_enable(1);
-    _wait_syncbusy();
-}
-
-void wdt_kick(void)
-{
-    WDT->CLEAR.reg = WDT_CLEAR_CLEAR_KEY_Val;
+    if (_setup_callback(ms_to_per(max_time), wdt_cb, arg) == 0) {
+        wdt_setup_reboot(min_time, max_time);
+    }
 }
 
 void isr_wdt(void)
@@ -231,3 +237,4 @@ void isr_wdt(void)
 
     cortexm_isr_end();
 }
+#endif /* MODULE_PERIPH_WDT_CB */
