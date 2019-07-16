@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include "periph/wdt.h"
+#include "pm_layered.h"
 #include "board.h"
 
 #define ENABLE_DEBUG 0
@@ -41,8 +42,16 @@
 #define WDT_CONFIG_PER_16K_Val WDT_CONFIG_PER_CYC16384_Val
 #endif
 
+
 static inline void _set_enable(bool on)
 {
+/* work around strange watchdog behaviour if IDLE2 is used on samd21 */
+#ifdef CPU_FAM_SAMD21
+    if (on) {
+        pm_block(1);
+    }
+#endif
+
 #ifdef WDT_CTRLA_ENABLE
     WDT->CTRLA.bit.ENABLE = on;
 #else
