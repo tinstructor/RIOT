@@ -8,7 +8,7 @@ ifeq (1, $(shell grep ARMv6 /proc/cpuinfo > /dev/null; echo $?))
     # raspi2, 3
     export PERIPH_BASE  = 0x3F000000
     export SPEED_COEFF  = 146203
-    EXPORT SPEED_OFFSET = 36
+    export SPEED_OFFSET = 36
 else
     # raspi1
     export PERIPH_BASE  = 0x20000000
