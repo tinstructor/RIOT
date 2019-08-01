@@ -22,5 +22,4 @@ export OPENOCD_ADAPTER_INIT ?= \
   -c 'bcm2835gpio_speed_coeffs $(SPEED_COEFF) $(SPEED_OFFSET)' \
   -c 'bcm2835gpio_swd_nums $(SWCLK) $(SWDIO)' \
   -c 'bcm2835gpio_srst_num $(RST)' \
-  -c 'reset_config srst_only srst_push_pull' \
   -c 'transport select swd'
