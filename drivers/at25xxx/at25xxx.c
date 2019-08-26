@@ -60,7 +60,7 @@ static inline void getbus(const at25xxx_t *dev)
 static inline uint32_t _pos(uint8_t cmd, uint32_t pos)
 {
     /* first byte is CMD, then addr with MSB first */
-    pos = htonl((pos & ADDR_MSK) | (cmd << ADDR_LEN));
+    pos = htonl((pos & ADDR_MSK) | ((uint32_t)cmd << ADDR_LEN));
     pos >>= 8 * sizeof(pos) - (ADDR_LEN + 8);
     return pos;
 }
