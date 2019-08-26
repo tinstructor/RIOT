@@ -47,7 +47,7 @@ extern "C" {
 #define AT25XXX_PARAM_HOLD      (GPIO_UNDEF)
 #endif
 #ifndef AT25XXX_PARAM_SIZE
-#define AT25XXX_PARAM_SIZE      (128 * 1024)    /* EEPROM size, in bytes */
+#define AT25XXX_PARAM_SIZE      (128 * 1024UL)  /* EEPROM size, in bytes */
 #endif
 #ifndef AT25XXX_PARAM_ADDR_LEN
 #define AT25XXX_PARAM_ADDR_LEN          (24)    /* Address length, in bits */

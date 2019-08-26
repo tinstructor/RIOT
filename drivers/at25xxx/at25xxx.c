@@ -37,7 +37,7 @@
 
 #define PAGE_SIZE   (AT25XXX_PARAM_PAGE_SIZE)
 #define ADDR_LEN    (AT25XXX_PARAM_ADDR_LEN)
-#define ADDR_MSK    ((1 << ADDR_LEN) - 1)
+#define ADDR_MSK    ((1UL << ADDR_LEN) - 1)
 
 #define CMD_WREN    (0x6)   /* Write Enable             */
 #define CMD_WRDI    (0x4)   /* Write Disable            */
