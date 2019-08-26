@@ -100,7 +100,7 @@ int main(void)
 
     at25xxx_init(&dev, &at25xxx_params[0]);
 
-    printf("EEPROM size: %ld kiB\n", dev.params.size / 1024);
+    printf("EEPROM size: %u kiB\n", (unsigned) (dev.params.size / 1024));
     printf("EEPROM page size: %d bytes\n", AT25XXX_PARAM_PAGE_SIZE);
     printf("EEPROM address length: %d bits\n\n", AT25XXX_PARAM_ADDR_LEN);
 
