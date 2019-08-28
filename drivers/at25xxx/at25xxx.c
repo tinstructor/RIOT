@@ -63,6 +63,17 @@ static inline bool _write_enabled(const at25xxx_t *dev)
     return spi_transfer_reg(dev->params.spi, dev->params.cs_pin, CMD_RDSR, 0) & SR_WEL;
 }
 
+static inline void _wait_until_eeprom_ready(const at25xxx_t *dev)
+{
+    while (_write_in_progress(dev)) {
+#ifdef USEMODULE_XTIMER
+        spi_release(dev->params.spi);
+        xtimer_usleep(POLL_DELAY_US);
+        getbus(dev);
+#endif
+    }
+}
+
 static size_t _write_page(const at25xxx_t *dev, uint32_t pos, const void *data, size_t len)
 {
     /* write no more than to the end of the current page to prevent wrap-around */
@@ -70,11 +81,7 @@ static size_t _write_page(const at25xxx_t *dev, uint32_t pos, const void *data, 
     pos = _pos(CMD_WRITE, pos);
 
     /* wait for previous write to finish - may take up to 5 ms */
-    while (_write_in_progress(dev)) {
-#ifdef USEMODULE_XTIMER
-        xtimer_usleep(POLL_DELAY_US);
-#endif
-    }
+    _wait_until_eeprom_ready(dev);
 
     /* set write enable and wait for status change */
     spi_transfer_byte(dev->params.spi, dev->params.cs_pin, false, CMD_WREN);
@@ -125,11 +132,7 @@ size_t at25xxx_read(const at25xxx_t *dev, uint32_t pos, void *data, size_t len)
     getbus(dev);
 
     /* wait for previous write to finish - may take up to 5 ms */
-    while (_write_in_progress(dev)) {
-#ifdef USEMODULE_XTIMER
-        xtimer_usleep(POLL_DELAY_US);
-#endif
-    }
+    _wait_until_eeprom_ready(dev);
 
     pos = _pos(CMD_READ, pos);
     spi_transfer_bytes(dev->params.spi, dev->params.cs_pin, true, &pos, NULL, 1 + ADDR_LEN / 8);
