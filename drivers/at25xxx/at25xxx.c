@@ -65,6 +65,7 @@ static inline bool _write_enabled(const at25xxx_t *dev)
 
 static size_t _write_page(const at25xxx_t *dev, uint32_t pos, const void *data, size_t len)
 {
+    /* write no more than to the end of the current page to prevent wrap-around */
     len = min(len, PAGE_SIZE - (pos & (PAGE_SIZE - 1)));
     pos = _pos(CMD_WRITE, pos);
 
