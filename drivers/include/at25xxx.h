@@ -55,8 +55,10 @@ typedef struct {
  * @param[in, out] dev    AT25XXX device handle
  * @param[in] params      AT25XXX parameters
  *
+ * @return    0 on success, -1 on failure
+ *
  */
-void at25xxx_init(at25xxx_t *dev, const at25xxx_params_t *params);
+int at25xxx_init(at25xxx_t *dev, const at25xxx_params_t *params);
 
 /**
  * @brief   Read a byte at a given position @p pos

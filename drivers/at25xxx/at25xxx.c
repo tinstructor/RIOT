@@ -40,9 +40,9 @@
 #define ADDR_LEN    (AT25XXX_PARAM_ADDR_LEN)
 #define ADDR_MSK    ((1UL << ADDR_LEN) - 1)
 
-static inline void getbus(const at25xxx_t *dev)
+static inline int getbus(const at25xxx_t *dev)
 {
-    spi_acquire(dev->params.spi, dev->params.cs_pin, SPI_MODE_0, dev->params.spi_clk);
+    return spi_acquire(dev->params.spi, dev->params.cs_pin, SPI_MODE_0, dev->params.spi_clk);
 }
 
 static inline uint32_t _pos(uint8_t cmd, uint32_t pos)
@@ -181,7 +181,7 @@ size_t at25xxx_clear(const at25xxx_t *dev, uint32_t pos, size_t len)
     return at25xxx_set(dev, pos, 0, len);
 }
 
-void at25xxx_init(at25xxx_t *dev, const at25xxx_params_t *params)
+int at25xxx_init(at25xxx_t *dev, const at25xxx_params_t *params)
 {
     dev->params = *params;
     spi_init_cs(dev->params.spi, dev->params.cs_pin);
@@ -195,4 +195,11 @@ void at25xxx_init(at25xxx_t *dev, const at25xxx_params_t *params)
         gpio_init(dev->params.hold_pin, GPIO_OUT);
         gpio_set(dev->params.hold_pin);
     }
+
+    /* check if the SPI configuration is valid */
+    if (getbus(dev) != SPI_OK) {
+        return -1;
+    }
+    spi_release(dev->params.spi);
+    return 0;
 }
