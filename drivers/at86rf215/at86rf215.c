@@ -58,27 +58,6 @@ void at86rf215_setup(at86rf215_t *dev_09, at86rf215_t *dev_24, const at86rf215_p
     }
 }
 
-static void _init_bb(at86rf215_t *dev)
-{
-    /* enable TXFE & RXFE IRQ */
-    at86rf215_reg_write(dev, dev->BBC->RG_IRQM, BB_IRQ_TXFE | BB_IRQ_RXFE);
-
-    /* enable EDC IRQ */
-    at86rf215_reg_write(dev, dev->RF->RG_IRQM, RF_IRQ_EDC);
-
-    /* set energy detect thresholt to -84 dBm */
-    at86rf215_reg_write(dev, dev->BBC->RG_AMEDT, -84);
-
-    /* enable address filter 0 */
-    at86rf215_reg_write(dev, dev->BBC->RG_AFC0, 0x1);
-    at86rf215_reg_write(dev, dev->BBC->RG_AMAACKPD, 0x1);
-
-    /* enable auto-ACK with Frame Checksum & Data Rate derived from RX frame */
-    at86rf215_reg_write(dev, dev->BBC->RG_AMCS, AMCS_AACK_MASK
-                                              | AMCS_AACKFA_MASK
-                                              | AMCS_AACKDR_MASK);
-}
-
 void at86rf215_reset(at86rf215_t *dev)
 {
     eui64_t addr_long;
@@ -96,7 +75,23 @@ void at86rf215_reset(at86rf215_t *dev)
     /* dissable clock output */
     at86rf215_reg_write(dev, RG_RF_CLKO, 0);
 
-    _init_bb(dev);
+    /* enable TXFE & RXFE IRQ */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQM, BB_IRQ_TXFE | BB_IRQ_RXFE);
+
+    /* enable EDC IRQ */
+    at86rf215_reg_write(dev, dev->RF->RG_IRQM, RF_IRQ_EDC);
+
+    /* set energy detect thresholt to -84 dBm */
+    at86rf215_reg_write(dev, dev->BBC->RG_AMEDT, -84);
+
+    /* enable address filter 0 */
+    at86rf215_reg_write(dev, dev->BBC->RG_AFC0, 0x1);
+    at86rf215_reg_write(dev, dev->BBC->RG_AMAACKPD, 0x1);
+
+    /* enable auto-ACK with Frame Checksum & Data Rate derived from RX frame */
+    at86rf215_reg_write(dev, dev->BBC->RG_AMCS, AMCS_AACK_MASK
+                                              | AMCS_AACKFA_MASK
+                                              | AMCS_AACKDR_MASK);
 
     if (is_subGHz(dev)) {
 

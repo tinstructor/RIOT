@@ -268,6 +268,16 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
                 !!(dev->flags & AT86RF215_OPT_CSMA);
             return sizeof(netopt_enable_t);
 
+        case NETOPT_CSMA_RETRIES:
+            assert(max_len >= sizeof(uint8_t));
+            *((uint8_t *)val) = dev->csma_retries_max;
+            return sizeof(uint8_t);
+
+        case NETOPT_RETRANS:
+            assert(max_len >= sizeof(uint8_t));
+            *((uint8_t *)val) = dev->retries_max;
+            return sizeof(uint8_t);
+
         case NETOPT_TX_RETRIES_NEEDED:
             assert(max_len >= sizeof(uint8_t));
             *((uint8_t *)val) = dev->retries_max - dev->retries;
@@ -298,18 +308,6 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             assert(max_len >= sizeof(int16_t));
             *((uint16_t *)val) = at86rf215_get_txpower(dev);
             res = sizeof(uint16_t);
-            break;
-
-        case NETOPT_RETRANS:
-            assert(max_len >= sizeof(uint8_t));
-            *((uint8_t *)val) = dev->retries_max;
-            res = sizeof(uint8_t);
-            break;
-
-        case NETOPT_CSMA_RETRIES:
-            assert(max_len >= sizeof(uint8_t));
-            *((uint8_t *)val) = dev->csma_retries_max;
-            res = sizeof(uint8_t);
             break;
 
         case NETOPT_CCA_THRESHOLD:
