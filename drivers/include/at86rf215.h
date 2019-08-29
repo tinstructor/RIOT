@@ -27,7 +27,6 @@
 #include <stdbool.h>
 
 #include "board.h"
-#include "cond.h"
 #include "periph/spi.h"
 #include "periph/gpio.h"
 #include "net/netdev.h"
@@ -130,8 +129,6 @@ typedef struct at86rf215 {
     struct at86rf215 *sibling;              /**< The other radio */
     const at86rf215_RF_regs_t  *RF;         /**< Radio Frontend Registers */
     const at86rf215_BBC_regs_t *BBC;        /**< Baseband Registers */
-    cond_t idle_cond;                       /**< Condition to signal return to idle */
-    mutex_t cond_lock;                      /**< Mutex for the idle condition */
     xtimer_t ack_timer;                     /**< timer for ACK timeout */
     msg_t ack_msg;                          /**< message for ACK timeout */
     uint16_t flags;                         /**< Device specific flags */

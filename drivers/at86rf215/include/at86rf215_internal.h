@@ -124,15 +124,6 @@ static inline void at86rf215_enable_radio(at86rf215_t *dev, uint8_t modulation)
                                             | PC_FCSFE_MASK);
 }
 
-/* blocks until the radio is idle, locks cond_lock mutex */
-static inline void _wait_for_idle(at86rf215_t *dev)
-{
-    mutex_lock(&dev->cond_lock);
-    while (dev->state != AT86RF215_STATE_IDLE) {
-        cond_wait(&dev->idle_cond, &dev->cond_lock);
-    }
-}
-
 static inline bool is_subGHz(const at86rf215_t *dev)
 {
     return dev->flags & AT86RF215_OPT_SUBGHZ;

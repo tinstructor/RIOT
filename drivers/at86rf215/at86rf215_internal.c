@@ -112,9 +112,6 @@ void at86rf215_filter_ack(at86rf215_t *dev, bool on)
 
 void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len)
 {
-    /* make sure the radio is idle */
-    _wait_for_idle(dev);
-
     at86rf215_disable_baseband(dev);
 
     while (len--) {
@@ -122,7 +119,6 @@ void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len)
     }
 
     at86rf215_enable_baseband(dev);
-    mutex_unlock(&dev->cond_lock);
 }
 
 const char* at86rf215_state2a(uint8_t state)

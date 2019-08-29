@@ -32,9 +32,6 @@ static void _setup_interface(at86rf215_t *dev, const at86rf215_params_t *params)
 {
     netdev_t *netdev = (netdev_t *)dev;
 
-    cond_init(&dev->idle_cond);
-    mutex_init(&dev->cond_lock);
-
     netdev->driver = &at86rf215_driver;
     dev->params = *params;
     dev->state = AT86RF215_STATE_OFF;
@@ -205,11 +202,12 @@ void at86rf215_tx_done(at86rf215_t *dev)
 
 void at86rf215_tx_prepare(at86rf215_t *dev)
 {
-    /* make sure the radio is idle */
-    _wait_for_idle(dev);
+    if (dev->state != AT86RF215_STATE_IDLE) {
+        DEBUG("[%s] TX while %s\n", __func__, rf215_state(dev->state));
+        return;
+    }
 
     dev->state = AT86RF215_STATE_TX_PREP;
-    mutex_unlock(&dev->cond_lock);
 
     _tx_prep(dev);
 
@@ -289,7 +287,9 @@ bool at86rf215_cca(at86rf215_t *dev)
     bool clear;
     uint8_t old_state;
 
-    _wait_for_idle(dev);
+    if (dev->state != AT86RF215_STATE_IDLE) {
+        return false;
+    }
 
     old_state = at86rf215_set_state(dev, RF_STATE_RX);
 
@@ -308,8 +308,6 @@ bool at86rf215_cca(at86rf215_t *dev)
     at86rf215_reg_or(dev, dev->BBC->RG_PC, PC_BBEN_MASK);
 
     at86rf215_set_state(dev, old_state);
-
-    mutex_unlock(&dev->cond_lock);
 
     return clear;
 }

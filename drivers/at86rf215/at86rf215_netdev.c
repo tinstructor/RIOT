@@ -92,9 +92,7 @@ static int _init(netdev_t *netdev)
 
     /* reset device to default values and put it into RX state */
     at86rf215_reset(dev);
-
     dev->state = AT86RF215_STATE_IDLE;
-    cond_signal(&dev->idle_cond);
 
     return 0;
 }
@@ -165,7 +163,6 @@ out:
     at86rf215_rf_cmd(dev, CMD_RF_RX);
 
     dev->state = AT86RF215_STATE_IDLE;
-    cond_signal(&dev->idle_cond);
 
     return pkt_len;
 }
@@ -525,7 +522,6 @@ static void _tx_end(at86rf215_t *dev)
     }
 
     dev->state = AT86RF215_STATE_IDLE;
-    cond_signal(&dev->idle_cond);
 }
 
 static void _ack_timeout_cb(void* arg) {
@@ -631,7 +627,6 @@ static void _isr(netdev_t *netdev)
             at86rf215_tx_done(dev);
 
             dev->state = AT86RF215_STATE_IDLE;
-            cond_signal(&dev->idle_cond);
             /* radio is still in RX mode */
         }
     }
@@ -681,7 +676,6 @@ static void _isr(netdev_t *netdev)
                 at86rf215_rf_cmd(dev, CMD_RF_RX);
 
                 dev->state = AT86RF215_STATE_IDLE;
-                cond_signal(&dev->idle_cond);
             }
         }
     }

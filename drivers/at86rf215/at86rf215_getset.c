@@ -67,13 +67,6 @@ uint8_t at86rf215_get_chan(const at86rf215_t *dev)
 
 void at86rf215_set_chan(at86rf215_t *dev, uint16_t channel)
 {
-    /* make sure the radio is idle or doing initialisation */
-    if (dev->state == AT86RF215_STATE_OFF) {
-        mutex_lock(&dev->cond_lock);
-    } else {
-        _wait_for_idle(dev);
-    }
-
     /* frequency has to be updated in TRXOFF status (datatsheet: 6.3.2) */
     uint8_t old_state = at86rf215_set_state(dev, CMD_RF_TRXOFF);
 
@@ -82,7 +75,6 @@ void at86rf215_set_chan(at86rf215_t *dev, uint16_t channel)
 
     /* enable the radio again */
     at86rf215_set_state(dev, old_state);
-    mutex_unlock(&dev->cond_lock);
 }
 
 uint8_t at86rf215_get_page(const at86rf215_t *dev)
@@ -93,13 +85,6 @@ uint8_t at86rf215_get_page(const at86rf215_t *dev)
 // TODO: proper 802.15.4 channel pages (9 & 10)
 void at86rf215_set_page(at86rf215_t *dev, uint8_t page)
 {
-    /* make sure the radio is idle or doing initialisation */
-    if (dev->state == AT86RF215_STATE_OFF) {
-        mutex_lock(&dev->cond_lock);
-    } else {
-        _wait_for_idle(dev);
-    }
-
     uint8_t old_state = at86rf215_set_state(dev, CMD_RF_TRXOFF);
 
     if ((page & 0xC0) == 0) {
@@ -126,7 +111,6 @@ void at86rf215_set_page(at86rf215_t *dev, uint8_t page)
     at86rf215_reg_write16(dev, dev->RF->RG_CNL, dev->netdev.chan);
 
     at86rf215_set_state(dev, old_state);
-    mutex_unlock(&dev->cond_lock);
 }
 
 uint16_t at86rf215_get_pan(const at86rf215_t *dev)
