@@ -91,9 +91,10 @@ void auto_init_at86rf215(void)
     }
 #else
     for (unsigned i = 0; i < AT86RF215_NUM; i++) {
-        at86rf215_setup(NULL, &at86rf215_devs[i], &at86rf215_params[i]);
+        /* AT86RF215M only has sub-GHz interface */
+        at86rf215_setup(&at86rf215_devs[i], NULL, &at86rf215_params[i]);
 
-        /* setup 2.4-GHz interface */
+        /* setup sub-GHz interface */
         _setup_netif(&at86rf215_devs[i], &_at86rf215_stacks[i], AT86RF215_MAC_PRIO);
     }
 #endif
