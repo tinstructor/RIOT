@@ -198,7 +198,7 @@ void at86rf215_tx_done(at86rf215_t *dev)
 void at86rf215_tx_prepare(at86rf215_t *dev)
 {
     if (dev->state != AT86RF215_STATE_IDLE) {
-        DEBUG("[%s] TX while %s\n", __func__, rf215_state(dev->state));
+        DEBUG("[%s] TX while %s\n", __func__, at86rf215_sw_state2a(dev->state));
         return;
     }
 
@@ -219,7 +219,7 @@ size_t at86rf215_tx_load(at86rf215_t *dev, const uint8_t *data,
                          size_t len, size_t offset)
 {
     if (dev->state != AT86RF215_STATE_TX_PREP) {
-        DEBUG("[%s] TX while %s\n", __func__, rf215_state(dev->state));
+        DEBUG("[%s] TX while %s\n", __func__, at86rf215_sw_state2a(dev->state));
         return 0;
     }
 
@@ -237,7 +237,7 @@ size_t at86rf215_tx_load(at86rf215_t *dev, const uint8_t *data,
 void at86rf215_tx_exec(at86rf215_t *dev)
 {
     if (dev->state != AT86RF215_STATE_TX_PREP) {
-        DEBUG("[%s] TX while %s\n", __func__, rf215_state(dev->state));
+        DEBUG("[%s] TX while %s\n", __func__, at86rf215_sw_state2a(dev->state));
         return;
     }
 

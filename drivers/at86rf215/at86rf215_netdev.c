@@ -659,7 +659,7 @@ static void _isr(netdev_t *netdev)
 
             break;
         default:
-            printf("RX while  %s!\n", rf215_state(dev->state));
+            printf("RX while  %s!\n", at86rf215_sw_state2a(dev->state));
             /* fall-through */
         case AT86RF215_STATE_IDLE:
             dev->state = AT86RF215_STATE_RX;

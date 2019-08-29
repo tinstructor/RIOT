@@ -121,15 +121,27 @@ void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len)
     at86rf215_enable_baseband(dev);
 }
 
-const char* at86rf215_state2a(uint8_t state)
+const char* at86rf215_hw_state2a(uint8_t state)
 {
     switch (state) {
-        case RF_STATE_TRXOFF: return "TRXOFF";
-        case RF_STATE_TXPREP: return "TXPREP";
-        case RF_STATE_TX: return "TX";
-        case RF_STATE_RX: return "RX";
-        case RF_STATE_TRANSITION: return "TRANSITION";
-        case RF_STATE_RESET: return "RESET";
-        default: return "invalid";
+    case RF_STATE_TRXOFF: return "TRXOFF";
+    case RF_STATE_TXPREP: return "TXPREP";
+    case RF_STATE_TX: return "TX";
+    case RF_STATE_RX: return "RX";
+    case RF_STATE_TRANSITION: return "TRANSITION";
+    case RF_STATE_RESET: return "RESET";
+    default: return "invalid";
+    }
+}
+
+const char* at86rf215_sw_state2a(at86rf215_state_t state) {
+    switch (state) {
+    case AT86RF215_STATE_OFF: return "OFF";
+    case AT86RF215_STATE_IDLE: return "IDLE";
+    case AT86RF215_STATE_RX: return "RX";
+    case AT86RF215_STATE_TX_PREP: return "TX prep";
+    case AT86RF215_STATE_TX: return "TX";
+    case AT86RF215_STATE_SLEEP: return "SLEEP";
+    default: return "invalid";
     }
 }

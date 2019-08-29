@@ -70,7 +70,8 @@ void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme);
 
 void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t rate);
 
-const char* at86rf215_state2a(uint8_t state);
+const char* at86rf215_hw_state2a(uint8_t state);
+const char* at86rf215_sw_state2a(at86rf215_state_t state);
 
 static inline void at86rf215_reg_and(const at86rf215_t *dev, uint16_t reg, uint8_t val)
 {

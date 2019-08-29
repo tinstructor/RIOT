@@ -73,18 +73,6 @@ typedef enum {
 } at86rf215_state_t;
 /** @} */
 
-static inline const char* rf215_state(at86rf215_state_t state) {
-    switch (state) {
-    case AT86RF215_STATE_OFF: return "OFF";
-    case AT86RF215_STATE_IDLE: return "IDLE";
-    case AT86RF215_STATE_RX: return "RX";
-    case AT86RF215_STATE_TX_PREP: return "TX prep";
-    case AT86RF215_STATE_TX: return "TX";
-    case AT86RF215_STATE_SLEEP: return "SLEEP";
-    default: return "invalid";
-    }
-}
-
 /**
  * @name    Internal device option flags
  * @{
