@@ -36,9 +36,7 @@ static void _setup_interface(at86rf215_t *dev, const at86rf215_params_t *params)
     mutex_init(&dev->cond_lock);
 
     netdev->driver = &at86rf215_driver;
-    /* initialize device descriptor */
     dev->params = *params;
-    /* radio state is P_ON when first powered-on */
     dev->state = AT86RF215_STATE_OFF;
 
 }
