@@ -28,6 +28,7 @@ extern "C" {
 
 /**
  * @name    Set default configuration parameters for the AT86RF215 driver
+ *          Example config for EXT3 on same54-xpro
  * @{
  */
 #ifndef AT86RF215_PARAM_SPI
@@ -37,13 +38,13 @@ extern "C" {
 #define AT86RF215_PARAM_SPI_CLK     (SPI_CLK_5MHZ)
 #endif
 #ifndef AT86RF215_PARAM_CS
-#define AT86RF215_PARAM_CS          (GPIO_PIN(0, 0))
+#define AT86RF215_PARAM_CS          (GPIO_PIN(PC, 14))
 #endif
 #ifndef AT86RF215_PARAM_INT
-#define AT86RF215_PARAM_INT         (GPIO_PIN(0, 1))
+#define AT86RF215_PARAM_INT         (GPIO_PIN(PC, 30))
 #endif
 #ifndef AT86RF215_PARAM_RESET
-#define AT86RF215_PARAM_RESET       (GPIO_PIN(0, 3))
+#define AT86RF215_PARAM_RESET       (GPIO_PIN(PD, 10))
 #endif
 
 #ifndef AT86RF215_PARAMS
