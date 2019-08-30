@@ -103,6 +103,8 @@ void at86rf215_reset_cfg(at86rf215_t *dev)
 
 void at86rf215_reset(at86rf215_t *dev)
 {
+    dev->state = AT86RF215_STATE_OFF;
+
     /* Reset state machine to ensure a known state */
     at86rf215_set_state(dev, RF_STATE_TRXOFF);
 

@@ -221,7 +221,11 @@ static void _set_state(at86rf215_t *dev, uint8_t state)
 uint8_t at86rf215_set_state(at86rf215_t *dev, uint8_t cmd)
 {
     uint8_t old_state;
-    do {
+
+    /* device might not respond in deep sleep */
+    if (dev->state == AT86RF215_STATE_SLEEP) {
+        old_state = RF_STATE_RESET;
+    } else do {
         old_state = at86rf215_get_rf_state(dev);
     } while (old_state == RF_STATE_TRANSITION);
 
@@ -239,13 +243,29 @@ uint8_t at86rf215_set_state(at86rf215_t *dev, uint8_t cmd)
     }
 
     if (old_state == RF_STATE_RESET) {
-        at86rf215_assert_awake(dev);
+        /* wake the transceiver */
+        _set_state(dev, CMD_RF_TRXOFF);
+        /* config is lost after SLEEP */
+        at86rf215_reset(dev);
+
+        /* if both tranceivers were sleeping, the chip entered DEEP_SLEEP.
+           Waking one device in that mode wakes the other one too. */
+        if (dev->sibling && dev->sibling->state == AT86RF215_STATE_SLEEP) {
+            dev->sibling->state = AT86RF215_STATE_OFF;
+            at86rf215_set_state(dev->sibling, CMD_RF_SLEEP);
+        }
     }
 
     if (cmd == CMD_RF_SLEEP) {
+        /* first we must transition to TRXOFF */
+        _set_state(dev, CMD_RF_TRXOFF);
+
         /* clear IRQ */
+        at86rf215_reg_read(dev, dev->BBC->RG_IRQS);
         at86rf215_reg_read(dev, dev->RF->RG_IRQS);
         at86rf215_rf_cmd(dev, cmd);
+
+        dev->state = AT86RF215_STATE_SLEEP;
     } else {
         _set_state(dev, cmd);
     }

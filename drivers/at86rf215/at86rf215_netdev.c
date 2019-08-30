@@ -178,7 +178,9 @@ static int _set_state(at86rf215_t *dev, netopt_state_t state)
         case NETOPT_STATE_SLEEP:
             at86rf215_set_state(dev, CMD_RF_SLEEP);
             break;
+        case NETOPT_STATE_RX:
         case NETOPT_STATE_IDLE:
+            at86rf215_set_state(dev, RF_STATE_RX);
             break;
         case NETOPT_STATE_TX:
             if (dev->flags & AT86RF215_OPT_PRELOADING) {
@@ -285,6 +287,11 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             *((uint8_t *)val) = dev->retries_max - dev->retries;
             return sizeof(uint8_t);
 
+        case NETOPT_AUTOACK:
+            *((netopt_enable_t *)val) =
+                !!(dev->flags & AT86RF215_OPT_AUTOACK);
+            return sizeof(netopt_enable_t);
+
         default:
             /* Can still be handled in second switch */
             break;
@@ -297,12 +304,10 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
         return res;
     }
 
-//    uint8_t old_state = at86rf215_get_rf_state(dev);
-
-    /* temporarily wake up if sleeping */
-//    if (old_state == AT86RF215_STATE_SLEEP) {
-//        at86rf215_assert_awake(dev);
-//    }
+    /* properties are not availiable if the device is sleeping */
+    if (dev->state == AT86RF215_STATE_SLEEP) {
+        return -ENOTSUP;
+    }
 
     /* these options require the transceiver to be not sleeping*/
     switch (opt) {
@@ -330,21 +335,10 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             res = sizeof(int8_t);
             break;
 
-        case NETOPT_AUTOACK:
-            *((netopt_enable_t *)val) =
-                !!(dev->flags & AT86RF215_OPT_AUTOACK);
-            res = sizeof(netopt_enable_t);
-            break;
-
         default:
             res = -ENOTSUP;
             break;
     }
-
-    /* go back to sleep if were sleeping */
-//    if (old_state == AT86RF215_STATE_SLEEP) {
-//        at86rf215_set_state(dev, AT86RF215_STATE_SLEEP);
-//    }
 
     return res;
 }
@@ -358,13 +352,8 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
         return -ENODEV;
     }
 
-    /* temporarily wake up if sleeping and opt != NETOPT_STATE.
-     * opt != NETOPT_STATE check prevents redundant wake-up.
-     * when opt == NETOPT_STATE, at86rf215_set_state() will wake up the
-     * radio if needed. */
-//    if ((old_state == AT86RF215_STATE_SLEEP) && (opt != NETOPT_STATE)) {
-//        at86rf215_assert_awake(dev);
-//    }
+    /* no need to wake up the device when it's sleeping - all registers
+       are reset on wakeup. */
 
     switch (opt) {
         case NETOPT_ADDRESS:
@@ -491,12 +480,6 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
         default:
             break;
     }
-
-    /* go back to sleep if were sleeping and state hasn't been changed */
-//    if ((old_state == AT86RF215_STATE_SLEEP)
-//        && (opt != NETOPT_STATE)) {
-//        at86rf215_set_state(dev, AT86RF215_STATE_SLEEP);
-//    }
 
     if (res == -ENOTSUP) {
         res = netdev_ieee802154_set((netdev_ieee802154_t *)netdev, opt, val, len);
