@@ -497,9 +497,12 @@ typedef struct {
 #endif /* USB_INST_NUM */
 
 /**
- * @brief Watchdog Configuration
+ * @brief Watchdog can be stopped.
  */
 #define WDT_HAS_STOP 1
+/**
+ * @brief Watchdog has to be initialized.
+ */
 #define WDT_HAS_INIT 1
 
 #ifdef __cplusplus
