@@ -20,7 +20,7 @@
 #include "at86rf215.h"
 #include "at86rf215_internal.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 #define KBIT 1000
