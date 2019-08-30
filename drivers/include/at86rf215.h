@@ -142,7 +142,14 @@ typedef struct at86rf215 {
 void at86rf215_setup(at86rf215_t *dev_09, at86rf215_t *dev_24, const at86rf215_params_t *params);
 
 /**
- * @brief   Trigger a hardware reset and configure radio with default values
+ * @brief   Trigger a hardware reset and configure radio with default values.
+ *
+ * @param[in,out] dev       device to configure
+ */
+void at86rf215_reset_cfg(at86rf215_t *dev);
+
+/**
+ * @brief   Trigger a hardware reset, configuration is retained.
  *
  * @param[in,out] dev       device to reset
  */

@@ -72,6 +72,9 @@ static int _init(netdev_t *netdev)
         gpio_init(dev->params.reset_pin, GPIO_OUT);
         gpio_set(dev->params.reset_pin);
         gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+
+        /* reset the entire chip */
+        at86rf215_hardware_reset(dev);
     }
 
     /* test if the SPI is set up correctly and the device is responding */
@@ -91,8 +94,7 @@ static int _init(netdev_t *netdev)
     }
 
     /* reset device to default values and put it into RX state */
-    at86rf215_reset(dev);
-    dev->state = AT86RF215_STATE_IDLE;
+    at86rf215_reset_cfg(dev);
 
     return 0;
 }

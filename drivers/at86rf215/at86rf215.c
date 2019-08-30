@@ -58,19 +58,66 @@ void at86rf215_setup(at86rf215_t *dev_09, at86rf215_t *dev_24, const at86rf215_p
     }
 }
 
-void at86rf215_reset(at86rf215_t *dev)
+void at86rf215_reset_cfg(at86rf215_t *dev)
 {
-    eui64_t addr_long;
-
-    /* only reset hardware once */
-    if (is_subGHz(dev) || dev->sibling == NULL) {
-        at86rf215_hardware_reset(dev);
-    }
-
     netdev_ieee802154_reset(&dev->netdev);
 
+    eui64_t addr_long;
+    /* get an 8-byte unique ID to use as hardware address */
+    luid_get(addr_long.uint8, IEEE802154_LONG_ADDRESS_LEN);
+
+    /* make sure we mark the address as non-multicast and not globally unique */
+    addr_long.uint8[0] &= ~(0x01);
+    addr_long.uint8[0] |=  (0x02);
+
+    if (is_subGHz(dev)) {
+        dev->page = 2; /* O-QPSK, legacy */
+        dev->netdev.chan = AT86RF215_DEFAULT_SUBGHZ_CHANNEL;
+    } else {
+        dev->page = 0; /* O-QPSK, legacy */
+        dev->netdev.chan = AT86RF215_DEFAULT_CHANNEL;
+
+        /* make sure both IFs don't have the same address */
+        addr_long.uint8[1]++;
+    }
+
+    memcpy(dev->netdev.short_addr, addr_long.uint8, IEEE802154_SHORT_ADDRESS_LEN);
+    memcpy(dev->netdev.long_addr, addr_long.uint8, IEEE802154_LONG_ADDRESS_LEN);
+    dev->netdev.pan = IEEE802154_DEFAULT_PANID;
+
+    /* apply the configuration */
+    at86rf215_reset(dev);
+
+    /* set default options */
+    dev->retries_max = 3;
+    dev->csma_retries_max = 4;
+
+    dev->flags |= AT86RF215_OPT_ACK_REQUESTED
+               |  AT86RF215_OPT_AUTOACK
+               |  AT86RF215_OPT_CSMA;
+
+    const netopt_enable_t enable = NETOPT_ENABLE;
+    netdev_ieee802154_set(&dev->netdev, NETOPT_ACK_REQ,
+                          &enable, sizeof(enable));
+}
+
+void at86rf215_reset(at86rf215_t *dev)
+{
     /* Reset state machine to ensure a known state */
     at86rf215_set_state(dev, RF_STATE_TRXOFF);
+
+    if (!dev->sibling) {
+        /* disable 2.4-GHz IRQs if the interface is not enabled */
+        if (is_subGHz(dev)) {
+            at86rf215_reg_write(dev, RG_BBC1_IRQM, 0);
+            at86rf215_reg_write(dev, RG_RF24_IRQM, 0);
+
+        /* disable sub-GHz IRQs if the interface is not enabled */
+        } else {
+            at86rf215_reg_write(dev, RG_BBC0_IRQM, 0);
+            at86rf215_reg_write(dev, RG_RF09_IRQM, 0);
+        }
+    }
 
     /* dissable clock output */
     at86rf215_reg_write(dev, RG_RF_CLKO, 0);
@@ -93,69 +140,26 @@ void at86rf215_reset(at86rf215_t *dev)
                                               | AMCS_AACKFA_MASK
                                               | AMCS_AACKDR_MASK);
 
-    if (is_subGHz(dev)) {
+    /* set default channel page */
+    at86rf215_set_page(dev, dev->page);
 
-        /* disable 2.4-GHz IRQs if the interface is not enabled */
-        if (!dev->sibling) {
-            at86rf215_reg_write(dev, RG_BBC1_IRQM, 0);
-            at86rf215_reg_write(dev, RG_RF24_IRQM, 0);
-        }
-        /* set default channel page - O-QPSK, legacy */
-        at86rf215_set_page(dev, 2);
-
-        /* set default channel */
-        at86rf215_set_chan(dev, AT86RF215_DEFAULT_SUBGHZ_CHANNEL);
-
-    } else {
-
-        /* disable sub-GHz IRQs if the interface is not enabled */
-        if (!dev->sibling) {
-            at86rf215_reg_write(dev, RG_BBC0_IRQM, 0);
-            at86rf215_reg_write(dev, RG_RF09_IRQM, 0);
-        }
-
-        /* set default channel page - O-QPSK, legacy */
-        at86rf215_set_page(dev, 0);
-
-        /* set default channel */
-        at86rf215_set_chan(dev, AT86RF215_DEFAULT_CHANNEL);
-    }
-
-    /* get an 8-byte unique ID to use as hardware address */
-    luid_get(addr_long.uint8, IEEE802154_LONG_ADDRESS_LEN);
-
-    /* make sure both IFs don't have the same address */
-    if (!is_subGHz(dev)) {
-        addr_long.uint8[1]++;
-    }
-
-    /* make sure we mark the address as non-multicast and not globally unique */
-    addr_long.uint8[0] &= ~(0x01);
-    addr_long.uint8[0] |=  (0x02);
+    /* set default channel */
+    at86rf215_set_chan(dev, dev->netdev.chan);
 
     /* set short and long address */
-    at86rf215_set_addr_long(dev, ntohll(addr_long.uint64.u64));
-    at86rf215_set_addr_short(dev, ntohs(addr_long.uint16[0].u16));
+    uint64_t long_addr;
+    memcpy(&long_addr, dev->netdev.long_addr, sizeof(long_addr));
+    at86rf215_set_addr_long(dev, long_addr);
+    at86rf215_set_addr_short(dev, *(uint16_t *)&dev->netdev.short_addr[0]);
 
     /*** set default PAN id ***/
-    at86rf215_set_pan(dev, IEEE802154_DEFAULT_PANID);
+    at86rf215_set_pan(dev, dev->netdev.pan);
 
     /* set default TX power */
     at86rf215_set_txpower(dev, AT86RF215_DEFAULT_TXPOWER);
 
-    /* set default options */
-    dev->retries_max = 3;
-    dev->csma_retries_max = 4;
-
-    dev->flags |= AT86RF215_OPT_ACK_REQUESTED
-               |  AT86RF215_OPT_AUTOACK
-               |  AT86RF215_OPT_CSMA;
-
-    const netopt_enable_t enable = NETOPT_ENABLE;
-    netdev_ieee802154_set(&dev->netdev, NETOPT_ACK_REQ,
-                          &enable, sizeof(enable));
-
     at86rf215_set_state(dev, RF_STATE_RX);
+    dev->state = AT86RF215_STATE_IDLE;
 }
 
 size_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len)

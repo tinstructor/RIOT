@@ -45,11 +45,7 @@ void at86rf215_set_addr_short(at86rf215_t *dev, uint16_t addr)
 uint64_t at86rf215_get_addr_long(const at86rf215_t *dev)
 {
     uint64_t addr;
-    uint8_t *ap = (uint8_t *)(&addr);
-
-    for (int i = 0; i < 8; i++) {
-        ap[i] = dev->netdev.long_addr[i];
-    }
+    at86rf215_reg_read_bytes(dev, dev->BBC->RG_MACEA0, &addr, sizeof(addr));
     return addr;
 }
 
@@ -120,6 +116,7 @@ uint16_t at86rf215_get_pan(const at86rf215_t *dev)
 
 void at86rf215_set_pan(at86rf215_t *dev, uint16_t pan)
 {
+    dev->netdev.pan = pan;
     at86rf215_reg_write16(dev, dev->BBC->RG_MACPID0F0, pan);
 }
 
