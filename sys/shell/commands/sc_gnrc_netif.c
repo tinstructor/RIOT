@@ -276,6 +276,18 @@ static void _print_netopt(netopt_t opt)
             printf("coding rate");
             break;
 
+        case NETOPT_IEEE802154_PHY:
+            printf("PHY mode");
+            break;
+
+        case NETOPT_OFDM_OPTION:
+            printf("OFDM option");
+            break;
+
+        case NETOPT_OFDM_MCS:
+            printf("modulation/coding scheme");
+            break;
+
         case NETOPT_CHECKSUM:
             printf("checksum");
             break;
@@ -311,6 +323,25 @@ static const char *_netopt_coding_rate_str[] = {
     [LORA_CR_4_6] = "4/6",
     [LORA_CR_4_7] = "4/7",
     [LORA_CR_4_8] = "4/8"
+};
+
+static const char *_netopt_ieee802154_phy_str[] = {
+    [IEEE802154_PHY_DISABLED] = "DISABLED",
+    [IEEE802154_PHY_BPSK] = "BPSK",
+    [IEEE802154_PHY_ASK] = "ASK",
+    [IEEE802154_PHY_OQPSK] = "O-QPSK",
+    [IEEE802154_PHY_OFDM] = "OFDM",
+    [IEEE802154_PHY_FSK] = "FSK"
+};
+
+static const char *_netopt_mcs_str[] = {
+    [0] = "BPSK, rate 1/2, 4x frequency repetition",
+    [1] = "BPSK, rate 1/2, 2x frequency repetition",
+    [2] = "QPSK, rate 1/2, 2x frequency repetition",
+    [3] = "QPSK, rate 1/2",
+    [4] = "QPSK, rate 3/4",
+    [5] = "16-QAM, rate 1/2",
+    [6] = "16-QAM, rate 3/4",
 };
 
 /* for some lines threshold might just be 0, so we can't use _LINE_THRESHOLD
@@ -436,6 +467,24 @@ static void _netif_list(kernel_pid_t iface)
     res = gnrc_netapi_get(iface, NETOPT_CODING_RATE, 0, &u8, sizeof(u8));
     if (res >= 0) {
         printf(" CR: %s ", _netopt_coding_rate_str[u8]);
+    }
+    res = gnrc_netapi_get(iface, NETOPT_IEEE802154_PHY, 0, &u8, sizeof(u8));
+    if (res >= 0) {
+        printf(" PHY: %s ", _netopt_ieee802154_phy_str[u8]);
+        switch (u8) {
+        case IEEE802154_PHY_OFDM:
+            printf("\n          ");
+            res = gnrc_netapi_get(iface, NETOPT_OFDM_OPTION, 0, &u8, sizeof(u8));
+            if (res >= 0) {
+                printf(" Option: %u ", u8);
+            }
+            res = gnrc_netapi_get(iface, NETOPT_OFDM_MCS, 0, &u8, sizeof(u8));
+            if (res >= 0) {
+                printf(" MCS: %u (%s) ", u8, _netopt_mcs_str[u8]);
+            }
+
+            break;
+        }
     }
     res = gnrc_netapi_get(iface, NETOPT_LINK_CONNECTED, 0, &u8, sizeof(u8));
     if (res >= 0) {
@@ -701,6 +750,27 @@ static int _netif_set_coding_rate(kernel_pid_t iface, char *value)
            iface, value);
 
     return 0;
+}
+
+static int _netif_set_ieee802154_phy_mode(kernel_pid_t iface, char *value)
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(_netopt_ieee802154_phy_str); ++i) {
+        if (strcmp(_netopt_ieee802154_phy_str[i], value)) {
+            continue;
+        }
+
+        if (gnrc_netapi_set(iface, NETOPT_IEEE802154_PHY, 0, &i, sizeof(uint8_t)) < 0) {
+            printf("error: unable to set PHY mode to %s\n", value);
+            return 1;
+        }
+        printf("success: set PHY mode of interface %" PRIkernel_pid " to %s\n",
+               iface, value);
+
+        return 0;
+    }
+
+    puts("usage: ifconfig <if_id> set phy [BPSK|ASK|O-QPSK|OFDM|FSK]");
+    return 1;
 }
 
 static int _netif_set_u16(kernel_pid_t iface, netopt_t opt, uint16_t context,
@@ -1017,6 +1087,15 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     }
     else if ((strcmp("coding_rate", key) == 0) || (strcmp("cr", key) == 0)) {
         return _netif_set_coding_rate(iface, value);
+    }
+    else if ((strcmp("phy_mode", key) == 0) || (strcmp("phy", key) == 0)) {
+        return _netif_set_ieee802154_phy_mode(iface, value);
+    }
+    else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
+        return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);
+    }
+    else if ((strcmp("scheme", key) == 0) || (strcmp("msc", key) == 0)) {
+        return _netif_set_u8(iface, NETOPT_OFDM_MCS, 0, value);
     }
     else if ((strcmp("channel", key) == 0) || (strcmp("chan", key) == 0)) {
         return _netif_set_u16(iface, NETOPT_CHANNEL, 0, value);

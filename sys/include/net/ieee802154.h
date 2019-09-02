@@ -97,6 +97,18 @@ extern "C" {
 #define IEEE802154_FRAME_LEN_MAX        (127U)  /**< maximum frame length */
 
 /**
+ * @brief   802.15.4 PHY modes
+ */
+enum {
+    IEEE802154_PHY_DISABLED,
+    IEEE802154_PHY_BPSK,
+    IEEE802154_PHY_ASK,
+    IEEE802154_PHY_OQPSK,
+    IEEE802154_PHY_OFDM,
+    IEEE802154_PHY_FSK
+};
+
+/**
  * @brief   Special address defintions
  * @{
  */
