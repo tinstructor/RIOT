@@ -177,22 +177,9 @@ static uint32_t _get_bitrate(uint8_t option, uint8_t scheme)
     return 0;
 }
 
-void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
+static void _set_option(at86rf215_t *dev, uint8_t option)
 {
-    if (option < 1 || option > 4) {
-        DEBUG("[%s] invalid option: %d\n", __func__, option);
-        return;
-    }
-
-    if (scheme > BB_MCS_16QAM_3BY4) {
-        DEBUG("[%s] invalid scheme: %d\n", __func__, scheme);
-        return;
-    }
-
     const bool superGHz = !is_subGHz(dev);
-
-    /* disable radio */
-    at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
 
     /* Set Receiver Bandwidth */
     at86rf215_reg_write(dev, dev->RF->RG_RXBWC, _RXBWC_BW(option, superGHz)
@@ -207,11 +194,6 @@ void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
     at86rf215_reg_write(dev, dev->RF->RG_TXDFE, _TXDFE_SR(option)
                                               | _TXDFE_RCUT(option));
 
-    /* set receiver gain target according to data sheet */
-    at86rf215_reg_write(dev, dev->RF->RG_AGCS, 3 << AGCS_TGT_SHIFT);
-    /* enable automatic receiver gain */
-    at86rf215_reg_write(dev, dev->RF->RG_AGCC, AGCC_EN_MASK);
-
     /* set channel spacing */
     at86rf215_reg_write(dev, dev->RF->RG_CS, _channel_spacing_kHz(option) / 25);
 
@@ -223,11 +205,77 @@ void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
     }
 
     at86rf215_reg_write(dev, dev->BBC->RG_OFDMC, option - 1);
+
+    dev->num_chans = _get_max_chan(dev, option);
+}
+
+static void _set_ack_timeout(at86rf215_t *dev, uint8_t option, uint8_t scheme)
+{
+    dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(option, scheme);
+}
+
+void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
+{
+    if (option < 1 || option > 4) {
+        DEBUG("[%s] invalid option: %d\n", __func__, option);
+        return;
+    }
+
+    if (scheme > BB_MCS_16QAM_3BY4) {
+        DEBUG("[%s] invalid scheme: %d\n", __func__, scheme);
+        return;
+    }
+
+    /* disable radio */
+    at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
+
+    /* set receiver gain target according to data sheet */
+    at86rf215_reg_write(dev, dev->RF->RG_AGCS, 3 << AGCS_TGT_SHIFT);
+    /* enable automatic receiver gain */
+    at86rf215_reg_write(dev, dev->RF->RG_AGCC, AGCC_EN_MASK);
+
+    _set_option(dev, option);
+
     at86rf215_reg_write(dev, dev->BBC->RG_OFDMPHRTX, scheme);
 
     at86rf215_enable_radio(dev, BB_MROFDM);
 
-    dev->num_chans = _get_max_chan(dev, option);
-    dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(option, scheme);
+    _set_ack_timeout(dev, option, scheme);
     DEBUG("[%s] ACK timeout: %d µs\n", __func__, dev->ack_timeout_usec);
+}
+
+int at86rf215_OFDM_set_scheme(at86rf215_t *dev, uint8_t scheme)
+{
+    if (scheme > BB_MCS_16QAM_3BY4) {
+        DEBUG("[%s] invalid scheme: %d\n", __func__, scheme);
+        return -1;
+    }
+
+    at86rf215_reg_write(dev, dev->BBC->RG_OFDMPHRTX, scheme);
+    _set_ack_timeout(dev, at86rf215_OFDM_get_option(dev), scheme);
+
+    return 0;
+}
+
+uint8_t at86rf215_OFDM_get_scheme(at86rf215_t *dev)
+{
+    return at86rf215_reg_read(dev, dev->BBC->RG_OFDMPHRTX) & OFDMPHRTX_MCS_MASK;
+}
+
+int at86rf215_OFDM_set_option(at86rf215_t *dev, uint8_t option)
+{
+    if (option < 1 || option > 4) {
+        DEBUG("[%s] invalid option: %d\n", __func__, option);
+        return -1;
+    }
+
+    _set_option(dev, option);
+    _set_ack_timeout(dev, option, at86rf215_OFDM_get_scheme(dev));
+
+    return 0;
+}
+
+uint8_t at86rf215_OFDM_get_option(at86rf215_t *dev)
+{
+    return 1 + (at86rf215_reg_read(dev, dev->BBC->RG_OFDMC) & OFDMC_OPT_MASK);
 }

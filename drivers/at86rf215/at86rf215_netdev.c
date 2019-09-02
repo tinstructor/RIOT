@@ -341,6 +341,24 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             res = max_len;
             break;
 
+        case NETOPT_IEEE802154_PHY:
+            assert(max_len >= sizeof(int8_t));
+            *((int8_t *)val) = at86rf215_get_phy_mode(dev);
+            res = max_len;
+            break;
+
+        case NETOPT_OFDM_OPTION:
+            assert(max_len >= sizeof(int8_t));
+            *((int8_t *)val) = at86rf215_OFDM_get_option(dev);
+            res = max_len;
+            break;
+
+        case NETOPT_OFDM_MCS:
+            assert(max_len >= sizeof(int8_t));
+            *((int8_t *)val) = at86rf215_OFDM_get_scheme(dev);
+            res = max_len;
+            break;
+
         default:
             res = -ENOTSUP;
             break;
@@ -479,6 +497,50 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             assert(len <= sizeof(int8_t));
             at86rf215_set_cca_threshold(dev, *((const int8_t *)val));
             res = sizeof(int8_t);
+            break;
+
+        case NETOPT_IEEE802154_PHY:
+            assert(len <= sizeof(uint8_t));
+            switch (*((const uint8_t *)val)) {
+            case IEEE802154_PHY_FSK:
+                /* TODO */
+                break;
+            case IEEE802154_PHY_OFDM:
+                at86rf215_configure_OFDM(dev,
+                                         at86rf215_OFDM_get_option(dev),
+                                         at86rf215_OFDM_get_scheme(dev));
+                res = sizeof(uint8_t);
+                break;
+            case IEEE802154_PHY_OQPSK:
+                /* TODO */
+                break;
+            default: return -ENOTSUP;
+            }
+
+        case NETOPT_OFDM_OPTION:
+            if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_OFDM) {
+                return -ENOTSUP;
+            }
+
+            assert(len <= sizeof(uint8_t));
+            if (at86rf215_OFDM_set_option(dev, *((const uint8_t *)val)) == 0) {
+                res = sizeof(uint8_t);
+            } else {
+                res = -ERANGE;
+            }
+            break;
+
+        case NETOPT_OFDM_MCS:
+            if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_OFDM) {
+                return -ENOTSUP;
+            }
+
+            assert(len <= sizeof(uint8_t));
+            if (at86rf215_OFDM_set_scheme(dev, *((const uint8_t *)val)) == 0) {
+                res = sizeof(uint8_t);
+            } else {
+                res = -ERANGE;
+            }
             break;
 
         default:

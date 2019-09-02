@@ -66,7 +66,16 @@ void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, bool modulation_id
 
 void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme);
 
+/** OFDM **/
 void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t rate);
+
+int at86rf215_OFDM_set_scheme(at86rf215_t *dev, uint8_t scheme);
+uint8_t at86rf215_OFDM_get_scheme(at86rf215_t *dev);
+
+int at86rf215_OFDM_set_option(at86rf215_t *dev, uint8_t option);
+uint8_t at86rf215_OFDM_get_option(at86rf215_t *dev);
+
+uint8_t at86rf215_get_phy_mode(at86rf215_t *dev);
 
 const char* at86rf215_hw_state2a(uint8_t state);
 const char* at86rf215_sw_state2a(at86rf215_state_t state);

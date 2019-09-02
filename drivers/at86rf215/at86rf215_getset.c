@@ -109,6 +109,16 @@ void at86rf215_set_page(at86rf215_t *dev, uint8_t page)
     at86rf215_set_state(dev, old_state);
 }
 
+uint8_t at86rf215_get_phy_mode(at86rf215_t *dev)
+{
+    switch (at86rf215_reg_read(dev, dev->BBC->RG_PC) & PC_PT_MASK) {
+    case 0x1: return IEEE802154_PHY_FSK;
+    case 0x2: return IEEE802154_PHY_OFDM;
+    case 0x3: return IEEE802154_PHY_OQPSK;
+    default:  return IEEE802154_PHY_DISABLED;
+    }
+}
+
 uint16_t at86rf215_get_pan(const at86rf215_t *dev)
 {
     return at86rf215_reg_read16(dev, dev->BBC->RG_MACPID0F0);
