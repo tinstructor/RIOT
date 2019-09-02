@@ -64,16 +64,20 @@ void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len);
 
 void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, bool modulation_idx_half);
 
-void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme);
-
 /** OFDM **/
-void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t rate);
+void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme);
 
 int at86rf215_OFDM_set_scheme(at86rf215_t *dev, uint8_t scheme);
 uint8_t at86rf215_OFDM_get_scheme(at86rf215_t *dev);
 
 int at86rf215_OFDM_set_option(at86rf215_t *dev, uint8_t option);
 uint8_t at86rf215_OFDM_get_option(at86rf215_t *dev);
+
+/** O-QPSK **/
+void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t rate);
+
+uint8_t at86rf215_OQPSK_get_chips(at86rf215_t *dev);
+int at86rf215_OQPSK_set_chips(at86rf215_t *dev, uint8_t chips);
 
 uint8_t at86rf215_get_phy_mode(at86rf215_t *dev);
 

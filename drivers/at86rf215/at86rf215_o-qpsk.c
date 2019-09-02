@@ -163,6 +163,34 @@ static uint32_t _get_bitrate(uint8_t chips, uint8_t mode)
     return 0;
 }
 
+static void _set_chips(at86rf215_t *dev, uint8_t chips, uint8_t direct_modulation)
+{
+    /* Set Receiver Bandwidth */
+    at86rf215_reg_write(dev, dev->RF->RG_RXBWC, _RXBWC_BW(chips));
+    /* Set fS; fCUT for RX */
+    at86rf215_reg_write(dev, dev->RF->RG_RXDFE, _RXDFE_SR(chips)
+                                              | _RXDFE_RCUT(chips));
+    /* Set Power Amplifier Ramp Time; fLPCUT */
+    at86rf215_reg_write(dev, dev->RF->RG_TXCUTC, _TXCUTC_PARAMP(chips)
+                                               | _TXCUTC_LPFCUT(chips));
+    /* Set fS; fCUT for TX */
+    at86rf215_reg_write(dev, dev->RF->RG_TXDFE, _TXDFE_SR(chips)
+                                              | _TXDFE_RCUT(chips)
+                                              | direct_modulation);
+
+    /* set receiver gain target according to data sheet */
+    at86rf215_reg_write(dev, dev->RF->RG_AGCS, 3 << AGCS_TGT_SHIFT);
+    at86rf215_reg_write(dev, dev->RF->RG_AGCC, _AGCC(chips));
+
+    /* use RC-0.8 shaping */
+    at86rf215_reg_write(dev, dev->BBC->RG_OQPSKC0, chips | direct_modulation);
+}
+
+static void _set_ack_timeout(at86rf215_t *dev, uint8_t chips, uint8_t mode)
+{
+    dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(chips, mode >> 1);
+}
+
 void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
 {
     uint8_t direct_modulation = 0;
@@ -206,23 +234,7 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
         direct_modulation = 1 << 4;
     }
 
-    /* Set Receiver Bandwidth */
-    at86rf215_reg_write(dev, dev->RF->RG_RXBWC, _RXBWC_BW(chips));
-    /* Set fS; fCUT for RX */
-    at86rf215_reg_write(dev, dev->RF->RG_RXDFE, _RXDFE_SR(chips)
-                                              | _RXDFE_RCUT(chips));
-    /* Set Power Amplifier Ramp Time; fLPCUT */
-    at86rf215_reg_write(dev, dev->RF->RG_TXCUTC, _TXCUTC_PARAMP(chips)
-                                               | _TXCUTC_LPFCUT(chips));
-    /* Set fS; fCUT for TX */
-    at86rf215_reg_write(dev, dev->RF->RG_TXDFE, _TXDFE_SR(chips)
-                                              | _TXDFE_RCUT(chips)
-                                              | direct_modulation);
-
-
-    /* set receiver gain target according to data sheet */
-    at86rf215_reg_write(dev, dev->RF->RG_AGCS, 3 << AGCS_TGT_SHIFT);
-    at86rf215_reg_write(dev, dev->RF->RG_AGCC, _AGCC(chips));
+    _set_chips(dev, chips, direct_modulation);
 
     /* set channel spacing */
     if (is_subGHz(dev)) {
@@ -233,11 +245,9 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
         at86rf215_reg_write16(dev, dev->RF->RG_CCF0L, QPSK_CENTER_FREQUENCY_24GHZ / 25);
     }
 
-    /* TX with legacy O-QPSK */
+    /* TX with selected rate mode */
     at86rf215_reg_write(dev, dev->BBC->RG_OQPSKPHRTX, mode);
 
-    /* use RC-0.8 shaping */
-    at86rf215_reg_write(dev, dev->BBC->RG_OQPSKC0, chips | direct_modulation);
     /* lowest preamble detection sensitivity */
     at86rf215_reg_write(dev, dev->BBC->RG_OQPSKC1, 0);
     /* listen for both MR-O-QPSK and legacy O-QPSK */
@@ -253,6 +263,19 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
     at86rf215_enable_radio(dev, BB_MROQPSK);
 
     dev->num_chans = is_subGHz(dev) ? 3 : 16;
-    dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(chips, mode >> 1);
+    _set_ack_timeout(dev, chips, mode);
     DEBUG("[%s] ACK timeout: %d µs\n", __func__, dev->ack_timeout_usec);
+}
+
+int at86rf215_OQPSK_set_chips(at86rf215_t *dev, uint8_t chips)
+{
+    (void) dev;
+    (void) chips;
+    /* TODO */
+    return 0;
+}
+
+uint8_t at86rf215_OQPSK_get_chips(at86rf215_t *dev)
+{
+    return at86rf215_reg_read(dev, dev->BBC->RG_OQPSKC0) & OQPSKC0_FCHIP_MASK;
 }

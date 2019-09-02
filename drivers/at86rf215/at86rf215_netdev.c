@@ -359,6 +359,17 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             res = max_len;
             break;
 
+        case NETOPT_OQPSK_CHIPS:
+            assert(max_len >= sizeof(int16_t));
+            switch (at86rf215_OQPSK_get_chips(dev)) {
+            case 0: *((int16_t *)val) =  100; break;
+            case 1: *((int16_t *)val) =  200; break;
+            case 2: *((int16_t *)val) = 1000; break;
+            case 3: *((int16_t *)val) = 2000; break;
+            }
+            res = max_len;
+            break;
+
         default:
             res = -ENOTSUP;
             break;
@@ -537,6 +548,30 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 
             assert(len <= sizeof(uint8_t));
             if (at86rf215_OFDM_set_scheme(dev, *((const uint8_t *)val)) == 0) {
+                res = sizeof(uint8_t);
+            } else {
+                res = -ERANGE;
+            }
+            break;
+
+        case NETOPT_OQPSK_CHIPS:
+            if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_OQPSK) {
+                return -ENOTSUP;
+            }
+
+            uint8_t chips;
+            assert(len <= sizeof(uint16_t));
+            if (*((const uint16_t *)val) <= 150) {
+                chips = 0;
+            } else if (*((const uint16_t *)val) <= 500) {
+                chips = 1;
+            } else if (*((const uint16_t *)val) <= 1500) {
+                chips = 2;
+            } else {
+                chips = 3;
+            }
+
+            if (at86rf215_OQPSK_set_chips(dev, chips) == 0) {
                 res = sizeof(uint8_t);
             } else {
                 res = -ERANGE;
