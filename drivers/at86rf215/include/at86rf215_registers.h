@@ -987,7 +987,7 @@ typedef enum bb_irq_tag {
 /* 16-QAM, rate ½ */
 #define BB_MCS_16QAM_1BY2               5
 /* 16-QAM, rate ¾ */
-#define BB_MCS_16QAM_3BY4               7
+#define BB_MCS_16QAM_3BY4               6
 
 /** Bit Mask for Sub-Register OFDMPHRTX.RB5 */
 #define OFDMPHRTX_RB5_MASK              0x10
