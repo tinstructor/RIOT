@@ -1094,7 +1094,7 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);
     }
-    else if ((strcmp("scheme", key) == 0) || (strcmp("msc", key) == 0)) {
+    else if ((strcmp("scheme", key) == 0) || (strcmp("mcs", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_MCS, 0, value);
     }
     else if ((strcmp("channel", key) == 0) || (strcmp("chan", key) == 0)) {
