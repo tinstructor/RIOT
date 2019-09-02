@@ -280,6 +280,10 @@ static void _print_netopt(netopt_t opt)
             printf("PHY mode");
             break;
 
+        case NETOPT_OQPSK_CHIPS:
+            printf("Chip Rate");
+            break;
+
         case NETOPT_OFDM_OPTION:
             printf("OFDM option");
             break;
@@ -472,6 +476,14 @@ static void _netif_list(kernel_pid_t iface)
     if (res >= 0) {
         printf(" PHY: %s ", _netopt_ieee802154_phy_str[u8]);
         switch (u8) {
+        case IEEE802154_PHY_OQPSK:
+            printf("\n          ");
+            res = gnrc_netapi_get(iface, NETOPT_OQPSK_CHIPS, 0, &u16, sizeof(u16));
+            if (res >= 0) {
+                printf(" Chip Rate: %u ", u16);
+            }
+
+            break;
         case IEEE802154_PHY_OFDM:
             printf("\n          ");
             res = gnrc_netapi_get(iface, NETOPT_OFDM_OPTION, 0, &u8, sizeof(u8));
@@ -1090,6 +1102,9 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     }
     else if ((strcmp("phy_mode", key) == 0) || (strcmp("phy", key) == 0)) {
         return _netif_set_ieee802154_phy_mode(iface, value);
+    }
+    else if ((strcmp("chip_rate", key) == 0) || (strcmp("chips", key) == 0)) {
+        return _netif_set_u16(iface, NETOPT_OQPSK_CHIPS, 0, value);
     }
     else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);
