@@ -191,6 +191,31 @@ static void _set_ack_timeout(at86rf215_t *dev, uint8_t chips, uint8_t mode)
     dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(chips, mode >> 1);
 }
 
+static void _set_legacy(at86rf215_t *dev, bool high_rate, uint8_t *chips, uint8_t *mode)
+{
+    /* enable/disable legacy high data rate */
+    if (high_rate) {
+        at86rf215_reg_or(dev, dev->BBC->RG_OQPSKC3, OQPSKC3_HRLEG_MASK);
+    } else {
+        at86rf215_reg_and(dev, dev->BBC->RG_OQPSKC3, ~OQPSKC3_HRLEG_MASK);
+    }
+
+    /* set the mode so that it results in the same data rate
+       as the corresponding non-legacy mode to avoid having to
+       distinguish between the two later on */
+    if (is_subGHz(dev)) {
+        *chips = BB_FCHIP1000;
+        *mode  = high_rate
+               ? (3 << 1) | AT86RF215_OQPSK_MODE_LEGACY
+               : (4 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
+    } else {
+        *chips = BB_FCHIP2000;
+        *mode  = high_rate
+               ? (3 << 1) | AT86RF215_OQPSK_MODE_LEGACY
+               : (5 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
+    }
+}
+
 void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
 {
     uint8_t direct_modulation = 0;
@@ -210,23 +235,7 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
 
     /* legacy mode only supports one defined chip rate */
     if (mode & AT86RF215_OQPSK_MODE_LEGACY) {
-
-        /* enable legacy high data rate */
-        if (mode & AT86RF215_OQPSK_MODE_LEGACY_HDR) {
-            at86rf215_reg_write(dev, dev->BBC->RG_OQPSKC3, OQPSKC3_HRLEG_MASK);
-        }
-
-        if (is_subGHz(dev)) {
-            chips = BB_FCHIP1000;
-            mode  = (mode & AT86RF215_OQPSK_MODE_LEGACY_HDR)
-                  ? (3 << 1) | AT86RF215_OQPSK_MODE_LEGACY
-                  : (4 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
-        } else {
-            chips = BB_FCHIP2000;
-            mode  = (mode & AT86RF215_OQPSK_MODE_LEGACY_HDR)
-                  ? (3 << 1) | AT86RF215_OQPSK_MODE_LEGACY
-                  : (5 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
-        }
+        _set_legacy(dev, mode & AT86RF215_OQPSK_MODE_LEGACY_HDR, &chips, &mode);
     /* enable direct modulation if the chip supports it */
     } else if (chips < BB_FCHIP1000 &&
                at86rf215_reg_read(dev, RG_RF_VN) >= 3) {
@@ -269,13 +278,64 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
 
 int at86rf215_OQPSK_set_chips(at86rf215_t *dev, uint8_t chips)
 {
-    (void) dev;
-    (void) chips;
-    /* TODO */
+    uint8_t direct_modulation, mode;
+
+    mode = at86rf215_reg_read(dev, dev->BBC->RG_OQPSKPHRTX);
+
+    if (mode & AT86RF215_OQPSK_MODE_LEGACY) {
+        DEBUG("[%s] can't set chip rate in legacy mode\n", __func__);
+        return -1;
+    }
+
+    if (chips < BB_FCHIP1000 && at86rf215_reg_read(dev, RG_RF_VN) >= 3) {
+        direct_modulation = 1 << 4;
+    } else {
+        direct_modulation = 0;
+    }
+
+    _set_chips(dev, chips, direct_modulation);
+    _set_ack_timeout(dev, chips, mode);
     return 0;
 }
 
 uint8_t at86rf215_OQPSK_get_chips(at86rf215_t *dev)
 {
     return at86rf215_reg_read(dev, dev->BBC->RG_OQPSKC0) & OQPSKC0_FCHIP_MASK;
+}
+
+int at86rf215_OQPSK_set_mode(at86rf215_t *dev, uint8_t mode)
+{
+    uint8_t chips;
+
+    if (mode & ~(OQPSKPHRTX_MOD_MASK | OQPSKPHRTX_LEG_MASK)) {
+        return -1;
+    }
+
+    if (mode & AT86RF215_OQPSK_MODE_LEGACY) {
+        bool high_rate = (mode & AT86RF215_OQPSK_MODE_LEGACY_HDR) == AT86RF215_OQPSK_MODE_LEGACY_HDR;
+        _set_legacy(dev, high_rate, &chips, &mode);
+    } else {
+        chips = at86rf215_OQPSK_get_chips(dev);
+    }
+
+    /* TX with selected rate mode */
+    at86rf215_reg_write(dev, dev->BBC->RG_OQPSKPHRTX, mode);
+    _set_ack_timeout(dev, chips, mode);
+
+    return 0;
+}
+
+uint8_t at86rf215_OQPSK_get_mode(at86rf215_t *dev)
+{
+    uint8_t mode = at86rf215_reg_read(dev, dev->BBC->RG_OQPSKPHRTX);
+
+    if (mode & AT86RF215_OQPSK_MODE_LEGACY) {
+        if (at86rf215_reg_read(dev, dev->BBC->RG_OQPSKC3) & OQPSKC3_HRLEG_MASK) {
+            return AT86RF215_OQPSK_MODE_LEGACY_HDR;
+        } else {
+            return AT86RF215_OQPSK_MODE_LEGACY;
+        }
+    }
+
+    return mode & OQPSKPHRTX_MOD_MASK;
 }

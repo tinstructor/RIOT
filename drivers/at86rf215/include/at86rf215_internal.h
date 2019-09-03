@@ -79,6 +79,9 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t rate);
 uint8_t at86rf215_OQPSK_get_chips(at86rf215_t *dev);
 int at86rf215_OQPSK_set_chips(at86rf215_t *dev, uint8_t chips);
 
+uint8_t at86rf215_OQPSK_get_mode(at86rf215_t *dev);
+int at86rf215_OQPSK_set_mode(at86rf215_t *dev, uint8_t mode);
+
 uint8_t at86rf215_get_phy_mode(at86rf215_t *dev);
 
 const char* at86rf215_hw_state2a(uint8_t state);
