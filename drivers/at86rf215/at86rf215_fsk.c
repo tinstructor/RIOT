@@ -22,6 +22,8 @@
 
 #include "debug.h"
 
+#define KHZ 1000
+
 /* IEEE Std 802.15.4g™-2012 Amendment 3
  * Table 68d—Total number of channels and first channel center frequencies for SUN PHYs */
 #define FSK_CHANNEL_SPACING            (200U)     /* kHz */
@@ -252,21 +254,64 @@ static uint8_t _RXDFE_RCUT_full(uint8_t srate, bool subGHz)
     return 0;
 }
 
-static uint32_t _srate(uint8_t srate)
+/* Table 6-64. Minimum Preamble Length */
+static uint8_t _FSKPL(uint8_t srate)
 {
     switch (srate) {
     case FSK_SRATE_50K:
-        return  50 * 1000;
+        return 2;
     case FSK_SRATE_100K:
-        return 100 * 1000;
+        return 3;
     case FSK_SRATE_150K:
-        return 150 * 1000;
     case FSK_SRATE_200K:
-        return 200 * 1000;
     case FSK_SRATE_300K:
-        return 300 * 1000;
+        return 8;
     case FSK_SRATE_400K:
-        return 400 * 1000;
+        return 10;
+    }
+
+    return 0;
+}
+
+/* fsk modulation indices / 8 */
+static const uint8_t fsk_mod_idx[] = {
+    3, 4, 6, 8, 10, 12, 14, 16
+};
+
+/* FSK modulation scale / 8 */
+static const uint8_t fsk_mod_idx_scale[] = {
+    7, 8, 9, 10
+};
+
+static void _fsk_mod_idx_get(uint8_t num, uint8_t *idx, uint8_t *scale)
+{
+    uint8_t diff = 0xFF;
+    for (uint8_t i = 0; i < ARRAY_SIZE(fsk_mod_idx_scale); ++i) {
+        for (uint8_t j = 0; j < ARRAY_SIZE(fsk_mod_idx); ++j) {
+            if (abs(num - fsk_mod_idx_scale[i] * fsk_mod_idx[j]) < diff) {
+                diff   = abs(num - fsk_mod_idx_scale[i] * fsk_mod_idx[j]);
+                *idx   = j;
+                *scale = i;
+            }
+        }
+    }
+}
+
+static uint32_t _srate_Hz(uint8_t srate)
+{
+    switch (srate) {
+    case FSK_SRATE_50K:
+        return  50 * KHZ;
+    case FSK_SRATE_100K:
+        return 100 * KHZ;
+    case FSK_SRATE_150K:
+        return 150 * KHZ;
+    case FSK_SRATE_200K:
+        return 200 * KHZ;
+    case FSK_SRATE_300K:
+        return 300 * KHZ;
+    case FSK_SRATE_400K:
+        return 400 * KHZ;
     }
 
     return 0;
@@ -277,16 +322,8 @@ static inline uint8_t _RXDFE_RCUT(uint8_t srate, bool subGHz, bool half)
     return half ? _RXDFE_RCUT_half(srate, subGHz) : _RXDFE_RCUT_full(srate, subGHz);
 }
 
-void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
+static void _set_srate(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
 {
-    if (srate > FSK_SRATE_400K) {
-        DEBUG("[%s] invalid symbol rate: %d\n", __func__, srate);
-        return;
-    }
-
-    /* disable radio */
-    at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
-
     /* Set Receiver Bandwidth: fBW = 160 kHz, fIF = 250 kHz */
     at86rf215_reg_write(dev, dev->RF->RG_RXBWC, _RXBWC_BW(srate, is_subGHz(dev), mod_idx_half));
     /* fS = 400 kHz; fCUT = fS/5.333 = 75 kHz */
@@ -299,6 +336,39 @@ void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
     at86rf215_reg_write(dev, dev->RF->RG_TXDFE, _TXDFE_SR(dev, srate)
                                               | (mod_idx_half ? RF_RCUT_FS_BY_8 : RF_RCUT_FS_BY_2)
                                               | TXDFE_DM_MASK);
+
+    /* configure pre-emphasis */
+    at86rf215_reg_write(dev, dev->BBC->RG_FSKPE0, FSKPE_Val[0][srate]);
+    at86rf215_reg_write(dev, dev->BBC->RG_FSKPE1, FSKPE_Val[1][srate]);
+    at86rf215_reg_write(dev, dev->BBC->RG_FSKPE2, FSKPE_Val[2][srate]);
+
+    /* set preamble length in octets */
+    at86rf215_reg_write(dev, dev->BBC->RG_FSKPLL, _FSKPL(srate));
+
+    /* set symbol rate, preamble is less than 256 so set hight bits 0 */
+    at86rf215_reg_write(dev, dev->BBC->RG_FSKC1, srate);
+}
+
+static void _set_ack_timeout(at86rf215_t *dev, uint8_t srate)
+{
+    dev->ack_timeout_usec =  3 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 1000000 / _srate_Hz(srate);
+}
+
+void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order)
+{
+    if (srate > FSK_SRATE_400K) {
+        DEBUG("[%s] invalid symbol rate: %d\n", __func__, srate);
+        return;
+    }
+
+    bool mod_idx_half = mod_idx <= 32;
+    uint8_t _mod_idx, _mod_idx_scale;
+    _fsk_mod_idx_get(mod_idx, &_mod_idx, &_mod_idx_scale);
+
+    /* disable radio */
+    at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
+
+    _set_srate(dev, srate, mod_idx_half);
 
     /* set receiver gain target according to data sheet */
     at86rf215_reg_write(dev, dev->RF->RG_AGCS, 1 << AGCS_TGT_SHIFT);
@@ -318,25 +388,82 @@ void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
     /* set Bandwidth Time Product, Modulation Index & Modulation Order */
     /* effective modulation index = MIDXS * MIDX */
     at86rf215_reg_write(dev, dev->BBC->RG_FSKC0, FSK_BT_20
-                                               | FSK_MIDXS_SCALE_8_BY_8
-                                               | (mod_idx_half ? FSK_MIDX_4_BY_8 : FSK_MIDX_8_BY_8)
-                                               | FSK_MORD_2SFK);
-
-    /* set symbol rate, preamble is less than 256 so set hight bits 0 */
-    at86rf215_reg_write(dev, dev->BBC->RG_FSKC1, srate);
+                                               | (_mod_idx << FSKC0_MIDX_SHIFT)
+                                               | (_mod_idx_scale << FSKC0_MIDXS_SHIFT)
+                                               | mod_order);
 
     /* enable direct modulation */
     at86rf215_reg_write(dev, dev->BBC->RG_FSKDM, FSKDM_EN_MASK | FSKDM_PE_MASK);
-
-    /* configure pre-emphasis */
-    at86rf215_reg_write(dev, dev->BBC->RG_FSKPE0, FSKPE_Val[0][srate]);
-    at86rf215_reg_write(dev, dev->BBC->RG_FSKPE1, FSKPE_Val[1][srate]);
-    at86rf215_reg_write(dev, dev->BBC->RG_FSKPE2, FSKPE_Val[2][srate]);
 
     at86rf215_enable_radio(dev, BB_MRFSK);
 
     /* assume channel spacing for mode #1 */
     dev->num_chans = is_subGHz(dev) ? 34 : 416;
-    dev->ack_timeout_usec =  3 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 1000000 / _srate(srate);
+    _set_ack_timeout(dev, srate);
     DEBUG("[%s] ACK timeout: %d µs\n", __func__, dev->ack_timeout_usec);
+}
+
+uint8_t at86rf215_FSK_get_mod_order(at86rf215_t *dev)
+{
+    return at86rf215_reg_read(dev, dev->BBC->RG_FSKC0) & FSKC0_MORD_MASK;
+}
+
+int at86rf215_FSK_set_mod_order(at86rf215_t *dev, uint8_t mod_order) {
+    if (mod_order) {
+        at86rf215_reg_or(dev, dev->BBC->RG_FSKC0, FSK_MORD_4SFK);
+    } else {
+        at86rf215_reg_and(dev, dev->BBC->RG_FSKC0, ~FSK_MORD_4SFK);
+    }
+
+    return 0;
+}
+
+uint8_t at86rf215_FSK_get_mod_idx(at86rf215_t *dev)
+{
+    uint8_t fskc0 = at86rf215_reg_read(dev, dev->BBC->RG_FSKC0);
+    uint8_t _mod_idx = (fskc0 & FSKC0_MIDX_MASK) >> FSKC0_MIDX_SHIFT;
+    uint8_t _mod_idx_scale = (fskc0 & FSKC0_MIDXS_MASK) >> FSKC0_MIDXS_SHIFT;
+
+    return fsk_mod_idx[_mod_idx] * fsk_mod_idx_scale[_mod_idx_scale];
+}
+
+int at86rf215_FSK_set_mod_idx(at86rf215_t *dev, uint8_t mod_idx)
+{
+    uint8_t _mod_idx, _mod_idx_scale;
+    _fsk_mod_idx_get(mod_idx, &_mod_idx, &_mod_idx_scale);
+    at86rf215_reg_write(dev, dev->BBC->RG_FSKC0, FSK_BT_20
+                                               | (_mod_idx << FSKC0_MIDX_SHIFT)
+                                               | (_mod_idx_scale << FSKC0_MIDXS_SHIFT)
+                                               | at86rf215_FSK_get_mod_order(dev));
+    return 0;
+}
+
+uint8_t at86rf215_FSK_get_srate(at86rf215_t *dev)
+{
+    return at86rf215_reg_read(dev, dev->BBC->RG_FSKC1) & FSKC1_SRATE_MASK;
+}
+
+int at86rf215_FSK_set_srate(at86rf215_t *dev, uint8_t srate)
+{
+    if (srate > FSK_SRATE_400K) {
+        return -1;
+    }
+
+    _set_srate(dev, srate, at86rf215_FSK_get_mod_idx(dev) <= 32);
+    _set_ack_timeout(dev, srate);
+    return 0;
+}
+
+void at86rf215_FSK_set_fec(at86rf215_t *dev, bool enable)
+{
+    (void) dev;
+    (void) enable;
+    // TODO
+}
+
+bool at86rf215_FSK_get_fec(at86rf215_t *dev)
+{
+    // TODO
+    (void) dev;
+    return false;
 }

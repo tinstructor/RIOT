@@ -90,7 +90,7 @@ void at86rf215_set_page(at86rf215_t *dev, uint8_t page)
         switch (page & 0xC0) {
         /* MR-FSK */
         case 0x40:
-            at86rf215_configure_FSK(dev, page & 0x7, page & 0x20);
+            at86rf215_configure_FSK(dev, FSK_SRATE_300K, 64, 0);
             break;
         /* MR-OFDM */
         case 0x80:

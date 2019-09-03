@@ -62,7 +62,20 @@ void at86rf215_filter_ack(at86rf215_t *dev, bool on);
 
 void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len);
 
-void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, bool modulation_idx_half);
+/** FSK **/
+void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order);
+
+int at86rf215_FSK_set_srate(at86rf215_t *dev, uint8_t srate);
+uint8_t at86rf215_FSK_get_srate(at86rf215_t *dev);
+
+int at86rf215_FSK_set_mod_idx(at86rf215_t *dev, uint8_t mod_idx);
+uint8_t at86rf215_FSK_get_mod_idx(at86rf215_t *dev);
+
+void at86rf215_FSK_set_fec(at86rf215_t *dev, bool enable);
+bool at86rf215_FSK_get_fec(at86rf215_t *dev);
+
+int at86rf215_FSK_set_mod_order(at86rf215_t *dev, uint8_t mod_order);
+uint8_t at86rf215_FSK_get_mod_order(at86rf215_t *dev);
 
 /** OFDM **/
 void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme);
