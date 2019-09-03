@@ -281,7 +281,11 @@ static void _print_netopt(netopt_t opt)
             break;
 
         case NETOPT_OQPSK_CHIPS:
-            printf("Chip Rate");
+            printf("chip rate");
+            break;
+
+        case NETOPT_OQPSK_RATE:
+            printf("rate mode");
             break;
 
         case NETOPT_OFDM_OPTION:
@@ -336,6 +340,16 @@ static const char *_netopt_ieee802154_phy_str[] = {
     [IEEE802154_PHY_OQPSK] = "O-QPSK",
     [IEEE802154_PHY_OFDM] = "OFDM",
     [IEEE802154_PHY_FSK] = "FSK"
+};
+
+static const char *_netopt_oqpsk_rate_str[] = {
+    [IEEE802154_OQPSK_LEGACY] = "legacy",
+    [IEEE802154_OQPSK_LEGACY_HIGH] = "legacy HR",
+    [IEEE802154_OQPSK_RATE_0] = "0",
+    [IEEE802154_OQPSK_RATE_1] = "1",
+    [IEEE802154_OQPSK_RATE_2] = "2",
+    [IEEE802154_OQPSK_RATE_3] = "3",
+    [IEEE802154_OQPSK_RATE_4] = "4",
 };
 
 static const char *_netopt_mcs_str[] = {
@@ -480,7 +494,11 @@ static void _netif_list(kernel_pid_t iface)
             printf("\n          ");
             res = gnrc_netapi_get(iface, NETOPT_OQPSK_CHIPS, 0, &u16, sizeof(u16));
             if (res >= 0) {
-                printf(" Chip Rate: %u ", u16);
+                printf(" chip rate: %u ", u16);
+            }
+            res = gnrc_netapi_get(iface, NETOPT_OQPSK_RATE, 0, &u8, sizeof(u8));
+            if (res >= 0) {
+                printf("rate mode: %s ", _netopt_oqpsk_rate_str[u8]);
             }
 
             break;
@@ -761,6 +779,34 @@ static int _netif_set_coding_rate(kernel_pid_t iface, char *value)
     printf("success: set coding rate of interface %" PRIkernel_pid " to %s\n",
            iface, value);
 
+    return 0;
+}
+
+static int _netif_set_oqpsk_rate_mode(kernel_pid_t iface, char *value)
+{
+    uint8_t mode;
+    if (!strcmp("legacy", value)) {
+        mode = IEEE802154_OQPSK_LEGACY;
+    } else if (!strcmp("legacy_high", value)) {
+        mode = IEEE802154_OQPSK_LEGACY_HIGH;
+    } else if  (*value >= '0' && *value <= '9') {
+        mode = IEEE802154_OQPSK_RATE_0 + *value - '0';
+    } else {
+        puts("usage: ifconfig <if_id> set rate_mode [legacy|legacy_high|0|1|2|3|4]");
+        return 1;
+    }
+
+    if (gnrc_netapi_set(iface, NETOPT_OQPSK_RATE, 0, &mode, sizeof(uint8_t)) < 0) {
+        if (mode >= ARRAY_SIZE(_netopt_oqpsk_rate_str)) {
+            puts("error: rate mode out of range.");
+        } else {
+            printf("error: unable to set rate mode to %s\n", _netopt_oqpsk_rate_str[mode]);
+        }
+        return 1;
+    }
+
+    printf("success: set rate mode of interface %" PRIkernel_pid " to %s\n",
+           iface, _netopt_oqpsk_rate_str[mode]);
     return 0;
 }
 
@@ -1105,6 +1151,9 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     }
     else if ((strcmp("chip_rate", key) == 0) || (strcmp("chips", key) == 0)) {
         return _netif_set_u16(iface, NETOPT_OQPSK_CHIPS, 0, value);
+    }
+    else if (strcmp("rate_mode", key) == 0) {
+        return _netif_set_oqpsk_rate_mode(iface, value);
     }
     else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);

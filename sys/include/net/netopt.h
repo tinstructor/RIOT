@@ -656,6 +656,11 @@ typedef enum {
     NETOPT_OQPSK_CHIPS,
 
     /**
+     * @brief   (uint8_t) MR-O-QPSK Rate Mode
+     */
+    NETOPT_OQPSK_RATE,
+
+    /**
      * @brief   (uint8_t) MR-OFDM PHY Option (Values: 1-4)
      */
     NETOPT_OFDM_OPTION,

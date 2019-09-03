@@ -109,6 +109,19 @@ enum {
 };
 
 /**
+ * @brief   802.15.4 O-QPSK Rate Modes
+ */
+enum {
+    IEEE802154_OQPSK_LEGACY,
+    IEEE802154_OQPSK_LEGACY_HIGH,
+    IEEE802154_OQPSK_RATE_0,
+    IEEE802154_OQPSK_RATE_1,
+    IEEE802154_OQPSK_RATE_2,
+    IEEE802154_OQPSK_RATE_3,
+    IEEE802154_OQPSK_RATE_4
+};
+
+/**
  * @brief   Special address defintions
  * @{
  */
