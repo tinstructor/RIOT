@@ -18,6 +18,7 @@
  * @author      Oliver Hahm <oliver.hahm@inria.fr>
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -87,6 +88,13 @@ static bool _is_number(char *str)
 static inline bool _is_iface(kernel_pid_t iface)
 {
     return (gnrc_netif_get_by_pid(iface) != NULL);
+}
+
+static void str_toupper(char *str)
+{
+    while (*str) {
+        *str++ = toupper(*str);
+    }
 }
 
 static uint8_t gcd(uint8_t a, uint8_t b)
@@ -945,7 +953,9 @@ static int _netif_set_fsk_modulation_index(kernel_pid_t iface, char *value)
 
 static int _netif_set_ieee802154_phy_mode(kernel_pid_t iface, char *value)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(_netopt_ieee802154_phy_str); ++i) {
+    str_toupper(value);
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(_netopt_ieee802154_phy_str); ++i) {
         if (strcmp(_netopt_ieee802154_phy_str[i], value)) {
             continue;
         }
