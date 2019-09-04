@@ -560,13 +560,11 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 
         case NETOPT_IEEE802154_PHY:
             assert(len <= sizeof(uint8_t));
-            switch (*((const uint8_t *)val)) {
-            case IEEE802154_PHY_FSK:
-                at86rf215_configure_FSK(dev,
-                                        at86rf215_FSK_get_srate(dev),
-                                        at86rf215_FSK_get_mod_idx(dev),
-                                        at86rf215_FSK_get_mod_order(dev),
-                                        at86rf215_FSK_get_fec(dev));
+            switch (*(uint8_t *)val) {
+            case IEEE802154_PHY_OQPSK:
+                at86rf215_configure_OQPSK(dev,
+                                          at86rf215_OQPSK_get_chips(dev),
+                                          at86rf215_OQPSK_get_mode(dev));
                 res = sizeof(uint8_t);
                 break;
             case IEEE802154_PHY_OFDM:
@@ -575,14 +573,18 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
                                          at86rf215_OFDM_get_scheme(dev));
                 res = sizeof(uint8_t);
                 break;
-            case IEEE802154_PHY_OQPSK:
-                at86rf215_configure_OQPSK(dev,
-                                          at86rf215_OQPSK_get_chips(dev),
-                                          at86rf215_OQPSK_get_mode(dev));
+            case IEEE802154_PHY_FSK:
+                at86rf215_configure_FSK(dev,
+                                        at86rf215_FSK_get_srate(dev),
+                                        at86rf215_FSK_get_mod_idx(dev),
+                                        at86rf215_FSK_get_mod_order(dev),
+                                        at86rf215_FSK_get_fec(dev));
                 res = sizeof(uint8_t);
                 break;
-            default: return -ENOTSUP;
+            default:
+                return -ENOTSUP;
             }
+            break;
 
         case NETOPT_OFDM_OPTION:
             if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_OFDM) {
