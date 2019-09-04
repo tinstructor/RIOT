@@ -89,6 +89,40 @@ static inline bool _is_iface(kernel_pid_t iface)
     return (gnrc_netif_get_by_pid(iface) != NULL);
 }
 
+static uint8_t gcd(uint8_t a, uint8_t b)
+{
+    if (a == 0 || b == 0) {
+        return 0;
+    }
+
+    uint8_t r;
+    do {
+        r = a % b;
+        a = b;
+        b = r;
+    } while (b);
+
+    return a;
+}
+
+static void frac_short(uint8_t *a, uint8_t *b)
+{
+    uint8_t d = gcd(*a, *b);
+
+    if (d == 0) {
+        return;
+    }
+
+    *a /= d;
+    *b /= d;
+}
+
+static void frac_extend(uint8_t *a, uint8_t *b, uint8_t base)
+{
+    *a *= base / *b;
+    *b  = base;
+}
+
 #ifdef MODULE_NETSTATS
 static const char *_netstats_module_to_str(uint8_t module)
 {
@@ -514,6 +548,20 @@ static void _netif_list(kernel_pid_t iface)
             }
 
             break;
+        case IEEE802154_PHY_FSK:
+            printf("\n          ");
+            res = gnrc_netapi_get(iface, NETOPT_FSK_MODULATION_INDEX, 0, &u8, sizeof(u8));
+            if (res >= 0) {
+                hwaddr[0] = 64; /* convenient temp var */
+                frac_short(&u8, hwaddr);
+                if (hwaddr[0] == 1) {
+                    printf(" index: %u ", u8);
+                } else {
+                    printf(" index: %u/%u ", u8, hwaddr[0]);
+                }
+            }
+
+            break;
         }
     }
     res = gnrc_netapi_get(iface, NETOPT_LINK_CONNECTED, 0, &u8, sizeof(u8));
@@ -807,6 +855,32 @@ static int _netif_set_oqpsk_rate_mode(kernel_pid_t iface, char *value)
 
     printf("success: set rate mode of interface %" PRIkernel_pid " to %s\n",
            iface, _netopt_oqpsk_rate_str[mode]);
+    return 0;
+}
+
+static int _netif_set_fsk_modulation_index(kernel_pid_t iface, char *value)
+{
+    uint8_t a, b;
+    char* frac = strchr(value, '/');
+    if (frac) {
+        *frac = 0;
+        b = atoi(frac + 1);
+    } else {
+        b = 1;
+    }
+    a = atoi(value);
+
+    frac_extend(&a, &b, 64);
+
+    int res = gnrc_netapi_set(iface, NETOPT_FSK_MODULATION_INDEX, 0, &a, sizeof(uint8_t));
+    if (res < 0) {
+        printf("error: unable to set modulation index to %d/%d\n", a, b);
+        return 1;
+    } else {
+        printf("success: set modulation index of interface %" PRIkernel_pid " to %d/%d\n",
+           iface, res, b);
+    }
+
     return 0;
 }
 
@@ -1154,6 +1228,9 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     }
     else if (strcmp("rate_mode", key) == 0) {
         return _netif_set_oqpsk_rate_mode(iface, value);
+    }
+    else if ((strcmp("modulation_index", key) == 0) || (strcmp("midx", key) == 0)) {
+        return _netif_set_fsk_modulation_index(iface, value);
     }
     else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);

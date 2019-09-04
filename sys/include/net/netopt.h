@@ -671,6 +671,11 @@ typedef enum {
     NETOPT_OFDM_MCS,
 
     /**
+     * @brief   (uint8_t) MR-FSK PHY Modulation Index (x 64)
+     */
+    NETOPT_FSK_MODULATION_INDEX,
+
+    /**
      * @brief   (uint8_t*) phy layer syncword
      */
     NETOPT_SYNCWORD,
