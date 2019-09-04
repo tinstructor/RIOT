@@ -418,6 +418,12 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             res = max_len;
             break;
 
+        case NETOPT_FSK_FEC:
+            assert(max_len >= sizeof(uint8_t));
+            *((uint8_t *)val) = at86rf215_FSK_get_fec(dev);
+            res = max_len;
+            break;
+
         default:
             res = -ENOTSUP;
             break;
@@ -689,6 +695,19 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             } else {
                 res = -ERANGE;
             }
+            break;
+
+        case NETOPT_FSK_FEC:
+            if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_FSK) {
+                return -ENOTSUP;
+            }
+
+            if (at86rf215_FSK_set_fec(dev, *(uint8_t *)val) == 0) {
+                res = sizeof(uint8_t);
+            } else {
+                res = -ERANGE;
+            }
+
             break;
 
         default:

@@ -73,8 +73,8 @@ uint8_t at86rf215_FSK_get_srate(at86rf215_t *dev);
 int at86rf215_FSK_set_mod_idx(at86rf215_t *dev, uint8_t mod_idx);
 uint8_t at86rf215_FSK_get_mod_idx(at86rf215_t *dev);
 
-void at86rf215_FSK_set_fec(at86rf215_t *dev, bool enable);
-bool at86rf215_FSK_get_fec(at86rf215_t *dev);
+int at86rf215_FSK_set_fec(at86rf215_t *dev, uint8_t mode);
+uint8_t at86rf215_FSK_get_fec(at86rf215_t *dev);
 
 int at86rf215_FSK_set_mod_order(at86rf215_t *dev, uint8_t mod_order);
 uint8_t at86rf215_FSK_get_mod_order(at86rf215_t *dev);

@@ -441,16 +441,39 @@ int at86rf215_FSK_set_srate(at86rf215_t *dev, uint8_t srate)
     return 0;
 }
 
-void at86rf215_FSK_set_fec(at86rf215_t *dev, bool enable)
+int at86rf215_FSK_set_fec(at86rf215_t *dev, uint8_t mode)
 {
     (void) dev;
-    (void) enable;
-    // TODO
+    switch (mode) {
+    case IEEE802154_FEC_NONE:
+        at86rf215_reg_and(dev, dev->BBC->RG_FSKPHRTX, ~FSKPHRTX_SFD_MASK);
+        break;
+    case IEEE802154_FEC_NRNSC:
+        at86rf215_reg_or(dev, dev->BBC->RG_FSKPHRTX, FSKPHRTX_SFD_MASK);
+        at86rf215_reg_and(dev, dev->BBC->RG_FSKC2, ~FSKC2_FECS_MASK);
+        break;
+    case IEEE802154_FEC_RSC:
+        at86rf215_reg_or(dev, dev->BBC->RG_FSKPHRTX, FSKPHRTX_SFD_MASK);
+        at86rf215_reg_or(dev, dev->BBC->RG_FSKC2, FSKC2_FECS_MASK);
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
 }
 
-bool at86rf215_FSK_get_fec(at86rf215_t *dev)
+uint8_t at86rf215_FSK_get_fec(at86rf215_t *dev)
 {
-    // TODO
-    (void) dev;
-    return false;
+    /* SFD0 -> Uncoded IEEE mode */
+    /* SFD1 -> Coded IEEE mode */
+    if (!(at86rf215_reg_read(dev, dev->BBC->RG_FSKPHRTX) & FSKPHRTX_SFD_MASK)) {
+        return IEEE802154_FEC_NONE;
+    }
+
+    if (at86rf215_reg_read(dev, dev->BBC->RG_FSKC2) & FSKC2_FECS_MASK) {
+        return IEEE802154_FEC_RSC;
+    } else {
+        return IEEE802154_FEC_NRNSC;
+    }
 }
