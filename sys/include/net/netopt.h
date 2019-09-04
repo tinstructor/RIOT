@@ -676,6 +676,16 @@ typedef enum {
     NETOPT_FSK_MODULATION_INDEX,
 
     /**
+     * @brief   (uint8_t) MR-FSK Modulation Order
+     */
+    NETOPT_FSK_MODULATION_ORDER,
+
+    /**
+     * @brief   (uint8_t) MR-FSK PHY Symbol Rate (kHz)
+     */
+    NETOPT_FSK_SRATE,
+
+    /**
      * @brief   (uint8_t*) phy layer syncword
      */
     NETOPT_SYNCWORD,

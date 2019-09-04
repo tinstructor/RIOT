@@ -330,6 +330,18 @@ static void _print_netopt(netopt_t opt)
             printf("modulation/coding scheme");
             break;
 
+        case NETOPT_FSK_MODULATION_INDEX:
+            printf("FSK modulation index");
+            break;
+
+        case NETOPT_FSK_MODULATION_ORDER:
+            printf("FSK modulation order");
+            break;
+
+        case NETOPT_FSK_SRATE:
+            printf("FSK symbol rate");
+            break;
+
         case NETOPT_CHECKSUM:
             printf("checksum");
             break;
@@ -555,10 +567,18 @@ static void _netif_list(kernel_pid_t iface)
                 hwaddr[0] = 64; /* convenient temp var */
                 frac_short(&u8, hwaddr);
                 if (hwaddr[0] == 1) {
-                    printf(" index: %u ", u8);
+                    printf(" modulation index: %u ", u8);
                 } else {
-                    printf(" index: %u/%u ", u8, hwaddr[0]);
+                    printf(" modulation index: %u/%u ", u8, hwaddr[0]);
                 }
+            }
+            res = gnrc_netapi_get(iface, NETOPT_FSK_MODULATION_ORDER, 0, &u8, sizeof(u8));
+            if (res >= 0) {
+                printf(" %u-FSK ", u8);
+            }
+            res = gnrc_netapi_get(iface, NETOPT_FSK_SRATE, 0, &u16, sizeof(u16));
+            if (res >= 0) {
+                printf(" symbol rate: %u kHz ", u16);
             }
 
             break;
@@ -1231,6 +1251,12 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     }
     else if ((strcmp("modulation_index", key) == 0) || (strcmp("midx", key) == 0)) {
         return _netif_set_fsk_modulation_index(iface, value);
+    }
+    else if ((strcmp("modulation_order", key) == 0) || (strcmp("mord", key) == 0)) {
+        return _netif_set_u8(iface, NETOPT_FSK_MODULATION_ORDER, 0, value);
+    }
+    else if ((strcmp("symbol_rate", key) == 0) || (strcmp("srate", key) == 0)) {
+        return _netif_set_u16(iface, NETOPT_FSK_SRATE, 0, value);
     }
     else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);
