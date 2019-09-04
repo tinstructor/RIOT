@@ -32,15 +32,29 @@ static inline void getbus(const at86rf215_t *dev)
     spi_acquire(SPIDEV, CSPIN, SPI_MODE_0, dev->params.spi_clk);
 }
 
+/* only to be used by at86rf215_hardware_reset()
+   can't use normal at86rf215_reg_read() because
+   we already hold the lock */
+static inline uint8_t _get_rf_state_with_lock(at86rf215_t *dev)
+{
+    uint16_t reg = htons(dev->RF->RG_STATE | FLAG_READ);
+    spi_transfer_bytes(SPIDEV, CSPIN, true, &reg, NULL, sizeof(reg));
+    return spi_transfer_byte(SPIDEV, CSPIN, false, 0) & STATE_STATE_MASK;
+}
+
 void at86rf215_hardware_reset(at86rf215_t *dev)
 {
+    /* prevent access during reset */
+    getbus(dev);
+
     /* trigger hardware reset */
     gpio_clear(dev->params.reset_pin);
     xtimer_usleep(AT86RF215_RESET_PULSE_WIDTH);
     gpio_set(dev->params.reset_pin);
     xtimer_usleep(AT86RF215_RESET_DELAY);
 
-    while (at86rf215_get_rf_state(dev) != RF_STATE_TRXOFF) {}
+    while (_get_rf_state_with_lock(dev) != RF_STATE_TRXOFF) {}
+    spi_release(SPIDEV);
 }
 
 void at86rf215_reg_write(const at86rf215_t *dev, uint16_t reg, uint8_t value)
