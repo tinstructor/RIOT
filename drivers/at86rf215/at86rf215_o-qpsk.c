@@ -189,6 +189,7 @@ static void _set_chips(at86rf215_t *dev, uint8_t chips, uint8_t direct_modulatio
 static void _set_ack_timeout(at86rf215_t *dev, uint8_t chips, uint8_t mode)
 {
     dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(chips, mode >> 1);
+    DEBUG("[%s] ACK timeout: %d µs\n", "O-QPSK", dev->ack_timeout_usec);
 }
 
 static void _set_legacy(at86rf215_t *dev, bool high_rate, uint8_t *chips, uint8_t *mode)
@@ -230,6 +231,9 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
         return;
     }
 
+    /* make sure we are in state TRXOFF */
+    uint8_t old_state = at86rf215_set_state(dev, CMD_RF_TRXOFF);
+
     /* disable radio */
     at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
 
@@ -269,11 +273,16 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
     /* legacy O-QPSK & listen to sync word SFD_1 */
     at86rf215_reg_write(dev, dev->BBC->RG_OQPSKC3, 0x0);
 
+    /* make sure the channel config is still valid */
+    dev->num_chans = is_subGHz(dev) ? 3 : 16;
+    dev->netdev.chan = at86rf215_chan_valid(dev, dev->netdev.chan);
+    at86rf215_reg_write16(dev, dev->RF->RG_CNL, dev->netdev.chan);
+
+    _set_ack_timeout(dev, chips, mode);
+
     at86rf215_enable_radio(dev, BB_MROQPSK);
 
-    dev->num_chans = is_subGHz(dev) ? 3 : 16;
-    _set_ack_timeout(dev, chips, mode);
-    DEBUG("[%s] ACK timeout: %d µs\n", __func__, dev->ack_timeout_usec);
+    at86rf215_set_state(dev, old_state);
 }
 
 int at86rf215_OQPSK_set_chips(at86rf215_t *dev, uint8_t chips)

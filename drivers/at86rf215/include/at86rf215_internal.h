@@ -65,11 +65,12 @@ void at86rf215_filter_ack(at86rf215_t *dev, bool on);
 void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len);
 
 /** FSK **/
-void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order);
+void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order, uint8_t fec);
 
 int at86rf215_FSK_set_srate(at86rf215_t *dev, uint8_t srate);
 uint8_t at86rf215_FSK_get_srate(at86rf215_t *dev);
 
+// mod_idx / 64
 int at86rf215_FSK_set_mod_idx(at86rf215_t *dev, uint8_t mod_idx);
 uint8_t at86rf215_FSK_get_mod_idx(at86rf215_t *dev);
 
@@ -98,6 +99,8 @@ uint8_t at86rf215_OQPSK_get_mode(at86rf215_t *dev);
 int at86rf215_OQPSK_set_mode(at86rf215_t *dev, uint8_t mode);
 
 uint8_t at86rf215_get_phy_mode(at86rf215_t *dev);
+
+uint16_t at86rf215_chan_valid(at86rf215_t *dev, uint16_t chan);
 
 const char* at86rf215_hw_state2a(uint8_t state);
 const char* at86rf215_sw_state2a(at86rf215_state_t state);

@@ -116,6 +116,23 @@ void at86rf215_get_random(at86rf215_t *dev, uint8_t *data, size_t len)
     at86rf215_enable_baseband(dev);
 }
 
+uint16_t at86rf215_chan_valid(at86rf215_t *dev, uint16_t chan)
+{
+    if (is_subGHz(dev)) {
+        if (chan >= dev->num_chans) {
+            return dev->num_chans - 1;
+        }
+    } else {
+        if (chan < IEEE802154_CHANNEL_MIN) {
+            return IEEE802154_CHANNEL_MIN;
+        } else if (chan >= IEEE802154_CHANNEL_MIN + dev->num_chans) {
+            return IEEE802154_CHANNEL_MIN + dev->num_chans - 1;
+        }
+    }
+
+    return chan;
+}
+
 const char* at86rf215_hw_state2a(uint8_t state)
 {
     switch (state) {

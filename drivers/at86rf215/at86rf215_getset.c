@@ -78,35 +78,18 @@ uint8_t at86rf215_get_page(const at86rf215_t *dev)
     return dev->page;
 }
 
-// TODO: proper 802.15.4 channel pages (9 & 10)
+/* TODO: find out how pages 9 & 10 are to be configured */
 void at86rf215_set_page(at86rf215_t *dev, uint8_t page)
 {
-    uint8_t old_state = at86rf215_set_state(dev, CMD_RF_TRXOFF);
-
-    if ((page & 0xC0) == 0) {
-        /* legacy mode */
-        at86rf215_configure_OQPSK(dev, BB_FCHIP2000, AT86RF215_OQPSK_MODE_LEGACY);
-    } else {
-        switch (page & 0xC0) {
-        /* MR-FSK */
-        case 0x40:
-            at86rf215_configure_FSK(dev, FSK_SRATE_300K, 64, 0);
-            break;
-        /* MR-OFDM */
-        case 0x80:
-            at86rf215_configure_OFDM(dev, 1 + (page & 0x3), (page >> 2) & 0x3);
-            break;
-        /* MR-O-QPSK */
-        case 0xC0:
-            at86rf215_configure_OQPSK(dev, (page & 0x18) >> 3, page & 0x7);
-            break;
-        }
+    if (is_subGHz(dev) && page == 2) {
+        at86rf215_configure_OQPSK(dev, BB_FCHIP1000, AT86RF215_OQPSK_MODE_LEGACY);
+        dev->page = page;
     }
 
-    /* we need to set the channel again */
-    at86rf215_reg_write16(dev, dev->RF->RG_CNL, dev->netdev.chan);
-
-    at86rf215_set_state(dev, old_state);
+    if (!is_subGHz(dev) && page == 0) {
+        at86rf215_configure_OQPSK(dev, BB_FCHIP2000, AT86RF215_OQPSK_MODE_LEGACY);
+        dev->page = page;
+    }
 }
 
 uint8_t at86rf215_get_phy_mode(at86rf215_t *dev)

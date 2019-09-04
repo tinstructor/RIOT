@@ -464,15 +464,9 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             assert(len == sizeof(uint16_t));
             uint16_t chan = *((const uint16_t *)val);
 
-            if (is_subGHz(dev)) {
-                if (chan > dev->num_chans) {
-                    res = -EINVAL;
-                    break;
-                }
-            } else if (chan < IEEE802154_CHANNEL_MIN ||
-                    chan > IEEE802154_CHANNEL_MAX + dev->num_chans) {
-                    res = -EINVAL;
-                    break;
+            if (at86rf215_chan_valid(dev, chan) != chan) {
+                res = -EINVAL;
+                break;
             }
 
             at86rf215_set_chan(dev, chan);
@@ -568,7 +562,12 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
             assert(len <= sizeof(uint8_t));
             switch (*((const uint8_t *)val)) {
             case IEEE802154_PHY_FSK:
-                /* TODO */
+                at86rf215_configure_FSK(dev,
+                                        at86rf215_FSK_get_srate(dev),
+                                        at86rf215_FSK_get_mod_idx(dev),
+                                        at86rf215_FSK_get_mod_order(dev),
+                                        at86rf215_FSK_get_fec(dev));
+                res = sizeof(uint8_t);
                 break;
             case IEEE802154_PHY_OFDM:
                 at86rf215_configure_OFDM(dev,

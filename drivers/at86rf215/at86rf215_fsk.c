@@ -336,17 +336,26 @@ static void _set_srate(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
     at86rf215_reg_write(dev, dev->BBC->RG_FSKC1, srate);
 }
 
-static void _set_ack_timeout(at86rf215_t *dev, uint8_t srate)
+static void _set_ack_timeout(at86rf215_t *dev, uint8_t srate, bool fec, bool mord4)
 {
     dev->ack_timeout_usec =  3 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 100 / at86rf215_fsk_srate_10kHz[srate];
+    /* forward error correction halves data rate */
+    dev->ack_timeout_usec <<= fec;
+    /* 4-FSK doubles data rate */
+    dev->ack_timeout_usec >>= mord4;
+
+    DEBUG("[%s] ACK timeout: %d µs\n", "FSK", dev->ack_timeout_usec);
 }
 
-void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order)
+void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order, uint8_t fec)
 {
     if (srate > FSK_SRATE_400K) {
         DEBUG("[%s] invalid symbol rate: %d\n", __func__, srate);
         return;
     }
+
+    /* make sure we are in state TRXOFF */
+    uint8_t old_state = at86rf215_set_state(dev, CMD_RF_TRXOFF);
 
     bool mod_idx_half = mod_idx <= 32;
     uint8_t _mod_idx, _mod_idx_scale;
@@ -382,12 +391,19 @@ void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, u
     /* enable direct modulation */
     at86rf215_reg_write(dev, dev->BBC->RG_FSKDM, FSKDM_EN_MASK | FSKDM_PE_MASK);
 
+    /* set forward error correction */
+    at86rf215_FSK_set_fec(dev, fec);
+
     at86rf215_enable_radio(dev, BB_MRFSK);
 
     /* assume channel spacing for mode #1 */
     dev->num_chans = is_subGHz(dev) ? 34 : 416;
-    _set_ack_timeout(dev, srate);
-    DEBUG("[%s] ACK timeout: %d µs\n", __func__, dev->ack_timeout_usec);
+    dev->netdev.chan = at86rf215_chan_valid(dev, dev->netdev.chan);
+    at86rf215_reg_write16(dev, dev->RF->RG_CNL, dev->netdev.chan);
+
+    _set_ack_timeout(dev, srate, mod_order, fec);
+
+    at86rf215_set_state(dev, old_state);
 }
 
 uint8_t at86rf215_FSK_get_mod_order(at86rf215_t *dev)
@@ -402,6 +418,9 @@ int at86rf215_FSK_set_mod_order(at86rf215_t *dev, uint8_t mod_order) {
         at86rf215_reg_and(dev, dev->BBC->RG_FSKC0, ~FSK_MORD_4SFK);
     }
 
+    _set_ack_timeout(dev, at86rf215_FSK_get_srate(dev),
+                     mod_order,
+                     at86rf215_FSK_get_fec(dev));
     return 0;
 }
 
@@ -437,7 +456,9 @@ int at86rf215_FSK_set_srate(at86rf215_t *dev, uint8_t srate)
     }
 
     _set_srate(dev, srate, at86rf215_FSK_get_mod_idx(dev) <= 32);
-    _set_ack_timeout(dev, srate);
+    _set_ack_timeout(dev, srate,
+                     at86rf215_FSK_get_mod_order(dev),
+                     at86rf215_FSK_get_fec(dev));
     return 0;
 }
 
@@ -459,6 +480,10 @@ int at86rf215_FSK_set_fec(at86rf215_t *dev, uint8_t mode)
     default:
         return -1;
     }
+
+    _set_ack_timeout(dev, at86rf215_FSK_get_srate(dev),
+                     at86rf215_FSK_get_mod_order(dev),
+                     mode);
 
     return 0;
 }

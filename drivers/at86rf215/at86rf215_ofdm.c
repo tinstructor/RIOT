@@ -206,12 +206,16 @@ static void _set_option(at86rf215_t *dev, uint8_t option)
 
     at86rf215_reg_write(dev, dev->BBC->RG_OFDMC, option - 1);
 
+    /* make sure channel config is still valid */
     dev->num_chans = _get_max_chan(dev, option);
+    dev->netdev.chan = at86rf215_chan_valid(dev, dev->netdev.chan);
+    at86rf215_reg_write16(dev, dev->RF->RG_CNL, dev->netdev.chan);
 }
 
 static void _set_ack_timeout(at86rf215_t *dev, uint8_t option, uint8_t scheme)
 {
     dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(option, scheme);
+    DEBUG("[%s] ACK timeout: %d µs\n", "OFDM", dev->ack_timeout_usec);
 }
 
 void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
@@ -226,6 +230,9 @@ void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
         return;
     }
 
+    /* make sure we are in state TRXOFF */
+    uint8_t old_state = at86rf215_set_state(dev, CMD_RF_TRXOFF);
+
     /* disable radio */
     at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
 
@@ -238,10 +245,11 @@ void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
 
     at86rf215_reg_write(dev, dev->BBC->RG_OFDMPHRTX, scheme);
 
+    _set_ack_timeout(dev, option, scheme);
+
     at86rf215_enable_radio(dev, BB_MROFDM);
 
-    _set_ack_timeout(dev, option, scheme);
-    DEBUG("[%s] ACK timeout: %d µs\n", __func__, dev->ack_timeout_usec);
+    at86rf215_set_state(dev, old_state);
 }
 
 int at86rf215_OFDM_set_scheme(at86rf215_t *dev, uint8_t scheme)
