@@ -22,13 +22,20 @@
 
 #include "debug.h"
 
-#define KHZ 1000
-
 /* IEEE Std 802.15.4g™-2012 Amendment 3
  * Table 68d—Total number of channels and first channel center frequencies for SUN PHYs */
 #define FSK_CHANNEL_SPACING            (200U)     /* kHz */
 #define FSK_CENTER_FREQUENCY_SUBGHZ    (863125U)  /* Hz  */
 #define FSK_CENTER_FREQUENCY_24GHZ     (2400200U - CCF0_24G_OFFSET) /* Hz  */
+
+const uint8_t at86rf215_fsk_srate_10kHz[] = {
+    [FSK_SRATE_50K]  = 5,
+    [FSK_SRATE_100K] = 10,
+    [FSK_SRATE_150K] = 15,
+    [FSK_SRATE_200K] = 20,
+    [FSK_SRATE_300K] = 30,
+    [FSK_SRATE_400K] = 40
+};
 
 /* table 6-51: Symbol Rate Settings */
 static uint8_t _TXDFE_SR(at86rf215_t *dev, uint8_t srate)
@@ -297,26 +304,6 @@ static void _fsk_mod_idx_get(uint8_t num, uint8_t *idx, uint8_t *scale)
     }
 }
 
-static uint32_t _srate_Hz(uint8_t srate)
-{
-    switch (srate) {
-    case FSK_SRATE_50K:
-        return  50 * KHZ;
-    case FSK_SRATE_100K:
-        return 100 * KHZ;
-    case FSK_SRATE_150K:
-        return 150 * KHZ;
-    case FSK_SRATE_200K:
-        return 200 * KHZ;
-    case FSK_SRATE_300K:
-        return 300 * KHZ;
-    case FSK_SRATE_400K:
-        return 400 * KHZ;
-    }
-
-    return 0;
-}
-
 static inline uint8_t _RXDFE_RCUT(uint8_t srate, bool subGHz, bool half)
 {
     return half ? _RXDFE_RCUT_half(srate, subGHz) : _RXDFE_RCUT_full(srate, subGHz);
@@ -351,7 +338,7 @@ static void _set_srate(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
 
 static void _set_ack_timeout(at86rf215_t *dev, uint8_t srate)
 {
-    dev->ack_timeout_usec =  3 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 1000000 / _srate_Hz(srate);
+    dev->ack_timeout_usec =  3 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 100 / at86rf215_fsk_srate_10kHz[srate];
 }
 
 void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order)

@@ -48,6 +48,8 @@ extern "C" {
 /* MR-QPSK */
 #define AT86RF215_MR_OQPSK_MODE(n)            ((n) << OQPSKPHRTX_MOD_SHIFT)
 
+extern const uint8_t at86rf215_fsk_srate_10kHz[];
+
 void at86rf215_hardware_reset(at86rf215_t *dev);
 
 void at86rf215_reg_write(const at86rf215_t *dev, uint16_t reg, uint8_t val);

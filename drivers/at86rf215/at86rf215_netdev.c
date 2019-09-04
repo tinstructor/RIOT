@@ -53,6 +53,20 @@ const netdev_driver_t at86rf215_driver = {
     .set = _set,
 };
 
+static uint8_t _get_best_match(const uint8_t *array, uint8_t len, uint8_t val)
+{
+    uint8_t res = 0;
+    uint8_t best = 0xFF;
+    for (uint8_t i = 0; i < len; ++i) {
+        if (abs((int)array[i] - val) < best) {
+            best = abs((int)array[i] - val);
+            res = i;
+        }
+    }
+
+    return res;
+}
+
 /* executed in the GPIO ISR context */
 static void _irq_handler(void *arg)
 {
@@ -392,6 +406,18 @@ static int _get(netdev_t *netdev, netopt_t opt, void *val, size_t max_len)
             res = max_len;
             break;
 
+        case NETOPT_FSK_MODULATION_ORDER:
+            assert(max_len >= sizeof(int8_t));
+            *((int8_t *)val) = 2 + 2*at86rf215_FSK_get_mod_order(dev);
+            res = max_len;
+            break;
+
+        case NETOPT_FSK_SRATE:
+            assert(max_len >= sizeof(uint16_t));
+            *((uint16_t *)val) = 10 * at86rf215_fsk_srate_10kHz[at86rf215_FSK_get_srate(dev)];
+            res = max_len;
+            break;
+
         default:
             res = -ENOTSUP;
             break;
@@ -633,6 +659,33 @@ static int _set(netdev_t *netdev, netopt_t opt, const void *val, size_t len)
 
             if (at86rf215_FSK_set_mod_idx(dev, *(uint8_t *)val) == 0) {
                 res = at86rf215_FSK_get_mod_idx(dev);
+            } else {
+                res = -ERANGE;
+            }
+            break;
+
+        case NETOPT_FSK_MODULATION_ORDER:
+            if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_FSK) {
+                return -ENOTSUP;
+            }
+
+            if (*(uint8_t *)val != 2 && *(uint8_t *)val != 4) {
+                res = -ERANGE;
+            } else {
+                at86rf215_FSK_set_mod_order(dev, *(uint8_t *)val >> 2);
+                res = sizeof(uint8_t);
+            }
+            break;
+
+        case NETOPT_FSK_SRATE:
+            if (at86rf215_get_phy_mode(dev) != IEEE802154_PHY_FSK) {
+                return -ENOTSUP;
+            }
+
+            res = _get_best_match(at86rf215_fsk_srate_10kHz,
+                                  FSK_SRATE_400K + 1, *(uint16_t *)val / 10);
+            if (at86rf215_FSK_set_srate(dev, res) == 0) {
+                res = 10 * at86rf215_fsk_srate_10kHz[res];
             } else {
                 res = -ERANGE;
             }
