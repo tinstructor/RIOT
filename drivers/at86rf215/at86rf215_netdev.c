@@ -781,10 +781,10 @@ static void _handle_ack_timeout(at86rf215_t *dev)
 /* clear the other IRQ if the sibling is not ready yet */
 static inline void _clear_sibling_irq(at86rf215_t *dev) {
     if (is_subGHz(dev)) {
-        at86rf215_reg_read(dev, RG_RF09_IRQS);
+        at86rf215_reg_read(dev, RG_RF24_IRQS);
         at86rf215_reg_read(dev, RG_BBC1_IRQS);
     } else {
-        at86rf215_reg_read(dev, RG_RF24_IRQS);
+        at86rf215_reg_read(dev, RG_RF09_IRQS);
         at86rf215_reg_read(dev, RG_BBC0_IRQS);
     }
 }
