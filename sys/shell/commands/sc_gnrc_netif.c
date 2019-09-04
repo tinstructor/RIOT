@@ -342,6 +342,10 @@ static void _print_netopt(netopt_t opt)
             printf("FSK symbol rate");
             break;
 
+        case NETOPT_FSK_FEC:
+            printf("FSK Forward Error Correction");
+            break;
+
         case NETOPT_CHECKSUM:
             printf("checksum");
             break;
@@ -406,6 +410,12 @@ static const char *_netopt_mcs_str[] = {
     [4] = "QPSK, rate 3/4",
     [5] = "16-QAM, rate 1/2",
     [6] = "16-QAM, rate 3/4",
+};
+
+static const char *_netopt_fec_str[] = {
+    [IEEE802154_FEC_NONE] = "none",
+    [IEEE802154_FEC_NRNSC] = "NRNSC",
+    [IEEE802154_FEC_RSC] = "RSC"
 };
 
 /* for some lines threshold might just be 0, so we can't use _LINE_THRESHOLD
@@ -579,6 +589,10 @@ static void _netif_list(kernel_pid_t iface)
             res = gnrc_netapi_get(iface, NETOPT_FSK_SRATE, 0, &u16, sizeof(u16));
             if (res >= 0) {
                 printf(" symbol rate: %u kHz ", u16);
+            }
+            res = gnrc_netapi_get(iface, NETOPT_FSK_FEC, 0, &u8, sizeof(u8));
+            if (res >= 0) {
+                printf(" FEC: %s ", _netopt_fec_str[u8]);
             }
 
             break;
@@ -875,6 +889,31 @@ static int _netif_set_oqpsk_rate_mode(kernel_pid_t iface, char *value)
 
     printf("success: set rate mode of interface %" PRIkernel_pid " to %s\n",
            iface, _netopt_oqpsk_rate_str[mode]);
+    return 0;
+}
+
+static int _netif_set_fsk_fec(kernel_pid_t iface, char *value)
+{
+    uint8_t mode = 0xFF;
+    for (size_t i = 0; i < ARRAY_SIZE(_netopt_fec_str); ++i) {
+        if (strcmp(value, _netopt_fec_str[i]) == 0) {
+            mode = i;
+            break;
+        }
+    }
+
+    if (mode == 0xFF) {
+        puts("usage: ifconfig <if_id> set fec [none|NRNSC|RSC]");
+        return 1;
+    }
+
+    if (gnrc_netapi_set(iface, NETOPT_FSK_FEC, 0, &mode, sizeof(uint8_t)) < 0) {
+        printf("error: unable to set forward error correction to %s\n", value);
+        return 1;
+    }
+
+    printf("success: set forward error correction of interface %" PRIkernel_pid " to %s\n",
+           iface, value);
     return 0;
 }
 
@@ -1257,6 +1296,9 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     }
     else if ((strcmp("symbol_rate", key) == 0) || (strcmp("srate", key) == 0)) {
         return _netif_set_u16(iface, NETOPT_FSK_SRATE, 0, value);
+    }
+    else if ((strcmp("forward_error_correction", key) == 0) || (strcmp("fec", key) == 0)) {
+        return _netif_set_fsk_fec(iface, value);
     }
     else if ((strcmp("option", key) == 0) || (strcmp("opt", key) == 0)) {
         return _netif_set_u8(iface, NETOPT_OFDM_OPTION, 0, value);

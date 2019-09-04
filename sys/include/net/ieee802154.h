@@ -100,25 +100,34 @@ extern "C" {
  * @brief   802.15.4 PHY modes
  */
 enum {
-    IEEE802154_PHY_DISABLED,
-    IEEE802154_PHY_BPSK,
-    IEEE802154_PHY_ASK,
-    IEEE802154_PHY_OQPSK,
-    IEEE802154_PHY_OFDM,
-    IEEE802154_PHY_FSK
+    IEEE802154_PHY_DISABLED,        /**< PHY disabled, no mode selected */
+    IEEE802154_PHY_BPSK,            /**< Binary Phase Shift Keying */
+    IEEE802154_PHY_ASK,             /**< Amplitude-Shift Keying */
+    IEEE802154_PHY_OQPSK,           /**< Offset Quadrature Phase-Shift Keying */
+    IEEE802154_PHY_OFDM,            /**< Orthogonal Frequency-Division Multiplexing */
+    IEEE802154_PHY_FSK              /**< Frequency Shift Keying */
 };
 
 /**
  * @brief   802.15.4 O-QPSK Rate Modes
  */
 enum {
-    IEEE802154_OQPSK_LEGACY,
-    IEEE802154_OQPSK_LEGACY_HIGH,
-    IEEE802154_OQPSK_RATE_0,
-    IEEE802154_OQPSK_RATE_1,
-    IEEE802154_OQPSK_RATE_2,
-    IEEE802154_OQPSK_RATE_3,
-    IEEE802154_OQPSK_RATE_4
+    IEEE802154_OQPSK_LEGACY,        /**< 250 kbit/s according to 802.15.4 */
+    IEEE802154_OQPSK_LEGACY_HIGH,   /**< vendor specific turbo mode */
+    IEEE802154_OQPSK_RATE_0,        /**< MR-O-QPSK rate 0 according to 802.15.4g-2012 */
+    IEEE802154_OQPSK_RATE_1,        /**< MR-O-QPSK rate 1 according to 802.15.4g-2012 */
+    IEEE802154_OQPSK_RATE_2,        /**< MR-O-QPSK rate 2 according to 802.15.4g-2012 */
+    IEEE802154_OQPSK_RATE_3,        /**< MR-O-QPSK rate 3 according to 802.15.4g-2012 */
+    IEEE802154_OQPSK_RATE_4         /**< MR-O-QPSK rate 4 according to 802.15.4g-2012 */
+};
+
+/**
+ * @brief   802.15.4 forward error correction schemes
+ */
+enum {
+    IEEE802154_FEC_NONE,            /**< no forward error correction */
+    IEEE802154_FEC_NRNSC,           /**< non-recursive and non-systematic code */
+    IEEE802154_FEC_RSC              /**< recursive and systematic code */
 };
 
 /**

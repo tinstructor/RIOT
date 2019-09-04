@@ -686,6 +686,11 @@ typedef enum {
     NETOPT_FSK_SRATE,
 
     /**
+     * @brief   (uint8_t) MR-FSK PHY Forward Error Correction
+     */
+    NETOPT_FSK_FEC,
+
+    /**
      * @brief   (uint8_t*) phy layer syncword
      */
     NETOPT_SYNCWORD,
