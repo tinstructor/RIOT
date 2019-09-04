@@ -28,11 +28,10 @@
 extern "C" {
 #endif
 
-#define AT86RF215_WAKEUP_DELAY          (306U)
-/* Minimum reset pulse width (tRST) - 625ns */
-#define AT86RF215_RESET_PULSE_WIDTH     (1U)
-/* The typical transition time to TRX_OFF after reset pulse is 1 µs (tPOWERON) */
-#define AT86RF215_RESET_DELAY           (1U)
+/* Minimum reset pulse width (tRST) */
+#define AT86RF215_RESET_PULSE_WIDTH     (16U)
+/* The typical transition time to TRX_OFF after reset (tPOWERON) */
+#define AT86RF215_RESET_DELAY           (16U)
 
 /* This is used to calculate the ACK timeout based on the bitrate.
  * AT86RF233 uses an ACK timeout of 54 symbol periods, or 864 µs @ 250 kbit/s
@@ -50,7 +49,7 @@ extern "C" {
 
 extern const uint8_t at86rf215_fsk_srate_10kHz[];
 
-void at86rf215_hardware_reset(at86rf215_t *dev);
+int at86rf215_hardware_reset(at86rf215_t *dev);
 
 void at86rf215_reg_write(const at86rf215_t *dev, uint16_t reg, uint8_t val);
 

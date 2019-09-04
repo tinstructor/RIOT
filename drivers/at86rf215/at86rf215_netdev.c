@@ -77,6 +77,7 @@ static void _irq_handler(void *arg)
 
 static int _init(netdev_t *netdev)
 {
+    int res;
     at86rf215_t *dev = (at86rf215_t *)netdev;
 
     /* don't call HW init for both radios */
@@ -88,23 +89,16 @@ static int _init(netdev_t *netdev)
         gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
 
         /* reset the entire chip */
-        at86rf215_hardware_reset(dev);
-    }
-
-    /* test if the SPI is set up correctly and the device is responding */
-    uint8_t tries = 5;
-    while (tries--) {
-        uint8_t pn = at86rf215_reg_read(dev, RG_RF_PN);
-        if ((pn == AT86RF215_PN) || (pn == AT86RF215M_PN)) {
-            break;
+        if ((res = at86rf215_hardware_reset(dev))) {
+            gpio_irq_disable(dev->params.int_pin);
+            return res;
         }
-
-        xtimer_usleep(1000);
     }
 
-    if (tries == 0) {
-        DEBUG("[at86rf215] error: unable to read correct part number\n");
-        return -1;
+    res = at86rf215_reg_read(dev, RG_RF_PN);
+    if ((res != AT86RF215_PN) && (res != AT86RF215M_PN)) {
+        DEBUG("[at86rf215] error: unable to read correct part number: %x\n", res);
+        return -ENOTSUP;;
     }
 
     /* reset device to default values and put it into RX state */

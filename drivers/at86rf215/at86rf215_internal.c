@@ -42,8 +42,13 @@ static inline uint8_t _get_rf_state_with_lock(at86rf215_t *dev)
     return spi_transfer_byte(SPIDEV, CSPIN, false, 0) & STATE_STATE_MASK;
 }
 
-void at86rf215_hardware_reset(at86rf215_t *dev)
+int at86rf215_hardware_reset(at86rf215_t *dev)
 {
+    /* bail out if no module is connected */
+    if (at86rf215_reg_read(dev, RG_RF_PN) == 0) {
+        return -ENODEV;
+    }
+
     /* prevent access during reset */
     getbus(dev);
 
@@ -55,6 +60,8 @@ void at86rf215_hardware_reset(at86rf215_t *dev)
 
     while (_get_rf_state_with_lock(dev) != RF_STATE_TRXOFF) {}
     spi_release(SPIDEV);
+
+    return 0;
 }
 
 void at86rf215_reg_write(const at86rf215_t *dev, uint16_t reg, uint8_t value)
