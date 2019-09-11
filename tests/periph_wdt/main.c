@@ -82,8 +82,8 @@ static void _early_warning(void* arg)
     uint8_t* count = arg;
 
     if (*count < COUNT_TEST) {
-        puts("kicking watchdog.");
         wdt_kick();
+        puts("kicking watchdog.");
         *count += 1;
     } else
         puts("starving watchdog.");
