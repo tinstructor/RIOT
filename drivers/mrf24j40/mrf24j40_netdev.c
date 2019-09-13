@@ -47,6 +47,32 @@ static void _irq_handler(void *arg)
     ((mrf24j40_t *)arg)->irq_flag = 1;
 }
 
+static inline int _test_spi_connection(mrf24j40_t *dev)
+{
+#if MRF24J40_TEST_SPI_CONNECTION
+    /* Check if MRF24J40 is available */
+    uint8_t txmcr = mrf24j40_reg_read_short(dev, MRF24J40_REG_TXMCR);
+    if ((txmcr == 0xFF) || (txmcr == 0x00)) {
+        /* Write default value to TXMCR register */
+        mrf24j40_reg_write_short(dev, MRF24J40_REG_TXMCR, MRF24J40_TXMCR_MACMINBE1 |
+                                                          MRF24J40_TXMCR_MACMINBE0 |
+                                                          MRF24J40_TXMCR_CSMABF2);
+        txmcr = mrf24j40_reg_read_short(dev, MRF24J40_REG_TXMCR);
+        if (txmcr != (MRF24J40_TXMCR_MACMINBE1 |
+                      MRF24J40_TXMCR_MACMINBE0 |
+                      MRF24J40_TXMCR_CSMABF2)) {
+            DEBUG("[mrf24j40] Initialization failure, SPI interface communication failed\n");
+            /* Return to prevents hangup later in the initialization */
+            return -1;
+        }
+    }
+#else
+    (void) dev;
+#endif
+
+    return 0;
+}
+
 static int _init(netdev_t *netdev)
 {
     mrf24j40_t *dev = (mrf24j40_t *)netdev;
@@ -56,6 +82,11 @@ static int _init(netdev_t *netdev)
     gpio_init(dev->params.reset_pin, GPIO_OUT);
     gpio_set(dev->params.reset_pin);
     gpio_init_int(dev->params.int_pin, GPIO_IN, GPIO_RISING, _irq_handler, dev);
+
+    /* before proceeding, check if the device responds */
+    if (_test_spi_connection(dev)) {
+        return -ENODEV;
+    }
 
     /* reset device to default values and put it into RX state */
     mrf24j40_reset(dev);

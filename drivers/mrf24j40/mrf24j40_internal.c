@@ -103,25 +103,6 @@ void mrf24j40_init(mrf24j40_t *dev)
 
     mrf24j40_hardware_reset(dev);
 
-#if ENABLE_DEBUG
-    /* Check if MRF24J40 is available */
-    uint8_t txmcr = mrf24j40_reg_read_short(dev, MRF24J40_REG_TXMCR);
-    if ((txmcr == 0xFF) || (txmcr == 0x00)) {
-        /* Write default value to TXMCR register */
-        mrf24j40_reg_write_short(dev, MRF24J40_REG_TXMCR, MRF24J40_TXMCR_MACMINBE1 |
-                                                          MRF24J40_TXMCR_MACMINBE0 |
-                                                          MRF24J40_TXMCR_CSMABF2);
-        txmcr = mrf24j40_reg_read_short(dev, MRF24J40_REG_TXMCR);
-        if (txmcr != (MRF24J40_TXMCR_MACMINBE1 |
-                      MRF24J40_TXMCR_MACMINBE0 |
-                      MRF24J40_TXMCR_CSMABF2)) {
-            DEBUG("[mrf24j40] Initialization failure, SPI interface communication failed\n");
-            /* Return to prevents hangup later in the initialization */
-            return;
-        }
-    }
-#endif
-
     /* do a soft reset */
     mrf24j40_reg_write_short(dev, MRF24J40_REG_SOFTRST, MRF24J40_SOFTRST_RSTPWR |
                                                         MRF24J40_SOFTRST_RSTBB  |
