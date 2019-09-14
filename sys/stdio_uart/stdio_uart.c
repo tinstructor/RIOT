@@ -40,6 +40,10 @@
 extern ethos_t ethos;
 #endif
 
+#ifdef MODULE_TELNETD
+#include "net/telnetd.h"
+#endif
+
 #if MODULE_VFS
 #include "vfs.h"
 #endif
@@ -63,6 +67,10 @@ void stdio_init(void)
 #else
     cb = NULL;
     arg = NULL;
+#endif
+
+#ifdef MODULE_TELNETD
+    telnetd_init(&stdio_uart_isrpipe);
 #endif
 
 #ifdef MODULE_STDIO_ETHOS
@@ -92,6 +100,11 @@ ssize_t stdio_write(const void* buffer, size_t len)
 #ifdef MODULE_STDIO_ETHOS
     ethos_send_frame(&ethos, (const uint8_t *)buffer, len, ETHOS_FRAME_TYPE_TEXT);
 #else
+#ifdef MODULE_TELNETD
+    if (telnetd_write(buffer, len)) {
+        return len;
+    }
+#endif
     uart_write(STDIO_UART_DEV, (const uint8_t *)buffer, len);
 #endif
     return len;

@@ -22,6 +22,9 @@ BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo \
 
 # Include packages that pull up and auto-init the link layer.
 # NOTE: 6LoWPAN will be included if IEEE802.15.4 devices are present
+USEMODULE += telnetd
+
+USEMODULE += esp_wifi
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
 # Activate ICMPv6 error messages
@@ -29,6 +32,7 @@ USEMODULE += gnrc_icmpv6_error
 # Specify the mandatory networking modules for IPv6 and UDP
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_udp
+USEMODULE += gnrc_tcp
 # Add a routing protocol
 USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl

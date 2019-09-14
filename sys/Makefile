@@ -154,6 +154,10 @@ endif
 ifneq (,$(filter credman,$(USEMODULE)))
   DIRS += net/credman
 endif
+ifneq (,$(filter telnetd,$(USEMODULE)))
+  DIRS += net/application_layer/telnetd
+endif
+
 
 DIRS += $(dir $(wildcard $(addsuffix /Makefile, $(USEMODULE))))
 

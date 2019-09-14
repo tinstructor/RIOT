@@ -22,6 +22,7 @@
 
 #include "shell.h"
 #include "msg.h"
+#include "net/telnetd.h"
 
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
@@ -39,6 +40,8 @@ int main(void)
      * receive potentially fast incoming networking packets */
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
     puts("RIOT network stack example application");
+
+    telnetd_start(2323);
 
     /* start shell */
     puts("All up, running the shell now");
