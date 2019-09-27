@@ -79,7 +79,7 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, void *arg)
     /* set asynchronous mode w/o parity, LSB first, TX and RX pad as specified
      * by the board in the periph_conf.h, x16 sampling and use internal clock */
     dev(uart)->CTRLA.reg = (SERCOM_USART_CTRLA_DORD |
-                            SERCOM_USART_CTRLA_SAMPR(0x1) |
+                            SERCOM_USART_CTRLA_SAMPR(0x0) |
                             SERCOM_USART_CTRLA_TXPO(uart_config[uart].tx_pad) |
                             SERCOM_USART_CTRLA_RXPO(uart_config[uart].rx_pad) |
                             SERCOM_USART_CTRLA_MODE(0x1));
@@ -89,9 +89,15 @@ int uart_init(uart_t uart, uint32_t baudrate, uart_rx_cb_t rx_cb, void *arg)
     }
 
     /* calculate and set baudrate */
-    uint32_t baud = ((((uint32_t)CLOCK_CORECLOCK * 8) / baudrate) / 16);
-    dev(uart)->BAUD.FRAC.FP = (baud % 8);
-    dev(uart)->BAUD.FRAC.BAUD = (baud / 8);
+    uint64_t tmp = (uint64_t)baudrate << 20;
+    tmp = (tmp + (CLOCK_CORECLOCK >> 1)) / CLOCK_CORECLOCK;
+
+    /* Verify that the calculated result is within range */
+    if (tmp < 1 || tmp > UINT16_MAX) {
+        return -UART_NOBAUD;
+    }
+
+    dev(uart)->BAUD.reg = 0x10000 - (uint16_t)tmp;
 
     /* enable transmitter, and configure 8N1 mode */
     dev(uart)->CTRLB.reg = SERCOM_USART_CTRLB_TXEN;
