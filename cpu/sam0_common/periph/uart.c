@@ -290,6 +290,8 @@ void UART_5_ISR(void)
 }
 #endif
 
+#if USE_NONBLOCKING
+
 #ifdef UART_0_ISR_TX
 void UART_0_ISR_TX(void)
 {
@@ -297,7 +299,6 @@ void UART_0_ISR_TX(void)
 }
 #endif
 
-#if USE_NONBLOCKING
 #ifdef UART_1_ISR_TX
 void UART_1_ISR_TX(void)
 {
