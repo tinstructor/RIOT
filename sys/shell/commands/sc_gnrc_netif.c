@@ -577,7 +577,7 @@ static void _netif_list(kernel_pid_t iface)
     }
     res = gnrc_netapi_get(iface, NETOPT_NID, 0, &u16, sizeof(u16));
     if (res >= 0) {
-        printf(" NID: 0x%" PRIx16, u16);
+        printf(" NID: 0x%" PRIx16 " ", u16);
     }
 #ifdef MODULE_GNRC_NETIF_CMD_LORA
     res = gnrc_netapi_get(iface, NETOPT_BANDWIDTH, 0, &u8, sizeof(u8));
