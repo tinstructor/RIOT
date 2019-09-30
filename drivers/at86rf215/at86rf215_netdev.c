@@ -205,7 +205,7 @@ static int _set_state(at86rf215_t *dev, netopt_state_t state)
     return sizeof(netopt_state_t);
 }
 
-netopt_state_t _get_state(at86rf215_t *dev)
+static netopt_state_t _get_state(at86rf215_t *dev)
 {
     switch (dev->state) {
         case AT86RF215_STATE_SLEEP:
