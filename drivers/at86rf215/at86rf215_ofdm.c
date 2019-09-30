@@ -218,15 +218,31 @@ static void _set_ack_timeout(at86rf215_t *dev, uint8_t option, uint8_t scheme)
     DEBUG("[%s] ACK timeout: %d µs\n", "OFDM", dev->ack_timeout_usec);
 }
 
-void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
+static bool _option_mcs_valid(uint8_t option, uint8_t mcs)
 {
     if (option < 1 || option > 4) {
-        DEBUG("[%s] invalid option: %d\n", __func__, option);
-        return;
+        return false;
     }
 
-    if (scheme > BB_MCS_16QAM_3BY4) {
-        DEBUG("[%s] invalid scheme: %d\n", __func__, scheme);
+    if (mcs > BB_MCS_16QAM_3BY4) {
+        return false;
+    }
+
+    if (mcs == BB_MCS_BPSK_REP4 && option > 2) {
+        return false;
+    }
+
+    if (mcs == BB_MCS_BPSK_REP2 && option == 4) {
+        return false;
+    }
+
+    return true;
+}
+
+void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
+{
+    if (!_option_mcs_valid(option, scheme)) {
+        DEBUG("[%s] invalid option/MCS: %d | %d\n", __func__, option, scheme);
         return;
     }
 
@@ -254,8 +270,10 @@ void at86rf215_configure_OFDM(at86rf215_t *dev, uint8_t option, uint8_t scheme)
 
 int at86rf215_OFDM_set_scheme(at86rf215_t *dev, uint8_t scheme)
 {
-    if (scheme > BB_MCS_16QAM_3BY4) {
-        DEBUG("[%s] invalid scheme: %d\n", __func__, scheme);
+    uint8_t option = at86rf215_OFDM_get_option(dev);
+
+    if (!_option_mcs_valid(option, scheme)) {
+        DEBUG("[%s] invalid MCS: %d\n", __func__, scheme);
         return -1;
     }
 
@@ -272,13 +290,15 @@ uint8_t at86rf215_OFDM_get_scheme(at86rf215_t *dev)
 
 int at86rf215_OFDM_set_option(at86rf215_t *dev, uint8_t option)
 {
-    if (option < 1 || option > 4) {
+    uint8_t mcs = at86rf215_OFDM_get_scheme(dev);
+
+    if (!_option_mcs_valid(option, mcs)) {
         DEBUG("[%s] invalid option: %d\n", __func__, option);
         return -1;
     }
 
     _set_option(dev, option);
-    _set_ack_timeout(dev, option, at86rf215_OFDM_get_scheme(dev));
+    _set_ack_timeout(dev, option, mcs);
 
     return 0;
 }
