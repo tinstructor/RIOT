@@ -28,30 +28,38 @@
 void at86rf215_mock_init(const at86rf215_t *dev);
 
 static const at86rf215_params_t test_params;
-static at86rf215_t test_dev;
+static at86rf215_t test_dev[2];
 
 static uint8_t _cb_set_state(at86rf215_t *dev, uint16_t reg, uint8_t val, void *ctx)
 {
-    (void) dev;
     (void) ctx;
     (void) reg;
-    at86rf215_reg_write(&test_dev, test_dev.RF->RG_STATE, val);
+    at86rf215_reg_write(dev, dev->RF->RG_STATE, val);
     return val;
 }
 
-static void _setup(void) {
-    at86rf215_setup(&test_dev, NULL, &test_params);
-    at86rf215_mock_init(&test_dev);
+static void _setup_regs(at86rf215_t *dev)
+{
+    at86rf215_reg_write(dev, RG_RF_PN, AT86RF215M_PN);
 
-    at86rf215_reg_write(&test_dev, RG_RF_PN, AT86RF215M_PN);
-    at86rf215_reg_write(&test_dev, test_dev.RF->RG_STATE, RF_STATE_TRXOFF);
-    at86rf215_mock_reg_on_write_cb(test_dev.RF->RG_CMD, _cb_set_state, NULL);
+    at86rf215_reg_write(dev, dev->RF->RG_STATE, RF_STATE_TRXOFF);
+    at86rf215_mock_reg_on_write_cb(dev->RF->RG_CMD, _cb_set_state, NULL);
+}
+
+static void _setup(void) {
+    at86rf215_setup(&test_dev[0], &test_dev[1], &test_params);
+
+    /* 2.4 GHz dev has the higher registers */
+    at86rf215_mock_init(&test_dev[1]);
+
+    _setup_regs(&test_dev[0]);
+    _setup_regs(&test_dev[1]);
 }
 
 static void test_at86rf215_dummy(void)
 {
-    TEST_ASSERT_EQUAL_INT(0, _init(&test_dev.netdev.netdev));
-    _isr(&test_dev.netdev.netdev);
+    TEST_ASSERT_EQUAL_INT(0, _init(&test_dev[0].netdev.netdev));
+    _isr(&test_dev[0].netdev.netdev);
     TEST_ASSERT(1 == 1);
 }
 
