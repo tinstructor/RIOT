@@ -45,7 +45,7 @@ static void _setup(void) {
 
     at86rf215_reg_write(&test_dev, RG_RF_PN, AT86RF215M_PN);
     at86rf215_reg_write(&test_dev, test_dev.RF->RG_STATE, RF_STATE_TRXOFF);
-    at86rf215_mock_reg_callback(test_dev.RF->RG_CMD, _cb_set_state, NULL);
+    at86rf215_mock_reg_on_write_cb(test_dev.RF->RG_CMD, _cb_set_state, NULL);
 }
 
 static void test_at86rf215_dummy(void)

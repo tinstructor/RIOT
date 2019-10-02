@@ -22,5 +22,7 @@
 
 typedef uint8_t (*reg_callback_t)(at86rf215_t *dev, uint16_t reg, uint8_t val, void *ctx);
 
-void at86rf215_mock_reg_callback(uint16_t reg, reg_callback_t cb, void *arg);
+void at86rf215_mock_reg_on_read_cb(uint16_t reg, reg_callback_t cb, void *arg);
+void at86rf215_mock_reg_on_write_cb(uint16_t reg, reg_callback_t cb, void *arg);
+
 void at86rf215_mock_init(const at86rf215_t *dev);

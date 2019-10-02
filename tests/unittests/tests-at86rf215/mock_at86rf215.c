@@ -27,7 +27,8 @@ struct reg_cb {
 };
 
 static uint8_t *_devmem;
-static struct reg_cb *_cbs;
+static struct reg_cb *write_cbs;
+static struct reg_cb *read_cbs;
 
 int at86rf215_hardware_reset(at86rf215_t *dev)
 {
@@ -39,8 +40,8 @@ void at86rf215_reg_write(const at86rf215_t *dev, uint16_t reg, uint8_t value)
 {
     (void) dev;
 
-    if (_cbs[reg].cb) {
-        value = _cbs[reg].cb((void*) dev, reg, value, _cbs[reg].ctx);
+    if (write_cbs[reg].cb) {
+        value = write_cbs[reg].cb((void*) dev, reg, value, write_cbs[reg].ctx);
     }
 
     _devmem[reg] = value;
@@ -49,6 +50,10 @@ void at86rf215_reg_write(const at86rf215_t *dev, uint16_t reg, uint8_t value)
 uint8_t at86rf215_reg_read(const at86rf215_t *dev, uint16_t reg)
 {
     (void) dev;
+
+    if (read_cbs[reg].cb) {
+        return read_cbs[reg].cb((void*) dev, reg, _devmem[reg], read_cbs[reg].ctx);
+    }
 
     return _devmem[reg];
 }
@@ -71,10 +76,16 @@ void at86rf215_reg_read_bytes(const at86rf215_t *dev, uint16_t reg, void *data, 
     }
 }
 
-void at86rf215_mock_reg_callback(uint16_t reg, reg_callback_t cb, void *ctx)
+void at86rf215_mock_reg_on_write_cb(uint16_t reg, reg_callback_t cb, void *ctx)
 {
-    _cbs[reg].cb = cb;
-    _cbs[reg].ctx = ctx;
+    write_cbs[reg].cb = cb;
+    write_cbs[reg].ctx = ctx;
+}
+
+void at86rf215_mock_reg_on_read_cb(uint16_t reg, reg_callback_t cb, void *ctx)
+{
+    read_cbs[reg].cb = cb;
+    read_cbs[reg].ctx = ctx;
 }
 
 void at86rf215_mock_init(const at86rf215_t *dev)
@@ -83,10 +94,15 @@ void at86rf215_mock_init(const at86rf215_t *dev)
         free(_devmem);
     }
 
-    if (_cbs != NULL) {
-        free(_cbs);
+    if (write_cbs != NULL) {
+        free(write_cbs);
+    }
+
+    if (read_cbs != NULL) {
+        free(read_cbs);
     }
 
     _devmem = calloc(dev->BBC->RG_FBTXE, 1);
-    _cbs = calloc(dev->BBC->RG_FBTXE, sizeof(*_cbs));
+    write_cbs = calloc(dev->BBC->RG_FBTXE, sizeof(*write_cbs));
+    read_cbs = calloc(dev->BBC->RG_FBTXE, sizeof(*read_cbs));
 }
