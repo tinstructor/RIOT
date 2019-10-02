@@ -30,7 +30,7 @@ void at86rf215_mock_init(const at86rf215_t *dev);
 
 static const at86rf215_params_t test_params;
 static at86rf215_t test_dev[2];
-static uint8_t *rx_buffer;
+static void *rx_buffer;
 
 static inline uint8_t _state(netdev_t *dev) {
     return ((at86rf215_t*)dev)->state;
@@ -106,14 +106,45 @@ static void test_at86rf215_rx(void)
     _isr(&test_dev[0].netdev.netdev);
 
     TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+    TEST_ASSERT_EQUAL_STRING(payload, rx_buffer);
+}
 
-    TEST_ASSERT_EQUAL_STRING(payload, (char*) rx_buffer);
+static void test_at86rf215_rx_aack(void)
+{
+    at86rf215_t *dev = &test_dev[0];
+    const char payload[] = "Hello AT86RF215, are you there?";
+
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+
+    /* set RX done interrupt */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_RXFE);
+
+    /* set ACK requested bit */
+    at86rf215_reg_write(dev, dev->BBC->RG_AMCS, AMCS_AACKFT_MASK);
+
+    at86rf215_reg_write(dev, dev->BBC->RG_RXFLL, sizeof(payload) + IEEE802154_FCS_LEN);
+    at86rf215_reg_write_bytes(dev, dev->BBC->RG_FBRXS, payload, sizeof(payload));
+
+    _isr(&test_dev[0].netdev.netdev);
+
+    /* receive function should not have been called yet */
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_RX, dev->state);
+    TEST_ASSERT_NULL(rx_buffer);
+
+    /* set TX done interrupt - 'ACK has been sent' */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_TXFE);
+
+    _isr(&test_dev[0].netdev.netdev);
+
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+    TEST_ASSERT_EQUAL_STRING(payload, rx_buffer);
 }
 
 Test *tests_at86rf215_tests(void)
 {
     EMB_UNIT_TESTFIXTURES(fixtures) {
         new_TestFixture(test_at86rf215_rx),
+        new_TestFixture(test_at86rf215_rx_aack),
     };
 
     EMB_UNIT_TESTCALLER(at86rf215_tests, _setup, NULL, fixtures);
