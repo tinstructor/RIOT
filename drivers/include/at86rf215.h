@@ -335,7 +335,7 @@ uint8_t at86rf215_set_state(at86rf215_t *dev, uint8_t state);
  * @return                  number of bytes that were actually send
  * @return                  or negative error code
  */
-ssize_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len);
+ssize_t at86rf215_send(at86rf215_t *dev, const void *data, size_t len);
 
 /**
  * @brief   Prepare for sending of data
