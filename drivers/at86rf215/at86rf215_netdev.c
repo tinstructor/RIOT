@@ -111,7 +111,9 @@ static int _send(netdev_t *netdev, const iolist_t *iolist)
     at86rf215_t *dev = (at86rf215_t *)netdev;
     size_t len = 0;
 
-    at86rf215_tx_prepare(dev);
+    if (at86rf215_tx_prepare(dev)) {
+        return -EBUSY;
+    }
 
     /* load packet data into FIFO */
     for (const iolist_t *iol = iolist; iol; iol = iol->iol_next) {
@@ -186,7 +188,7 @@ static int _set_state(at86rf215_t *dev, netopt_state_t state)
             break;
         case NETOPT_STATE_TX:
             if (dev->flags & AT86RF215_OPT_PRELOADING) {
-                at86rf215_tx_exec(dev);
+                return at86rf215_tx_exec(dev);
             }
             break;
         case NETOPT_STATE_RESET:

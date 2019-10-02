@@ -165,14 +165,18 @@ void at86rf215_reset(at86rf215_t *dev)
     dev->state = AT86RF215_STATE_IDLE;
 }
 
-size_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len)
+ssize_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len)
 {
     /* check data length */
     if (len > AT86RF215_MAX_PKT_LENGTH) {
         DEBUG("[at86rf215] Error: data to send exceeds max packet size\n");
-        return 0;
+        return -EOVERFLOW;
     }
-    at86rf215_tx_prepare(dev);
+
+    if (at86rf215_tx_prepare(dev)) {
+        return -EBUSY;
+    }
+
     at86rf215_tx_load(dev, data, len, 0);
     at86rf215_tx_exec(dev);
     return len;
@@ -202,25 +206,27 @@ void at86rf215_tx_done(at86rf215_t *dev)
     at86rf215_reg_write(dev, dev->BBC->RG_AMCS, amcs);
 }
 
-void at86rf215_tx_prepare(at86rf215_t *dev)
+int at86rf215_tx_prepare(at86rf215_t *dev)
 {
     if (dev->state != AT86RF215_STATE_IDLE) {
         DEBUG("[%s] TX while %s\n", __func__, at86rf215_sw_state2a(dev->state));
-        return;
+        return -EBUSY;
     }
+
+    /* disable baseband for energy detection */
+    at86rf215_disable_baseband(dev);
 
     dev->state = AT86RF215_STATE_TX_PREP;
 
     /* automatically switch to RX when TX is done */
     _enable_tx2rx(dev);
 
-    /* disable baseband for energy detection */
-    at86rf215_disable_baseband(dev);
-
     /* prepare for TX */
     at86rf215_set_state(dev, CMD_RF_TXPREP);
 
     dev->tx_frame_len = IEEE802154_FCS_LEN;
+
+    return 0;
 }
 
 size_t at86rf215_tx_load(at86rf215_t *dev, const uint8_t *data,
@@ -242,11 +248,11 @@ size_t at86rf215_tx_load(at86rf215_t *dev, const uint8_t *data,
     return offset + len;
 }
 
-void at86rf215_tx_exec(at86rf215_t *dev)
+int at86rf215_tx_exec(at86rf215_t *dev)
 {
     if (dev->state != AT86RF215_STATE_TX_PREP) {
         DEBUG("[%s] TX while %s\n", __func__, at86rf215_sw_state2a(dev->state));
-        return;
+        return -EBUSY;
     }
 
     netdev_t *netdev = (netdev_t *)dev;
@@ -284,6 +290,8 @@ void at86rf215_tx_exec(at86rf215_t *dev)
         (dev->flags & AT86RF215_OPT_TELL_TX_START)) {
         netdev->event_callback(netdev, NETDEV_EVENT_TX_STARTED);
     }
+
+    return 0;
 }
 
 void at86rf215_tx_abort(at86rf215_t *dev)

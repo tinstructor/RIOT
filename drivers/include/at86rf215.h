@@ -333,9 +333,9 @@ uint8_t at86rf215_set_state(at86rf215_t *dev, uint8_t state);
  * @param[in] len           length of @p data
  *
  * @return                  number of bytes that were actually send
- * @return                  0 on error
+ * @return                  or negative error code
  */
-size_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len);
+ssize_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len);
 
 /**
  * @brief   Prepare for sending of data
@@ -343,9 +343,11 @@ size_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len);
  * This function puts the given device into the TX state, so no receiving of
  * data is possible after it was called.
  *
- * @param[in,out] dev        device to prepare for sending
+ * @param[in,out] dev       device to prepare for sending
+ *
+ * @return                  0 on success, error otherwise
  */
-void at86rf215_tx_prepare(at86rf215_t *dev);
+int at86rf215_tx_prepare(at86rf215_t *dev);
 
 /**
  * @brief   Load chunks of data into the transmit buffer of the given device
@@ -364,8 +366,10 @@ size_t at86rf215_tx_load(at86rf215_t *dev, const uint8_t *data,
  * @brief   Trigger sending of data previously loaded into transmit buffer
  *
  * @param[in] dev           device to trigger
+ *
+ * @return                  0 on success, error otherwise
  */
-void at86rf215_tx_exec(at86rf215_t *dev);
+int at86rf215_tx_exec(at86rf215_t *dev);
 
 /**
  * @brief   Abort sending of data previously loaded into transmit buffer
