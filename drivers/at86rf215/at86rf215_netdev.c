@@ -153,7 +153,7 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 
     /* just return length when buf == NULL */
     if (buf == NULL) {
-        goto out;
+        return pkt_len;
     }
 
     /* not enough space in buf */
