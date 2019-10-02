@@ -34,7 +34,6 @@
 #include "at86rf215_netdev.h"
 #include "at86rf215_internal.h"
 
-#define ENABLE_DEBUG (0)
 #include "debug.h"
 
 static int _send(netdev_t *netdev, const iolist_t *iolist);
@@ -158,8 +157,7 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
 
     /* not enough space in buf */
     if (pkt_len > (int) len) {
-        pkt_len = -ENOBUFS;
-        goto out;
+        return -ENOBUFS;
     }
 
     /* copy payload */
@@ -169,11 +167,6 @@ static int _recv(netdev_t *netdev, void *buf, size_t len, void *info)
         netdev_ieee802154_rx_info_t *radio_info = info;
         radio_info->rssi = (int8_t) at86rf215_reg_read(dev, dev->RF->RG_EDV);
     }
-
-out:
-    at86rf215_rf_cmd(dev, CMD_RF_RX);
-
-    dev->state = AT86RF215_STATE_IDLE;
 
     return pkt_len;
 }
@@ -890,10 +883,14 @@ static void _isr(netdev_t *netdev)
 
             break;
         case AT86RF215_STATE_RX:
+
             /* only consider RX done when ACK has been sent */
             if (dev->flags & AT86RF215_OPT_TELL_RX_END) {
                 netdev->event_callback(netdev, NETDEV_EVENT_RX_COMPLETE);
             }
+
+            at86rf215_rf_cmd(dev, CMD_RF_RX);
+            dev->state = AT86RF215_STATE_IDLE;
             break;
         }
     }
