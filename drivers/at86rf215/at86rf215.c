@@ -91,8 +91,7 @@ void at86rf215_reset_cfg(at86rf215_t *dev)
     dev->retries_max = 3;
     dev->csma_retries_max = 4;
 
-    dev->flags |= AT86RF215_OPT_ACK_REQUESTED
-               |  AT86RF215_OPT_AUTOACK
+    dev->flags |= AT86RF215_OPT_AUTOACK
                |  AT86RF215_OPT_CSMA;
 
     const netopt_enable_t enable = NETOPT_ENABLE;
@@ -165,7 +164,7 @@ void at86rf215_reset(at86rf215_t *dev)
     dev->state = AT86RF215_STATE_IDLE;
 }
 
-ssize_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len)
+ssize_t at86rf215_send(at86rf215_t *dev, const void *data, size_t len)
 {
     /* check data length */
     if (len > AT86RF215_MAX_PKT_LENGTH) {

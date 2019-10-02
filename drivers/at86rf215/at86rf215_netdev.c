@@ -875,11 +875,13 @@ static void _isr(netdev_t *netdev)
 
             /* only consider TX done when ACK has been received */
             if (dev->flags & AT86RF215_OPT_ACK_REQUESTED) {
+                DEBUG("TX done but ACK requested");
                 if (dev->retries) {
                     --dev->retries;
                     _start_ack_timer(dev);
                 }
             } else {
+                DEBUG("TX done, no ACK requested");
                 _tx_end(dev, NETDEV_EVENT_TX_COMPLETE);
             }
 
