@@ -44,11 +44,21 @@ static uint8_t _cb_set_state(at86rf215_t *dev, uint16_t reg, uint8_t val, void *
     return val;
 }
 
+static uint8_t _cb_clear_on_read(at86rf215_t *dev, uint16_t reg, uint8_t val, void *ctx)
+{
+    (void) ctx;
+    at86rf215_reg_write(dev, reg, 0);
+    return val;
+}
+
 static void _netdev_event_cb(netdev_t *dev, netdev_event_t event)
 {
     int size;
 
     switch (event) {
+    case NETDEV_EVENT_ISR:
+        _isr(dev);
+        break;
     case NETDEV_EVENT_RX_COMPLETE:
         TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_RX, _state(dev));
         size = _recv(dev, NULL, 0, NULL);
@@ -56,8 +66,11 @@ static void _netdev_event_cb(netdev_t *dev, netdev_event_t event)
         TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_RX, _state(dev));
         TEST_ASSERT_EQUAL_INT(size, _recv(dev, rx_buffer, size, NULL));
         break;
+    case NETDEV_EVENT_TX_COMPLETE:
+        puts("TX done!");
+        break;
     default:
-        puts("unhandled case");
+        TEST_FAIL("unexpected netdev event");
     }
 }
 
@@ -67,6 +80,10 @@ static void _setup_regs(at86rf215_t *dev)
 
     at86rf215_reg_write(dev, dev->RF->RG_STATE, RF_STATE_TRXOFF);
     at86rf215_mock_reg_on_write_cb(dev->RF->RG_CMD, _cb_set_state, NULL);
+
+    /* make sure IRQ regs are cleared when read */
+    at86rf215_mock_reg_on_read_cb(dev->RF->RG_IRQS, _cb_clear_on_read, NULL);
+    at86rf215_mock_reg_on_read_cb(dev->BBC->RG_IRQS, _cb_clear_on_read, NULL);
 
     dev->netdev.netdev.event_callback = _netdev_event_cb;
     dev->flags |= AT86RF215_OPT_TELL_RX_END;
@@ -90,6 +107,9 @@ static void _setup(void) {
     TEST_ASSERT_EQUAL_INT(0, _init(&test_dev[0].netdev.netdev));
 }
 
+/*
+ * Simulates receiving a message without ACK request set
+ */
 static void test_at86rf215_rx(void)
 {
     at86rf215_t *dev = &test_dev[0];
@@ -109,6 +129,9 @@ static void test_at86rf215_rx(void)
     TEST_ASSERT_EQUAL_STRING(payload, rx_buffer);
 }
 
+/*
+ * Simulates receiving a message with ACK request set
+ */
 static void test_at86rf215_rx_aack(void)
 {
     at86rf215_t *dev = &test_dev[0];
@@ -140,11 +163,50 @@ static void test_at86rf215_rx_aack(void)
     TEST_ASSERT_EQUAL_STRING(payload, rx_buffer);
 }
 
+/*
+ * Simulates sending a message (without ACK)
+ */
+static void test_at86rf215_tx(void)
+{
+    uint8_t tx_buffer_len;
+    char tx_buffer[128];
+    at86rf215_t *dev = &test_dev[0];
+    const char payload[] = "Hello Test!";
+
+    dev->flags &= ~AT86RF215_OPT_ACK_REQUESTED;
+
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), at86rf215_send(dev, payload, sizeof(payload)));
+
+    /* read TX buffer */
+    tx_buffer_len = at86rf215_reg_read(dev, dev->BBC->RG_TXFLL) - IEEE802154_FCS_LEN;
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), tx_buffer_len);
+
+    at86rf215_reg_read_bytes(dev, dev->BBC->RG_FBTXS, tx_buffer, tx_buffer_len);
+    TEST_ASSERT_EQUAL_STRING(payload, tx_buffer);
+
+    /* set energy detect interrupt */
+    at86rf215_reg_write(dev, dev->RF->RG_IRQS, RF_IRQ_EDC);
+
+    /* set TX done interrupt */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_TXFE);
+
+    /* set channel clear */
+    at86rf215_reg_write(dev, dev->BBC->RG_AMCS, 0);
+
+    _isr(&test_dev[0].netdev.netdev);
+
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+}
+
+
 Test *tests_at86rf215_tests(void)
 {
     EMB_UNIT_TESTFIXTURES(fixtures) {
         new_TestFixture(test_at86rf215_rx),
         new_TestFixture(test_at86rf215_rx_aack),
+        new_TestFixture(test_at86rf215_tx),
     };
 
     EMB_UNIT_TESTCALLER(at86rf215_tests, _setup, NULL, fixtures);
