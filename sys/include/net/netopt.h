@@ -691,6 +691,11 @@ typedef enum {
     NETOPT_FSK_FEC,
 
     /**
+     * @brief   (uint8_t) MR_FSK PHY Channel Spacing (kHz)
+     */
+    NETOPT_FSK_CHANNEL_SPACING,
+
+    /**
      * @brief   (uint8_t*) phy layer syncword
      */
     NETOPT_SYNCWORD,
