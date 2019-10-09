@@ -24,16 +24,20 @@
 // #include "timing_control_types.h"
 #include "board.h"
 #include "periph/gpio.h"
+#include "xtimer.h"
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
-#define TX_TX_MSG_PIN       GPIO_PIN(PORT_A, 7)
+#define TX_TX_PIN           GPIO_PIN(PORT_A, 7)
+#define IF_TX_PIN           GPIO_PIN(PORT_C, 2)
 #define TX_PHY_CFG_PIN      GPIO_PIN(PORT_A, 6)
 #define RX_PHY_CFG_PIN      GPIO_PIN(PORT_D, 0)
-#define IF_TX_MSG_PIN       GPIO_PIN(PORT_C, 2)
 #define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 3)
+
+#define TX_WUP_INTERVAL     (10LU * US_PER_SEC)
+#define IF_TX_OFFSET_US     100UL
 
 #ifdef __cplusplus
 } /* end extern "C" */

@@ -34,20 +34,41 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
-#define WAKEUP_INTERVAL (10LU * US_PER_SEC)
+kernel_pid_t pid_tx;
+// kernel_pid_t pid_phy_cfg;
 
-kernel_pid_t pid;
-static char stack[THREAD_STACKSIZE_MAIN];
-static xtimer_ticks32_t last_wakeup;
+static char stack_tx[THREAD_STACKSIZE_MAIN];
+// static char stack_phy_cfg[THREAD_STACKSIZE_MAIN];
 
-static void *thread_handler(void *arg)
+static xtimer_ticks32_t last_wakeup_tx_tx;
+static xtimer_ticks32_t last_wakeup_if_tx;
+static xtimer_ticks32_t last_wakeup_tx_phy_cfg;
+static xtimer_ticks32_t last_wakeup_rx_phy_cfg;
+static xtimer_ticks32_t last_wakeup_if_phy_cfg;
+
+static void init_timers(void) 
+{
+    xtimer_ticks32_t now = xtimer_now();
+    xtimer_ticks32_t if_tx_offset_32 = xtimer_ticks_from_usec(IF_TX_OFFSET_US);
+
+    last_wakeup_tx_tx = now;
+    last_wakeup_if_tx = now;
+
+    last_wakeup_if_tx.ticks32 += if_tx_offset_32.ticks32;
+
+    last_wakeup_tx_phy_cfg = now;
+    last_wakeup_rx_phy_cfg = now;
+    last_wakeup_if_phy_cfg = now;
+}
+
+static void *thread_tx_handler(void *arg)
 {
     (void) arg;
 
     while (1)
     {
-        xtimer_periodic_wakeup(&last_wakeup, WAKEUP_INTERVAL);
-        gpio_set(GPIO_PIN(PORT_A,7));
+        xtimer_periodic_wakeup(&last_wakeup_tx_tx, TX_WUP_INTERVAL);
+        gpio_set(TX_TX_PIN);
         LED0_ON;
         xtimer_usleep(100);
         gpio_clear(GPIO_PIN(PORT_A,7));
@@ -57,15 +78,15 @@ static void *thread_handler(void *arg)
     return NULL;
 }
 
-
 int main(void)
 {
-    last_wakeup = xtimer_now();
+    init_timers();
 
     puts("Welcome to RIOT!");
 
-    pid = thread_create(stack, sizeof(stack), THREAD_PRIORITY_MAIN - 1,
-                        0, thread_handler, NULL, "thread");
+    pid_tx = thread_create(stack_tx, sizeof(stack_tx), 
+             THREAD_PRIORITY_MAIN - 1, 0, thread_tx_handler, 
+             NULL, "thread tx");
 
     /* initialize output pins */
     gpio_init(GPIO_PIN(PORT_A,7), GPIO_OUT);
