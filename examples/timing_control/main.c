@@ -31,48 +31,51 @@
 #include "periph/gpio.h"
 #include "timing_control_constants.h"
 
-#define ENABLE_DEBUG    (0)
+#define ENABLE_DEBUG    (1)
 #include "debug.h"
 
-kernel_pid_t pid_tx;
-// kernel_pid_t pid_phy_cfg;
+kernel_pid_t pid_tc;
+static char stack_tc[THREAD_STACKSIZE_MAIN];
+xtimer_ticks32_t last_wup_tc;
+xtimer_t phy_cfg_timer;
 
-static char stack_tx[THREAD_STACKSIZE_MAIN];
-// static char stack_phy_cfg[THREAD_STACKSIZE_MAIN];
-
-static xtimer_ticks32_t last_wakeup_tx_tx;
-static xtimer_ticks32_t last_wakeup_if_tx;
-static xtimer_ticks32_t last_wakeup_tx_phy_cfg;
-static xtimer_ticks32_t last_wakeup_rx_phy_cfg;
-static xtimer_ticks32_t last_wakeup_if_phy_cfg;
-
-static void init_timers(void) 
-{
-    xtimer_ticks32_t now = xtimer_now();
-    xtimer_ticks32_t if_tx_offset_32 = xtimer_ticks_from_usec(IF_TX_OFFSET_US);
-
-    last_wakeup_tx_tx = now;
-    last_wakeup_if_tx = now;
-
-    last_wakeup_if_tx.ticks32 += if_tx_offset_32.ticks32;
-
-    last_wakeup_tx_phy_cfg = now;
-    last_wakeup_rx_phy_cfg = now;
-    last_wakeup_if_phy_cfg = now;
-}
-
-static void *thread_tx_handler(void *arg)
+static void *thread_tc_handler(void *arg)
 {
     (void) arg;
 
-    while (1)
-    {
-        xtimer_periodic_wakeup(&last_wakeup_tx_tx, TX_WUP_INTERVAL);
+    msg_t msg = {.type = TC_MSG_PHY_CFG};
+    msg_t msg_queue[8];
+    msg_init_queue(msg_queue, 8);
+
+    xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
+
+    while (1) {
+        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - IF_TX_OFFSET_US - PULSE_DURATION_US);
         gpio_set(TX_TX_PIN);
-        LED0_ON;
-        xtimer_usleep(100);
-        gpio_clear(GPIO_PIN(PORT_A,7));
-        LED0_OFF;
+        DEBUG("tx tx on: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+        xtimer_periodic_wakeup(&last_wup_tc, IF_TX_OFFSET_US);
+        gpio_set(IF_TX_PIN);
+        DEBUG("if tx on: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - IF_TX_OFFSET_US);
+        gpio_clear(TX_TX_PIN);
+        DEBUG("tx tx off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+        xtimer_periodic_wakeup(&last_wup_tc, IF_TX_OFFSET_US);
+        gpio_clear(IF_TX_PIN);
+        DEBUG("if tx off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+        if (msg_try_receive(&msg) == 1) {
+            last_wup_tc = xtimer_now();
+            gpio_set(TX_PHY_CFG_PIN);
+            DEBUG("tx phy cfg on: %"PRIu32"\n",xtimer_usec_from_ticks(last_wup_tc));
+            xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
+            gpio_clear(TX_PHY_CFG_PIN);
+            DEBUG("tx phy cfg off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+            gpio_set(RX_PHY_CFG_PIN);
+            DEBUG("rx phy cfg on: %"PRIu32"\n",xtimer_usec_from_ticks(last_wup_tc));
+            xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
+            gpio_clear(RX_PHY_CFG_PIN);
+            DEBUG("rx phy cfg off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+            xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
+        }
     }
     
     return NULL;
@@ -80,16 +83,17 @@ static void *thread_tx_handler(void *arg)
 
 int main(void)
 {
-    init_timers();
-
     puts("Welcome to RIOT!");
 
-    pid_tx = thread_create(stack_tx, sizeof(stack_tx), 
-             THREAD_PRIORITY_MAIN - 1, 0, thread_tx_handler, 
-             NULL, "thread tx");
+    last_wup_tc = xtimer_now();
+
+    pid_tc = thread_create(stack_tc, sizeof(stack_tc), 
+             THREAD_PRIORITY_MAIN - 1, 0, thread_tc_handler, 
+             NULL, "thread tc");
 
     /* initialize output pins */
-    gpio_init(GPIO_PIN(PORT_A,7), GPIO_OUT);
+    gpio_init(TX_TX_PIN, GPIO_OUT);
+    gpio_init(IF_TX_PIN, GPIO_OUT);
     
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);

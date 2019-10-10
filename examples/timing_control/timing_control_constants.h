@@ -21,7 +21,7 @@
 #ifndef TIMING_CONTROL_CONSTANTS_H
 #define TIMING_CONTROL_CONSTANTS_H
 
-// #include "timing_control_types.h"
+#include "timing_control_types.h"
 #include "board.h"
 #include "periph/gpio.h"
 #include "xtimer.h"
@@ -36,8 +36,11 @@
 #define RX_PHY_CFG_PIN      GPIO_PIN(PORT_D, 0)
 #define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 3)
 
-#define TX_WUP_INTERVAL     (10LU * US_PER_SEC)
-#define IF_TX_OFFSET_US     100UL
+#define NUM_OF_TX           (20UL)
+#define TX_WUP_INTERVAL     (1UL * US_PER_SEC)
+#define IF_TX_OFFSET_US     (100UL)
+#define PULSE_DURATION_US   (100UL * US_PER_MS)
+#define PHY_CFG_INTERVAL    (TX_WUP_INTERVAL * NUM_OF_TX)   
 
 #ifdef __cplusplus
 } /* end extern "C" */
