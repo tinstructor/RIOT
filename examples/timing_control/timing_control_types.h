@@ -28,8 +28,7 @@
 #endif
 
 typedef enum {
-    TC_MSG_TRX_PHY_CFG,
-    TC_MSG_IF_PHY_CFG,
+    TC_MSG_PHY_CFG,
 } tc_msg_t;
 
 #ifdef __cplusplus

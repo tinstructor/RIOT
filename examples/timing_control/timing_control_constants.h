@@ -36,13 +36,14 @@
 #define RX_PHY_CFG_PIN      GPIO_PIN(PORT_D, 0)
 #define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 3)
 
-#define NUM_OF_TX           (2UL)
-#define NUM_OF_PHY          (2UL)
+#define NUM_OF_TX           (100UL)
+#define NUM_OF_PHY          (6UL)
+#define NUM_OF_EXP          (NUM_OF_PHY * NUM_OF_PHY)
 
-#define TX_WUP_INTERVAL     (1UL * US_PER_SEC)
+#define TX_WUP_INTERVAL     (500UL * US_PER_MS)
 #define PHY_CFG_INTERVAL    (TX_WUP_INTERVAL * NUM_OF_TX)
-#define EXP_INTERVAL        (PHY_CFG_INTERVAL * NUM_OF_PHY)   
 
+#define WAITING_PERIOD_US   (500UL)
 #define IF_TX_OFFSET_US     (100UL)
 #define PULSE_DURATION_US   (100UL * US_PER_MS)
 
