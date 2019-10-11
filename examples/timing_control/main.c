@@ -93,6 +93,7 @@ static void *thread_tc_handler(void *arg)
     uint8_t experiments = 0;
 
     while (!allowed_to_start()) { thread_yield(); };
+    xtimer_sleep(5); // allows to close the lid
 
     msg = msg_phy_cfg;
     last_wup_tc = xtimer_now();
