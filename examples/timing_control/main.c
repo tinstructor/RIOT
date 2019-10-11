@@ -31,7 +31,7 @@
 #include "periph/gpio.h"
 #include "timing_control_constants.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 kernel_pid_t pid_tc;
@@ -50,6 +50,7 @@ static void *thread_tc_handler(void *arg)
     uint8_t phy_reconfigs = 0;
     uint8_t experiments = 0;
 
+    last_wup_tc = xtimer_now();
     xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
 
     while (experiments <= NUM_OF_EXP) {
@@ -102,15 +103,23 @@ int main(void)
 {
     puts("Welcome to RIOT!");
 
-    last_wup_tc = xtimer_now();
+    /* initialize output pins */
+    gpio_init(TX_TX_PIN, GPIO_OUT);
+    gpio_init(IF_TX_PIN, GPIO_OUT);
+    gpio_init(TX_PHY_CFG_PIN, GPIO_OUT);
+    gpio_init(RX_PHY_CFG_PIN, GPIO_OUT);
+    gpio_init(IF_PHY_CFG_PIN, GPIO_OUT);
+
+    /* Clear output pins */
+    gpio_clear(TX_TX_PIN);
+    gpio_clear(IF_TX_PIN);
+    gpio_clear(TX_PHY_CFG_PIN);
+    gpio_clear(RX_PHY_CFG_PIN);
+    gpio_clear(IF_PHY_CFG_PIN);
 
     pid_tc = thread_create(stack_tc, sizeof(stack_tc), 
              THREAD_PRIORITY_MAIN - 1, 0, thread_tc_handler, 
              NULL, "thread tc");
-
-    /* initialize output pins */
-    gpio_init(TX_TX_PIN, GPIO_OUT);
-    gpio_init(IF_TX_PIN, GPIO_OUT);
     
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
