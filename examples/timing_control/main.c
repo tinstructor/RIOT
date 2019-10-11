@@ -92,7 +92,7 @@ static void *thread_tc_handler(void *arg)
     uint8_t phy_reconfigs = 0;
     uint8_t experiments = 0;
 
-    while (!allowed_to_start()) { /* do nothing */ };
+    while (!allowed_to_start()) { thread_yield(); };
 
     msg = msg_phy_cfg;
     last_wup_tc = xtimer_now();
@@ -163,7 +163,7 @@ int main(void)
     gpio_clear(IF_PHY_CFG_PIN);
     
     pid_btn = thread_create(stack_btn, sizeof(stack_btn), 
-              THREAD_PRIORITY_MAIN - 2, 0, thread_btn_handler, 
+              THREAD_PRIORITY_MAIN - 1, 0, thread_btn_handler, 
               NULL, "thread btn");
 
     gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, gpio_cb, NULL);
