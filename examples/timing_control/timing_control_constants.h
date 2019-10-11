@@ -25,6 +25,7 @@
 #include "board.h"
 #include "periph/gpio.h"
 #include "xtimer.h"
+#include "msg.h"
 
 #ifdef __cplusplus
  extern "C" {
@@ -46,6 +47,9 @@
 #define WAITING_PERIOD_US   (1UL * US_PER_MS)
 #define IF_TX_OFFSET_US     (1UL * US_PER_MS)
 #define PULSE_DURATION_US   (150UL * US_PER_MS)
+
+static const msg_t msg_phy_cfg = {.type = TC_MSG_PHY_CFG};
+static const msg_t msg_start = {.type = TC_MSG_START};
 
 #ifdef __cplusplus
 } /* end extern "C" */

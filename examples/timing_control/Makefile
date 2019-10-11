@@ -26,5 +26,6 @@ USEMODULE += xtimer
 
 # Specify all required features
 FEATURES_REQUIRED += periph_gpio
+FEATURES_REQUIRED += periph_gpio_irq
 
 include $(RIOTBASE)/Makefile.include

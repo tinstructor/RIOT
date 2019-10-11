@@ -21,7 +21,10 @@
 #ifndef TIMING_CONTROL_TYPES_H
 #define TIMING_CONTROL_TYPES_H
 
+#include <stdbool.h>
+
 #include "kernel_types.h"
+#include "mutex.h"
 
 #ifdef __cplusplus
  extern "C" {
@@ -29,7 +32,13 @@
 
 typedef enum {
     TC_MSG_PHY_CFG,
+    TC_MSG_START,
 } tc_msg_t;
+
+typedef struct {
+    bool flag;
+    mutex_t lock;
+} tc_flag_t;
 
 #ifdef __cplusplus
 } /* end extern "C" */
