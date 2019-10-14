@@ -339,15 +339,15 @@ int main(void)
     msg_t phy_cfg_2_4_ghz_message;
     phy_cfg_2_4_ghz_message.type = IF_MSG_PHY_CFG_2_4_GHZ;
     /* initialize input pins */
-    gpio_init(GPIO_PIN(1,0), GPIO_IN);
-    gpio_init(GPIO_PIN(1,1), GPIO_IN);
-    gpio_init(GPIO_PIN(1,2), GPIO_IN);
-    gpio_init(GPIO_PIN(1,3), GPIO_IN);
+    gpio_init(TX_SUB_GHZ_PIN, GPIO_IN);
+    gpio_init(TX_2_4_GHZ_PIN, GPIO_IN);
+    gpio_init(PHY_CFG_SUB_GHZ_PIN, GPIO_IN);
+    gpio_init(PHY_CFG_2_4_GHZ_PIN, GPIO_IN);
     /* initialize input pins to be triggered */
-    gpio_init_int(GPIO_PIN(1,0), GPIO_IN_PD, GPIO_RISING, gpio_cb, &tx_message_sub_ghz);
-    gpio_init_int(GPIO_PIN(1,1), GPIO_IN_PD, GPIO_RISING, gpio_cb, &tx_message_2_4_ghz);
-    gpio_init_int(GPIO_PIN(1,2), GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_sub_ghz_message);
-    gpio_init_int(GPIO_PIN(1,3), GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_2_4_ghz_message);
+    gpio_init_int(TX_SUB_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &tx_message_sub_ghz);
+    gpio_init_int(TX_2_4_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &tx_message_2_4_ghz);
+    gpio_init_int(PHY_CFG_SUB_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_sub_ghz_message);
+    gpio_init_int(PHY_CFG_2_4_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_2_4_ghz_message);
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);

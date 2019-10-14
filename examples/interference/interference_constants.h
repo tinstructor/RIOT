@@ -23,6 +23,8 @@
 
 #include "interference_types.h"
 #include "net/gnrc.h"
+#include "board.h"
+#include "periph/gpio.h"
 
 #ifdef __cplusplus
  extern "C" {
@@ -79,6 +81,11 @@ static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37"
                                                                                   "01234"};  
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */
+
+#define TX_SUB_GHZ_PIN           GPIO_PIN(PORT_B, 0)
+#define TX_2_4_GHZ_PIN           GPIO_PIN(PORT_B, 1)
+#define PHY_CFG_SUB_GHZ_PIN      GPIO_PIN(PORT_B, 2)
+#define PHY_CFG_2_4_GHZ_PIN      GPIO_PIN(PORT_B, 3)
 
 #ifdef __cplusplus
 } /* end extern "C" */
