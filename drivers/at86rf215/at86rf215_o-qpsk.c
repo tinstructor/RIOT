@@ -157,7 +157,7 @@ static uint32_t _get_bitrate(uint8_t chips, uint8_t mode)
         return 12500 * (1 << mode);
     case BB_FCHIP1000:
     case BB_FCHIP2000:
-        return 31250 * (1 << mode);
+        return mode ? 125000 * (1 << (mode - 1)) : 31250;
     }
 
     return 0;
@@ -179,16 +179,16 @@ static void _set_legacy(at86rf215_t *dev, bool high_rate, uint8_t *chips, uint8_
         *chips = BB_FCHIP1000;
         *mode  = high_rate
                ? (3 << 1) | AT86RF215_OQPSK_MODE_LEGACY
-               : (4 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
+               : (2 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
     } else {
         *chips = BB_FCHIP2000;
         *mode  = high_rate
                ? (3 << 1) | AT86RF215_OQPSK_MODE_LEGACY
-               : (5 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
+               : (2 << 1) | AT86RF215_OQPSK_MODE_LEGACY;
     }
 }
 
-static void _set_mode(at86rf215_t *dev, uint8_t mode, bool legacy, uint8_t *chips)
+static uint8_t _set_mode(at86rf215_t *dev, uint8_t mode, bool legacy, uint8_t *chips)
 {
     if (legacy) {
         _set_legacy(dev, mode > 0, chips, &mode);
@@ -202,6 +202,7 @@ static void _set_mode(at86rf215_t *dev, uint8_t mode, bool legacy, uint8_t *chip
 
     /* TX with selected rate mode */
     at86rf215_reg_write(dev, dev->BBC->RG_OQPSKPHRTX, mode);
+    return mode;
 }
 
 static void _set_chips(at86rf215_t *dev, uint8_t chips, uint8_t direct_modulation)
@@ -229,8 +230,8 @@ static void _set_chips(at86rf215_t *dev, uint8_t chips, uint8_t direct_modulatio
 
 static void _set_ack_timeout(at86rf215_t *dev, uint8_t chips, uint8_t mode)
 {
-    dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(chips, mode >> 1);
-    DEBUG("[%s] ACK timeout: %d µs\n", "O-QPSK", dev->ack_timeout_usec);
+    dev->ack_timeout_usec = 10 * AT86RF215_ACK_PERIOD_IN_BITS * 1000000UL / _get_bitrate(chips, mode >> 1);
+    DEBUG("[%s] ACK timeout: %"PRIu32" µs\n", "O-QPSK", dev->ack_timeout_usec);
 }
 
 void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
@@ -254,10 +255,10 @@ void at86rf215_configure_OQPSK(at86rf215_t *dev, uint8_t chips, uint8_t mode)
     /* disable radio */
     at86rf215_reg_write(dev, dev->BBC->RG_PC, 0);
 
-    _set_mode(dev,
-              mode & ~IEEE802154_OQPSK_FLAG_LEGACY,
-              mode &  IEEE802154_OQPSK_FLAG_LEGACY,
-              &chips);
+    mode = _set_mode(dev,
+                     mode & ~IEEE802154_OQPSK_FLAG_LEGACY,
+                     mode &  IEEE802154_OQPSK_FLAG_LEGACY,
+                     &chips);
 
     /* enable direct modulation if the chip supports it */
     if (chips < BB_FCHIP1000 &&
@@ -338,12 +339,12 @@ int at86rf215_OQPSK_set_mode(at86rf215_t *dev, uint8_t mode)
 
     chips = at86rf215_OQPSK_get_chips(dev);
 
-    _set_mode(dev,
-              mode & ~IEEE802154_OQPSK_FLAG_LEGACY,
-              mode &  IEEE802154_OQPSK_FLAG_LEGACY,
-              &chips);
+    mode = _set_mode(dev,
+                     mode & ~IEEE802154_OQPSK_FLAG_LEGACY,
+                     mode &  IEEE802154_OQPSK_FLAG_LEGACY,
+                     &chips);
 
-    at86rf215_OQPSK_set_chips(dev, chips);
+    _set_ack_timeout(dev, chips, mode);
 
     return 0;
 }

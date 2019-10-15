@@ -135,10 +135,10 @@ typedef struct at86rf215 {
     const at86rf215_BBC_regs_t *BBC;        /**< Baseband Registers */
     xtimer_t ack_timer;                     /**< timer for ACK timeout */
     msg_t ack_msg;                          /**< message for ACK timeout */
+    uint32_t ack_timeout_usec;              /**< time to wait before retransmission in µs */
     uint16_t flags;                         /**< Device specific flags */
     uint16_t num_chans;                     /**< Number of legal channel at current modulation */
     uint16_t tx_frame_len;                  /**< length of the current TX frame */
-    uint16_t ack_timeout_usec;              /**< time to wait before retransmission in µs */
     uint8_t ack_timeout;                    /**< 1 if ack timeout was reached, 0 otherwise */
     uint8_t page;                           /**< currently used channel page */
     uint8_t state;                          /**< current state of the radio */
@@ -333,9 +333,9 @@ uint8_t at86rf215_set_state(at86rf215_t *dev, uint8_t state);
  * @param[in] len           length of @p data
  *
  * @return                  number of bytes that were actually send
- * @return                  0 on error
+ * @return                  or negative error code
  */
-size_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len);
+ssize_t at86rf215_send(at86rf215_t *dev, const void *data, size_t len);
 
 /**
  * @brief   Prepare for sending of data
@@ -343,9 +343,11 @@ size_t at86rf215_send(at86rf215_t *dev, const uint8_t *data, size_t len);
  * This function puts the given device into the TX state, so no receiving of
  * data is possible after it was called.
  *
- * @param[in,out] dev        device to prepare for sending
+ * @param[in,out] dev       device to prepare for sending
+ *
+ * @return                  0 on success, error otherwise
  */
-void at86rf215_tx_prepare(at86rf215_t *dev);
+int at86rf215_tx_prepare(at86rf215_t *dev);
 
 /**
  * @brief   Load chunks of data into the transmit buffer of the given device
@@ -364,8 +366,10 @@ size_t at86rf215_tx_load(at86rf215_t *dev, const uint8_t *data,
  * @brief   Trigger sending of data previously loaded into transmit buffer
  *
  * @param[in] dev           device to trigger
+ *
+ * @return                  0 on success, error otherwise
  */
-void at86rf215_tx_exec(at86rf215_t *dev);
+int at86rf215_tx_exec(at86rf215_t *dev);
 
 /**
  * @brief   Abort sending of data previously loaded into transmit buffer

@@ -120,6 +120,9 @@ include $(RIOTMAKE)/info-nproc.inc.mk
 # List of boards variables
 include $(RIOTMAKE)/boards.inc.mk
 
+# Debug targets for build system migration
+include $(RIOTMAKE)/dependencies_debug.inc.mk
+
 GLOBAL_GOALS += buildtest buildtest-indocker info-boards-supported info-boards-features-missing info-buildsizes info-buildsizes-diff
 ifneq (, $(filter $(GLOBAL_GOALS), $(MAKECMDGOALS)))
   BOARD=none
@@ -272,6 +275,13 @@ export TOOLCHAIN
 # will most likely not need to touch this.
 export PREFIX ?= $(if $(TARGET_ARCH),$(TARGET_ARCH)-)
 
+# set default PROGRAMMER value if flashing a board on IoT-LAB
+# This must be done before parsing the Makefile.include of the board and cannot
+# be done in makefile.iotlab.single.inc.mk which is included after.
+ifneq (,$(IOTLAB_NODE))
+  PROGRAMMER ?= iotlab
+endif
+
 # Add standard include directories
 INCLUDES += -I$(RIOTBASE)/core/include -I$(RIOTBASE)/drivers/include -I$(RIOTBASE)/sys/include
 
@@ -340,9 +350,9 @@ ifeq ($(RIOT_CI_BUILD),1)
 endif
 
 # if you want to publish the board into the sources as an uppercase #define
-BOARDDEF := $(shell echo $(BOARD) | tr 'a-z' 'A-Z' | tr '-' '_')
-CPUDEF := $(shell echo $(CPU) | tr 'a-z' 'A-Z' | tr '-' '_')
-MCUDEF := $(shell echo $(MCU) | tr 'a-z' 'A-Z' | tr '-' '_')
+BOARDDEF = $(call uppercase_and_underscore,$(BOARD))
+CPUDEF = $(call uppercase_and_underscore,$(CPU))
+MCUDEF = $(call uppercase_and_underscore,$(MCU))
 CFLAGS += -DRIOT_APPLICATION=\"$(APPLICATION)\"
 CFLAGS += -DBOARD_$(BOARDDEF)=\"$(BOARD)\" -DRIOT_BOARD=BOARD_$(BOARDDEF)
 CFLAGS += -DCPU_$(CPUDEF)=\"$(CPU)\" -DRIOT_CPU=CPU_$(CPUDEF)
@@ -451,6 +461,9 @@ ifeq (,$(FLASHFILE))
   $(error FLASHFILE is not defined for this board: $(FLASHFILE))
 endif
 
+# By default always build ELFFILE and FLASHFILE
+BUILD_FILES += $(ELFFILE) $(FLASHFILE)
+
 # variables used to compile and link c++
 CPPMIX ?= $(if $(wildcard *.cpp),1,)
 
@@ -479,7 +492,7 @@ ifeq ($(BUILD_IN_DOCKER),1)
 link: ..in-docker-container
 else
 ifeq (,$(RIOTNOLINK))
-link: ..compiler-check ..build-message $(ELFFILE) $(FLASHFILE) print-size
+link: ..compiler-check ..build-message $(BUILD_FILES) print-size
 else
 link: ..compiler-check ..build-message $(BASELIBS)
 endif # RIOTNOLINK
@@ -560,6 +573,16 @@ define check_cmd
 	    exit 1;}
 endef
 
+# Check if setsid command is available on the system for debug target
+# This is not the case on MacOSX, so it must be built on the fly
+ifneq (,$(filter debug, $(MAKECMDGOALS)))
+  ifneq (0,$(shell which setsid 2>&1 > /dev/null ; echo $$?))
+    SETSID = $(RIOTTOOLS)/setsid/setsid
+    $(call target-export-variables,debug,$(SETSID))
+    DEBUGDEPS += $(SETSID)
+  endif
+endif
+
 ..compiler-check:
 	$(call check_cmd,$(CC),Compiler)
 
@@ -616,7 +639,14 @@ preflash: $(BUILD_BEFORE_FLASH)
 
 termdeps: $(TERMDEPS)
 
-term: $(filter flash, $(MAKECMDGOALS)) $(TERMDEPS)
+term: $(filter flash flash-only, $(MAKECMDGOALS)) $(TERMDEPS)
+	$(call check_cmd,$(TERMPROG),Terminal program)
+	$(TERMPROG) $(TERMFLAGS)
+
+# Term without the pyterm added logging
+# TERMFLAGS must be exported for `jlink.sh term_rtt`.
+cleanterm: export PYTERMFLAGS += --noprefix --no-repeat-command-on-empty-line
+cleanterm: $(filter flash, $(MAKECMDGOALS)) $(TERMDEPS)
 	$(call check_cmd,$(TERMPROG),Terminal program)
 	$(TERMPROG) $(TERMFLAGS)
 
@@ -626,7 +656,7 @@ list-ttys:
 doc:
 	make -BC $(RIOTBASE) doc
 
-debug:
+debug: $(DEBUGDEPS)
 	$(call check_cmd,$(DEBUGGER),Debug program)
 	$(DEBUGGER) $(DEBUGGER_FLAGS)
 
@@ -702,6 +732,9 @@ ifneq (, $(filter all flash, $(if $(MAKECMDGOALS), $(MAKECMDGOALS), all)))
     EXPECT_ERRORS := 1
   endif
 
+  # turn provided but blacklisted features into required "!<feature>"
+  FEATURES_REQUIRED += $(addprefix !,$(sort $(filter $(FEATURES_PROVIDED), $(FEATURES_BLACKLIST))))
+
   # Test if all feature requirements were met by the selected board.
   ifneq (,$(FEATURES_MISSING))
     $(shell $(COLOR_ECHO) "$(COLOR_RED)There are unsatisfied feature requirements:$(COLOR_RESET)"\
@@ -776,20 +809,31 @@ endif
 include $(RIOTTOOLS)/desvirt/Makefile.desvirt
 
 # Build a header file with all common macro definitions and undefinitions
-# make it depend on FORCE to re-run of the script every time even if the file exists
-# The script will only touch the file if anything has changed since last time.
-$(RIOTBUILD_CONFIG_HEADER_C): FORCE
+# Everytime the header is updated, it will trigger a new compilation.
+#
+# The file is created first through a `.in` file that will be modified if
+# any CFLAGS changed. It depends on FORCE to re-run of the script every time
+# even if the file exists but the file will only be updated on modifications.
+#
+# The header is then created by keeping only the macros. Keeping the
+# comments added absolute path in the file that screwed caching.
+#
+# The rebuild behavior could even only be done with an empty file, but currently
+# some macros definitions are passed through this file.
+$(RIOTBUILD_CONFIG_HEADER_C): $(RIOTBUILD_CONFIG_HEADER_C).in
+	$(Q)sed -n -e '1i /* Generated file do not edit */' -e '/^#.*/ p' $< > $@
+
+.SECONDARY: $(RIOTBUILD_CONFIG_HEADER_C).in
+$(RIOTBUILD_CONFIG_HEADER_C).in: FORCE | $(CLEAN)
 	@mkdir -p '$(dir $@)'
 	$(Q)'$(RIOTTOOLS)/genconfigheader/genconfigheader.sh' $(CFLAGS_WITH_MACROS) \
 		| '$(LAZYSPONGE)' $(LAZYSPONGE_FLAGS) '$@'
 
-# Immediate evaluation but keep CLAGS_WITH_MACROS deferred
-_CFLAGS := $(CFLAGS)
-CFLAGS_WITH_MACROS = $(_CFLAGS)
+CFLAGS_WITH_MACROS += $(CFLAGS)
 CFLAGS_WITH_MACROS += -DRIOT_VERSION=\"$(RIOT_VERSION)\"
+# MODULE_NAME defines. Declared in 'makefiles/modules.inc.mk'
+CFLAGS_WITH_MACROS += $(EXTDEFINES)
 
-CFLAGS := $(patsubst -D%,,$(CFLAGS))
-CFLAGS := $(patsubst -U%,,$(CFLAGS))
 CFLAGS += -include '$(RIOTBUILD_CONFIG_HEADER_C)'
 
 # include mcuboot support

@@ -237,8 +237,8 @@ static void _set_usage(char *cmd_name)
          "       * \"modulation_order\" - FSK modulation order\n"
          "       * \"symbol_rate\" - FSK symbol rate\n"
          "       * \"fec\" - FSK forward error correction\n"
-         "       * \"channel_spacing\" - FSK channel spacing\n"
 #endif
+         "       * \"channel_spacing\" - channel spacing\n"
          "       * \"power\" - TX power in dBm\n"
          "       * \"retrans\" - max. number of retransmissions\n"
          "       * \"src_len\" - sets the source address length in byte\n"
@@ -398,8 +398,8 @@ static void _print_netopt(netopt_t opt)
             printf("FSK Forward Error Correction");
             break;
 
-        case NETOPT_FSK_CHANNEL_SPACING:
-            printf("FSK Channel Spacing");
+        case NETOPT_CHANNEL_SPACING:
+            printf("Channel Spacing");
             break;
 
 #endif /* MODULE_GNRC_NETIF_CMD_FSK */
@@ -611,9 +611,9 @@ static void _netif_list(kernel_pid_t iface)
             }
             res = gnrc_netapi_get(iface, NETOPT_OQPSK_RATE, 0, &u8, sizeof(u8));
             if (res >= 0) {
-                printf("rate mode: %d %s", u8 & ~IEEE802154_OQPSK_FLAG_LEGACY,
-                                          (u8 & IEEE802154_OQPSK_FLAG_LEGACY) ?
-                                           "(legacy) " : "");
+                printf(" rate mode: %d %s ", u8 & ~IEEE802154_OQPSK_FLAG_LEGACY,
+                                            (u8 & IEEE802154_OQPSK_FLAG_LEGACY) ?
+                                            "(legacy) " : "");
             }
 
             break;
@@ -657,13 +657,13 @@ static void _netif_list(kernel_pid_t iface)
             if (res >= 0) {
                 printf(" FEC: %s ", _netopt_fec_str[u8]);
             }
-            res = gnrc_netapi_get(iface, NETOPT_FSK_CHANNEL_SPACING, 0, &u16, sizeof(u16));
-            if (res >= 0) {
-                printf(" ch_space: %u kHz ", u16);
-            }
             break;
 #endif /* MODULE_GNRC_NETIF_CMD_FSK */
         }
+    }
+    res = gnrc_netapi_get(iface, NETOPT_CHANNEL_SPACING, 0, &u16, sizeof(u16));
+    if (res >= 0) {
+        printf(" BW: %ukHz ", u16);
     }
     res = gnrc_netapi_get(iface, NETOPT_LINK_CONNECTED, 0, &u8, sizeof(u8));
     if (res >= 0) {
@@ -1394,10 +1394,10 @@ static int _netif_set(char *cmd_name, kernel_pid_t iface, char *key, char *value
     else if ((strcmp("forward_error_correction", key) == 0) || (strcmp("fec", key) == 0)) {
         return _netif_set_fsk_fec(iface, value);
     }
-    else if ((strcmp("channel_spacing", key) == 0) || (strcmp("cspace", key) == 0)) {
-        return _netif_set_u16(iface, NETOPT_FSK_CHANNEL_SPACING, 0, value);
-    }
 #endif /* MODULE_GNRC_NETIF_CMD_FSK */
+    else if ((strcmp("channel_spacing", key) == 0) || (strcmp("bw", key) == 0)) {
+        return _netif_set_u16(iface, NETOPT_CHANNEL_SPACING, 0, value);
+    }
     else if ((strcmp("channel", key) == 0) || (strcmp("chan", key) == 0)) {
         return _netif_set_u16(iface, NETOPT_CHANNEL, 0, value);
     }

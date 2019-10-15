@@ -9,7 +9,6 @@ BOARD_BLACKLIST += arduino-mega2560
 BOARD_BLACKLIST += arduino-nano
 BOARD_BLACKLIST += arduino-uno
 BOARD_BLACKLIST += chronos
-BOARD_BLACKLIST += jiminy-mega256rfr2
 BOARD_BLACKLIST += mega-xplained
 BOARD_BLACKLIST += msb-430
 BOARD_BLACKLIST += msb-430h
@@ -25,13 +24,16 @@ BOARD_INSUFFICIENT_MEMORY := airfy-beacon \
                              arduino-mega2560 \
                              arduino-mkr1000 \
                              arduino-mkrfox1200 \
+                             arduino-mkrwan1300 \
                              arduino-mkrzero \
                              arduino-nano \
                              arduino-uno \
                              arduino-zero \
                              b-l072z-lrwan1 \
                              blackpill \
+                             blackpill-128kib \
                              bluepill \
+                             bluepill-128kib \
                              calliope-mini \
                              cc2650-launchpad \
                              cc2650stk \
@@ -81,9 +83,11 @@ BOARD_INSUFFICIENT_MEMORY := airfy-beacon \
                              samd21-xpro \
                              samr21-xpro \
                              samr30-xpro \
+                             samr34-xpro \
                              sensebox_samd21 \
                              slstk3401a \
                              sltb001a \
+                             slwstk6000b-slwrb4150a \
                              slwstk6220a \
                              sodaq-autonomo \
                              sodaq-explorer \

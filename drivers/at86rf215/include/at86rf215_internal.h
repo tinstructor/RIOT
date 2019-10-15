@@ -64,7 +64,7 @@ extern const uint8_t at86rf215_fsk_channel_spacing_25kHz[];
  * @brief   Perform a reset of the entire chip.
  *
  * @param   dev     device to reset, will also reset sibling device
- * @return           0 on success, error if device is not availiable
+ * @return           0 on success, error if device is not available
  */
 int at86rf215_hardware_reset(at86rf215_t *dev);
 
@@ -165,7 +165,7 @@ uint8_t at86rf215_FSK_get_srate(at86rf215_t *dev);
  *          fractions of 64.
  *          Not all possible fractional values are configurable by the hardware.
  *          If the fractional can not be mapped to the hardware, the nearest matching
- *          one is choosen.
+ *          one is chosen.
  *
  * @param[in] dev       device to configure
  * @param[in] mod_idx   modulation index, multiplied by 64 (½ -> 32; 1 -> 64)
@@ -216,22 +216,22 @@ uint8_t at86rf215_FSK_get_fec(at86rf215_t *dev);
 
 /**
  * @brief   Configure the channel spacing for the FSK modulation
- * 
+ *
  * @param[in] dev       device to configure
  * @param[in] ch_space  channel spacing, possible values: FSK_CHANNEL_SPACING_200K … _400K
- * 
+ *
  * @return              0 on success, failure otherwise
  */
 int at86rf215_FSK_set_channel_spacing(at86rf215_t *dev, uint8_t ch_space);
 
 /**
- * @brief   Get the channel spacing for the FSK modulation
- * 
+ * @brief   Get the configured channel spacing
+ *
  * @param[in] dev   device to read from
- * 
- * @return          channel spacing, possible values: FSK_CHANNEL_SPACING_200K … _400K
+ *
+ * @return          channel spacing in kHz
  */
-uint8_t at86rf215_FSK_get_channel_spacing(at86rf215_t *dev);
+uint16_t at86rf215_get_channel_spacing(at86rf215_t *dev);
 
 /**
  * @brief   Configure the FSK modulation order.
@@ -264,7 +264,7 @@ uint8_t at86rf215_FSK_get_mod_order(at86rf215_t *dev);
 /**
  * @brief   Configure the radio to make use of OFDM modulation.
  *          There are 4 OFDM options, each with a different number of active tones.
- *          The deivce supports BPSK, QPSK and 16-QAM modulation and coding schemes (MCS)
+ *          The device supports BPSK, QPSK and 16-QAM modulation and coding schemes (MCS)
  *
  * @param[in] dev       device to configure
  * @param[in] option    modulation option, each increment halves the data rate
@@ -387,7 +387,7 @@ uint8_t at86rf215_get_phy_mode(at86rf215_t *dev);
 /**
  * @brief   Check if a channel number is valid.
  *          The function takes the current frequency band and modulation into
- *          account to determine if `chan` would be a legel channel number.
+ *          account to determine if `chan` would be a legal channel number.
  *          If so, it is returned unmodified. Otherwise the next closest legal
  *          channel number is returned.
  *

@@ -9,6 +9,7 @@ FEATURES_CONFLICT_GLOBAL := $(FEATURES_CONFLICT)
 FEATURES_CONFLICT_MSG_GLOBAL := $(FEATURES_MSG_CONFLICT)
 DISABLE_MODULE_GLOBAL := $(DISABLE_MODULE)
 DEFAULT_MODULE_GLOBAL := $(DEFAULT_MODULE)
+FEATURES_BLACKLIST_GLOBAL := $(FEATURES_BLACKLIST)
 
 define board_missing_features
   BOARD             := $(1)
@@ -20,6 +21,7 @@ define board_missing_features
   FEATURES_OPTIONAL := $(FEATURES_OPTIONAL_GLOBAL)
   FEATURES_CONFLICT := $(FEATURES_CONFLICT_GLOBAL)
   FEATURES_CONFLICT_MSG := $(FEATURES_CONFLICT_MSG_GLOBAL)
+  FEATURES_BLACKLIST:= $(FEATURES_BLACKLIST_GLOBAL)
 
   # Remove board specific variables set by Makefile.features/Makefile.dep
   FEATURES_PROVIDED :=
@@ -39,6 +41,10 @@ define board_missing_features
   ifneq (,$$(FEATURES_MISSING))
     BOARDS_FEATURES_MISSING += "$(1) $$(FEATURES_MISSING)"
     BOARDS_WITH_MISSING_FEATURES += $(1)
+  endif
+
+  ifneq (,$$(DEPENDENCY_DEBUG))
+    $$(call file_save_dependencies_variables,dependencies_info-boards-supported)
   endif
 endef
 

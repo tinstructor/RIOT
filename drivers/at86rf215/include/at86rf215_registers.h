@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /**
- * @brief    Radio Frontent registers
+ * @brief    Radio Frontend registers
  * @{
  */
 struct at86rf215_RF_regs {

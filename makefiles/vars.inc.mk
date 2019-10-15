@@ -19,6 +19,7 @@ export USEPKG                # Pkg dependencies (third party modules) of the app
 export DISABLE_MODULE        # Used in the application's Makefile to suppress DEFAULT_MODULEs.
 export APPDEPS               # Files / Makefile targets that need to be created before the application can be build. Set in the application's Makefile.
 # BUILDDEPS                  # Files / Makefile targets that need to be created before starting to build.
+# DEBUGDEPS                  # Files / Makefile targets that need to be created before starting a debug session.
 
 export RIOTBASE              # The root folder of RIOT. The folder where this very file lives in.
 export RIOTCPU               # For third party CPUs this folder is the base of the CPUs.
@@ -80,6 +81,7 @@ export ELFFILE               # The unstripped result of the compilation.
 export HEXFILE               # The 'intel hex' stripped result of the compilation.
 # BINFILE                    # The 'binary' stripped result of the compilation.
 # FLASHFILE                  # The output file used for flashing
+# BUILD_FILES                # The list of files to be built
 # DEBUGGER                   # The command to call on "make debug", usually a script starting the GDB front-end.
 # DEBUGGER_FLAGS             # The parameters to supply to DEBUGGER.
 # DEBUGSERVER                # The command to call on "make debug-server", usually a script starting the GDB server.

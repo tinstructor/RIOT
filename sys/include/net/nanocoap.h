@@ -718,6 +718,26 @@ size_t coap_blockwise_put_bytes(coap_block_slicer_t *slicer, uint8_t *bufpos,
 size_t coap_blockwise_put_char(coap_block_slicer_t *slicer, uint8_t *bufpos, char c);
 
 /**
+ * @brief    Block option getter
+ *
+ * This function gets a CoAP packet's block option and parses it into a helper
+ * structure.
+ *
+ * If no block option is present in @p pkt, the values in @p block will be
+ * initialized with zero. That implies both block->offset and block->more are
+ * also valid in that case, as packet with offset==0 and more==0 means it contains
+ * all the payload for the corresponding request.
+ *
+ * @param[in]   pkt     pkt to work on
+ * @param[out]  block   ptr to preallocated coap_block1_t structure
+ * @param[in]   option  block1 or block2
+ *
+ * @returns     0 if block option not present
+ * @returns     1 if structure has been filled
+ */
+int coap_get_block(coap_pkt_t *pkt, coap_block1_t *block, uint16_t option);
+
+/**
  * @brief    Block1 option getter
  *
  * This function gets a CoAP packet's block1 option and parses it into a helper
@@ -729,23 +749,29 @@ size_t coap_blockwise_put_char(coap_block_slicer_t *slicer, uint8_t *bufpos, cha
  * all the payload for the corresponding request.
  *
  * @param[in]   pkt     pkt to work on
- * @param[out]  block1  ptr to preallocated coap_block1_t structure
+ * @param[out]  block   ptr to preallocated coap_block1_t structure
  *
  * @returns     0 if block1 option not present
  * @returns     1 if structure has been filled
  */
-int coap_get_block1(coap_pkt_t *pkt, coap_block1_t *block1);
+static inline int coap_get_block1(coap_pkt_t *pkt, coap_block1_t *block)
+{
+    return coap_get_block(pkt, block, COAP_OPT_BLOCK1);
+}
 
 /**
  * @brief    Block2 option getter
  *
  * @param[in]   pkt     pkt to work on
- * @param[out]  block2  ptr to preallocated coap_block1_t structure
+ * @param[out]  block   ptr to preallocated coap_block1_t structure
  *
  * @returns     0 if block2 option not present
  * @returns     1 if structure has been filled
  */
-int coap_get_block2(coap_pkt_t *pkt, coap_block1_t *block2);
+static inline int coap_get_block2(coap_pkt_t *pkt, coap_block1_t *block)
+{
+    return coap_get_block(pkt, block, COAP_OPT_BLOCK2);
+}
 
 /**
  * @brief    Generic block option getter
@@ -781,6 +807,75 @@ static inline unsigned coap_szx2size(unsigned szx)
  * Use a coap_pkt_t struct to manage writing Options to the PDU.
  */
 /**
+ * @brief   Add block option in descriptive use from a slicer object
+ *
+ * When calling this function to initialize a packet with a block option, the
+ * more flag must be set to prevent the creation of an option with a length too
+ * small to contain the size bit.
+
+ * @post pkt.payload advanced to first byte after option
+ * @post pkt.payload_len reduced by option length
+ *
+ * @param[in,out] pkt         pkt referencing target buffer
+ * @param[in]     slicer      coap blockwise slicer helper struct
+ * @param[in]     more        more flag (1 or 0)
+ * @param[in]     option      option number (block1 or block2)
+ *
+ * @return        number of bytes written to buffer
+ * @return        <0 on error
+ * @return        -ENOSPC if no available options or insufficient buffer space
+ */
+ssize_t coap_opt_add_block(coap_pkt_t *pkt, coap_block_slicer_t *slicer,
+                           bool more, uint16_t option);
+
+/**
+ * @brief   Add block1 option in descriptive use from a slicer object
+ *
+ * When calling this function to initialize a packet with a block option, the
+ * more flag must be set to prevent the creation of an option with a length too
+ * small to contain the size bit.
+
+ * @post pkt.payload advanced to first byte after option
+ * @post pkt.payload_len reduced by option length
+ *
+ * @param[in,out] pkt         pkt referencing target buffer
+ * @param[in]     slicer      coap blockwise slicer helper struct
+ * @param[in]     more        more flag (1 or 0)
+ *
+ * @return        number of bytes written to buffer
+ * @return        <0 on error
+ * @return        -ENOSPC if no available options or insufficient buffer space
+ */
+static inline ssize_t coap_opt_add_block1(coap_pkt_t *pkt,
+                                          coap_block_slicer_t *slicer, bool more)
+{
+    return coap_opt_add_block(pkt, slicer, more, COAP_OPT_BLOCK1);
+}
+
+/**
+ * @brief   Add block2 option in descriptive use from a slicer object
+ *
+ * When calling this function to initialize a packet with a block option, the
+ * more flag must be set to prevent the creation of an option with a length too
+ * small to contain the size bit.
+
+ * @post pkt.payload advanced to first byte after option
+ * @post pkt.payload_len reduced by option length
+ *
+ * @param[in,out] pkt         pkt referencing target buffer
+ * @param[in]     slicer      coap blockwise slicer helper struct
+ * @param[in]     more        more flag (1 or 0)
+ *
+ * @return        number of bytes written to buffer
+ * @return        <0 on error
+ * @return        -ENOSPC if no available options or insufficient buffer space
+ */
+static inline ssize_t coap_opt_add_block2(coap_pkt_t *pkt,
+                                          coap_block_slicer_t *slicer, bool more)
+{
+    return coap_opt_add_block(pkt, slicer, more, COAP_OPT_BLOCK2);
+}
+/**
  * @brief   Encode the given uint option into pkt
  *
  * @post pkt.payload advanced to first byte after option
@@ -795,6 +890,43 @@ static inline unsigned coap_szx2size(unsigned szx)
  * @return        -ENOSPC if no available options or insufficient buffer space
  */
 ssize_t coap_opt_add_uint(coap_pkt_t *pkt, uint16_t optnum, uint32_t value);
+
+/**
+ * @brief   Encode the given block1 option in control use
+ *
+ * @post pkt.payload advanced to first byte after option
+ * @post pkt.payload_len reduced by option length
+ *
+ * @param[in,out] pkt         pkt referencing target buffer
+ * @param[in]     block       block to encode
+ *
+ * @return        number of bytes written to buffer
+ * @return        <0 on error
+ * @return        -ENOSPC if no available options or insufficient buffer space
+ */
+static inline ssize_t coap_opt_add_block1_control(coap_pkt_t *pkt, coap_block1_t *block) {
+    return coap_opt_add_uint(pkt, COAP_OPT_BLOCK1,
+                             (block->blknum << 4) | block->szx | (block->more ? 0x8 : 0));
+}
+
+/**
+ * @brief   Encode the given block2 option in control use
+ *
+ * @post pkt.payload advanced to first byte after option
+ * @post pkt.payload_len reduced by option length
+ *
+ * @param[in,out] pkt         pkt referencing target buffer
+ * @param[in]     block       block to encode
+ *
+ * @return        number of bytes written to buffer
+ * @return        <0 on error
+ * @return        -ENOSPC if no available options or insufficient buffer space
+ */
+static inline ssize_t coap_opt_add_block2_control(coap_pkt_t *pkt, coap_block1_t *block) {
+    /* block.more must be zero, so no need to 'or' it in */
+    return coap_opt_add_uint(pkt, COAP_OPT_BLOCK2,
+                             (block->blknum << 4) | block->szx);
+}
 
 /**
  * @brief   Append a Content-Format option to the pkt buffer
@@ -933,17 +1065,18 @@ static inline size_t coap_opt_put_block2(uint8_t *buf, uint16_t lastonum,
 }
 
 /**
- * @brief   Insert block option into buffer from block struct
+ * @brief   Encode the given uint option into buffer
  *
- * @param[in]   buf         buffer to write to
- * @param[in]   lastonum    last option number (must be < @p option)
- * @param[in]   block       block option attribute struct
- * @param[in]   option      option number (block1 or block2)
+ * @param[out]  buf         buffer to write to
+ * @param[in]   lastonum    number of previous option (for delta calculation),
+ *                          or 0 for first option
+ * @param[in]   onum        number of option
+ * @param[in]   value       value to encode
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_opt_put_block_object(uint8_t *buf, uint16_t lastonum,
-                                 coap_block1_t *block, uint16_t option);
+size_t coap_opt_put_uint(uint8_t *buf, uint16_t lastonum, uint16_t onum,
+                         uint32_t value);
 
 /**
  * @brief   Insert block1 option into buffer in control usage
@@ -957,7 +1090,8 @@ size_t coap_opt_put_block_object(uint8_t *buf, uint16_t lastonum,
 static inline size_t coap_opt_put_block1_control(uint8_t *buf, uint16_t lastonum,
                                                  coap_block1_t *block)
 {
-    return coap_opt_put_block_object(buf, lastonum, block, COAP_OPT_BLOCK1);
+    return coap_opt_put_uint(buf, lastonum, COAP_OPT_BLOCK1,
+                             (block->blknum << 4) | block->szx | (block->more ? 0x8 : 0));
 }
 
 /**
@@ -974,8 +1108,9 @@ static inline size_t coap_opt_put_block1_control(uint8_t *buf, uint16_t lastonum
 static inline size_t coap_opt_put_block2_control(uint8_t *buf, uint16_t lastonum,
                                                  coap_block1_t *block)
 {
-    block->more = 0;
-    return coap_opt_put_block_object(buf, lastonum, block, COAP_OPT_BLOCK2);
+    /* block.more must be zero, so no need to 'or' it in */
+    return coap_opt_put_uint(buf, lastonum, COAP_OPT_BLOCK2,
+                             (block->blknum << 4) | block->szx);
 }
 
 /**
@@ -1110,7 +1245,12 @@ size_t coap_put_option(uint8_t *buf, uint16_t lastonum, uint16_t onum, const uin
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more);
+static inline size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum,
+                                            unsigned blknum, unsigned szx, int more)
+{
+    return coap_opt_put_uint(buf, lastonum, COAP_OPT_BLOCK1,
+                             (blknum << 4) | szx | (more ? 0x8 : 0));
+}
 
 /**
  * @brief   Insert content type option into buffer
@@ -1122,7 +1262,11 @@ size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, 
  *
  * @returns     amount of bytes written to @p buf
  */
-size_t coap_put_option_ct(uint8_t *buf, uint16_t lastonum, uint16_t content_type);
+static inline size_t coap_put_option_ct(uint8_t *buf, uint16_t lastonum,
+                                        uint16_t content_type)
+{
+    return coap_opt_put_uint(buf, lastonum, COAP_OPT_CONTENT_FORMAT, content_type);
+}
 /**@}*/
 
 

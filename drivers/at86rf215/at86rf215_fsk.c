@@ -40,7 +40,7 @@ const uint8_t at86rf215_fsk_channel_spacing_25kHz[] = {
 };
 
 /* IEEE Std 802.15.4™-2015
- * Table 10-10—Channel numbering for SUN PHYs, 
+ * Table 10-10—Channel numbering for SUN PHYs,
  * index is channel spacing */
 static const uint16_t chan_center_freq0_subghz_25khz[] = {
     [FSK_CHANNEL_SPACING_200K]  = 863125U / 25,
@@ -48,7 +48,7 @@ static const uint16_t chan_center_freq0_subghz_25khz[] = {
 };
 
 /* IEEE Std 802.15.4™-2015
- * Table 10-10—Channel numbering for SUN PHYs, 
+ * Table 10-10—Channel numbering for SUN PHYs,
  * index is channel spacing */
 static const uint16_t chan_center_freq0_24ghz_25khz[] = {
     [FSK_CHANNEL_SPACING_200K] = (2400200U - CCF0_24G_OFFSET) / 25,
@@ -357,19 +357,19 @@ static void _set_srate(at86rf215_t *dev, uint8_t srate, bool mod_idx_half)
     /* set preamble length in octets */
     at86rf215_reg_write(dev, dev->BBC->RG_FSKPLL, _FSKPL(srate));
 
-    /* set symbol rate, preamble is less than 256 so set hight bits 0 */
+    /* set symbol rate, preamble is less than 256 so set high bits 0 */
     at86rf215_reg_write(dev, dev->BBC->RG_FSKC1, srate);
 }
 
 static void _set_ack_timeout(at86rf215_t *dev, uint8_t srate, bool mord4, bool fec)
 {
-    dev->ack_timeout_usec =  3 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 100 / at86rf215_fsk_srate_10kHz[srate];
+    dev->ack_timeout_usec =  10 * AT86RF215_ACK_PERIOD_IN_SYMBOLS * 100 / at86rf215_fsk_srate_10kHz[srate];
     /* forward error correction halves data rate */
     dev->ack_timeout_usec <<= fec;
     /* 4-FSK doubles data rate */
     dev->ack_timeout_usec >>= mord4;
 
-    DEBUG("[%s] ACK timeout: %d µs\n", "FSK", dev->ack_timeout_usec);
+    DEBUG("[%s] ACK timeout: %"PRIu32" µs\n", "FSK", dev->ack_timeout_usec);
 }
 
 void at86rf215_configure_FSK(at86rf215_t *dev, uint8_t srate, uint8_t mod_idx, uint8_t mod_order, uint8_t fec)
@@ -560,8 +560,4 @@ int at86rf215_FSK_set_channel_spacing(at86rf215_t *dev, uint8_t ch_space)
     at86rf215_set_state(dev, old_state);
 
     return 0;
-}
-
-uint8_t at86rf215_FSK_get_channel_spacing(at86rf215_t *dev) {
-    return at86rf215_reg_read(dev, dev->RF->RG_CS);
 }

@@ -491,6 +491,10 @@ void auto_init(void)
     extern void auto_init_mpu9150(void);
     auto_init_mpu9150();
 #endif
+#ifdef MODULE_OPT3001
+    extern void auto_init_opt3001(void);
+    auto_init_opt3001();
+#endif
 #ifdef MODULE_PCA9685
     extern void auto_init_pca9685(void);
     auto_init_pca9685();
@@ -581,4 +585,9 @@ void auto_init(void)
     auto_init_candev();
 
 #endif /* MODULE_AUTO_INIT_CAN */
+
+#ifdef MODULE_SUIT
+    extern void suit_init_conditions(void);
+    suit_init_conditions();
+#endif /* MODULE_SUIT */
 }

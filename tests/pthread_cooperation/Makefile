@@ -16,10 +16,15 @@ BOARD_INSUFFICIENT_MEMORY := \
 BOARD_INSUFFICIENT_MEMORY += \
 	arduino-leonardo \
 	arduino-mega2560 \
-	jiminy-mega256rfr2 \
 	mega-xplained \
 	waspmote-pro \
 	#
+
+# nucleo-f303k8 doesn't have enough RAM to run the test so we reduce the stack
+# size for every thread
+ifneq (,$(filter nucleo-f303k8,$(BOARD)))
+  CFLAGS += -DTHREAD_STACKSIZE_DEFAULT=512
+endif
 
 USEMODULE += posix_headers
 USEMODULE += pthread

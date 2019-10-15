@@ -22,6 +22,7 @@
  * @}
  */
 
+#include <assert.h>
 #include <string.h>
 #include <errno.h>
 
@@ -46,8 +47,7 @@ static mutex_t locks[I2C_NUMOF];
 
 static inline NRF_TWIM_Type *bus(i2c_t dev)
 {
-    (void) dev;
-    return i2c_config[0].dev;
+    return i2c_config[dev].dev;
 }
 
 static int finish(i2c_t dev)
@@ -113,7 +113,7 @@ int i2c_acquire(i2c_t dev)
     return 0;
 }
 
-int i2c_release(i2c_t dev)
+void i2c_release(i2c_t dev)
 {
     assert(dev < I2C_NUMOF);
 
@@ -121,7 +121,6 @@ int i2c_release(i2c_t dev)
     mutex_unlock(&locks[dev]);
 
     DEBUG("[i2c] released dev %i\n", (int)dev);
-    return 0;
 }
 
 int i2c_write_regs(i2c_t dev, uint16_t addr, uint16_t reg,

@@ -214,8 +214,8 @@ static void _set_option(at86rf215_t *dev, uint8_t option)
 
 static void _set_ack_timeout(at86rf215_t *dev, uint8_t option, uint8_t scheme)
 {
-    dev->ack_timeout_usec = AT86RF215_ACK_PERIOD_IN_BITS * 1000000 / _get_bitrate(option, scheme);
-    DEBUG("[%s] ACK timeout: %d µs\n", "OFDM", dev->ack_timeout_usec);
+    dev->ack_timeout_usec = 10 * AT86RF215_ACK_PERIOD_IN_BITS * 1000000UL / _get_bitrate(option, scheme);
+    DEBUG("[%s] ACK timeout: %"PRIu32" µs\n", "OFDM", dev->ack_timeout_usec);
 }
 
 static bool _option_mcs_valid(uint8_t option, uint8_t mcs)

@@ -73,6 +73,10 @@ void at86rf215_set_chan(at86rf215_t *dev, uint16_t channel)
     at86rf215_set_state(dev, old_state);
 }
 
+uint16_t at86rf215_get_channel_spacing(at86rf215_t *dev) {
+    return 25 * at86rf215_reg_read(dev, dev->RF->RG_CS);
+}
+
 uint8_t at86rf215_get_page(const at86rf215_t *dev)
 {
     return dev->page;
@@ -242,7 +246,7 @@ uint8_t at86rf215_set_state(at86rf215_t *dev, uint8_t cmd)
         /* config is lost after SLEEP */
         at86rf215_reset(dev);
 
-        /* if both tranceivers were sleeping, the chip entered DEEP_SLEEP.
+        /* if both transceivers were sleeping, the chip entered DEEP_SLEEP.
            Waking one device in that mode wakes the other one too. */
         if (dev->sibling && dev->sibling->state == AT86RF215_STATE_SLEEP) {
             dev->sibling->state = AT86RF215_STATE_OFF;

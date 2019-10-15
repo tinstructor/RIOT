@@ -41,8 +41,10 @@ PSEUDOMODULES += gnrc_sixlowpan_router_default
 PSEUDOMODULES += gnrc_sock_check_reuse
 PSEUDOMODULES += gnrc_txtsnd
 PSEUDOMODULES += i2c_scan
+PSEUDOMODULES += heap_cmd
 PSEUDOMODULES += l2filter_blacklist
 PSEUDOMODULES += l2filter_whitelist
+PSEUDOMODULES += lis2dh12_i2c
 PSEUDOMODULES += lis2dh12_spi
 PSEUDOMODULES += log
 PSEUDOMODULES += log_printfnoformat
@@ -51,7 +53,6 @@ PSEUDOMODULES += lora
 PSEUDOMODULES += mpu_stack_guard
 PSEUDOMODULES += nanocoap_%
 PSEUDOMODULES += netdev_default
-PSEUDOMODULES += netif
 PSEUDOMODULES += netstats
 PSEUDOMODULES += netstats_l2
 PSEUDOMODULES += netstats_ipv6
@@ -80,8 +81,12 @@ PSEUDOMODULES += sock_tcp
 PSEUDOMODULES += sock_udp
 PSEUDOMODULES += stdin
 PSEUDOMODULES += stdio_ethos
+PSEUDOMODULES += stdio_cdc_acm
 PSEUDOMODULES += stdio_uart_rx
-PSEUDOMODULES += sock_dtls
+PSEUDOMODULES += suit_%
+
+# handle suit_v4 being a distinct module
+NO_PSEUDOMODULES += suit_v4
 
 # print ascii representation in function od_hex_dump()
 PSEUDOMODULES += od_string
@@ -106,6 +111,9 @@ PSEUDOMODULES += ccs811_full
 PSEUDOMODULES += cc1100
 PSEUDOMODULES += cc1100e
 PSEUDOMODULES += cc1101
+
+# include variants of mrf24j40 drivers as pseudo modules
+PSEUDOMODULES += mrf24j40m%
 
 # include variants of SX127X drivers as pseudo modules
 PSEUDOMODULES += sx1272
