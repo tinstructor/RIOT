@@ -148,6 +148,8 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
             return 1;
     }
 
+    DEBUG("PHY reconfigured\n");
+
     return 0;
 }
 
