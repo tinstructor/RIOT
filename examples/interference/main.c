@@ -103,7 +103,7 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
                 return 1;
             }
 
-            res = gnrc_netapi_set(phy_cfg->iface, NETOPT_FSK_CHANNEL_SPACING, 0, 
+            res = gnrc_netapi_set(phy_cfg->iface, NETOPT_CHANNEL_SPACING, 0, 
                 &phy_cfg->fsk_cfg.cspace, sizeof(phy_cfg->fsk_cfg.cspace));
             if (res < 0) {
                 DEBUG("Unable to set FSK cspace to %d\n", phy_cfg->fsk_cfg.cspace);
