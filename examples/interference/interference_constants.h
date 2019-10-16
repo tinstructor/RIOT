@@ -62,9 +62,9 @@ static const if_phy_cfg_t phy_cfg_2_4_ghz[NUM_PHY_CFG_2_4_GHZ] = {
     {IFACE_2_4_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {50, 200, 64, 2}},
     {IFACE_2_4_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {100, 400, 32, 2}},
     {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 2}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 3}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 1}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
+    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 3}},
+    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 1}},
+    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
 };
 
 static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
