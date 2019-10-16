@@ -2,6 +2,7 @@ import io
 import sys
 import re
 import argparse
+import csv
 import math
 
 ################################################################################
@@ -48,12 +49,13 @@ class experiment:
 
 parser = argparse.ArgumentParser()
 parser.add_argument("logfile", help="The logfile to be analyzed.")
+parser.add_argument("csvfile", help="The csv file to which log-derived info must be appended.")
 args = parser.parse_args()
 
 LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
 LOG_REGEXP_PHY = re.compile("^.*?PHY")
 
-NUM_OF_TX = 2
+NUM_OF_TX = 100
 PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
                "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
                "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
@@ -64,6 +66,7 @@ if_phy_index = 0
 experiment_index = 0
 current_experiment = experiment(NUM_OF_TX, PHY_CONFIGS[trx_phy_index], PHY_CONFIGS[if_phy_index])
 
+csv_filename = args.csvfile
 log_filename = args.logfile
 
 with open(log_filename, "r") as log:
@@ -94,3 +97,7 @@ for e in experiments:
     print("PHY of IF:\t\t%s" % (experiments[e].get_if_phy()))
     print("PRR:\t\t\t%.2f" % (experiments[e].packet_success()))
     print("---------------------------------------------------")
+
+with open(csv_filename, "w", newline='') as output_file:
+    for e in experiments:
+        output_file.write("%s,%s,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].packet_success()))
