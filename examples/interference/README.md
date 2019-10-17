@@ -124,10 +124,25 @@ $ make -j flash BOARD=openmote-b GNRC_NETIF_NUMOF=1 PORT_BSL=/dev/ttyUSB1
 ```
 
 ## Tips & Tricks
-Coming soon
+An invaluable command is `make list-ttys`. What it does is displaying all available USB devices for flashing like so for example:
+```bash
+$ make list-ttys
+/sys/bus/usb/devices/1-1: FTDI Dual RS232-HS, serial: '', tty(s): ttyUSB1, ttyUSB0
+/sys/bus/usb/devices/2-2: Silicon Labs Zolertia RE-Mote platform, serial: 'ZOL-RM02-B0240000002', tty(s): ttyUSB4
+/sys/bus/usb/devices/1-2: FTDI Dual RS232-HS, serial: '', tty(s): ttyUSB2, ttyUSB3
+```
+
+The annoying thing is that each FTDI UART bridge shows up as 2 seperate devices. Generally speaking, the highest number is the one you want to specify in your `make flash` command, like so:
+```bash
+$ make -j flash BOARD=openmote-b GNRC_NETIF_NUMOF=1 PORT_BSL=/dev/ttyUSB1
+```
+
+>**Note:** notice the `GNRC_NETIF_NUMOF=1` argument. The number specified can be either 1 or 2 and indicates wheter just the AT86RF215 Sub-GHz interface is made available (when specifying 1) or both interfaces (i.e., Sub-GHz + 2.4GHz) of the AT86RF215 transceiver can be used.
 
 ## Usage
-Coming soon
+The basic usage of this example application is pretty straighforward.
+
+Coming soon.
 
 ## Recommended Reads
 - [**IEEE 802.15.4-2015**](https://standards.ieee.org/standard/802_15_4-2015.html): The currently active PHY + MAC layer standard for 802.15.4 networks. Although this is the official standard, many developers seem to have a total disregard for certain aspects of it. Especially on the Sub-GHz PHY layers, there seems to be a lot of confusion as to what is actually standardised and what is not. The fact that IEEE standards are very expensive to obtain doesn't help this confusion either.
