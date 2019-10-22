@@ -16,7 +16,7 @@ REGEXP = re.compile(r"^.*_(?P<bytes>\d+)B.*_(?P<time>\d+)(?P<prefix>[UM]*)S\.csv
 
 df = pd.read_csv(file_list[0], header=None)
 df.columns = ["TRX PHY","IF PHY","PRR"]
-if_phy = df["IF PHY"].unique()
+if_phys = df["IF PHY"].unique()
 
 graph_info = {}
 
@@ -33,18 +33,24 @@ for csv_file in file_list:
         df = pd.read_csv(csv_file, header=None)
         df.columns = ["TRX PHY","IF PHY","PRR"]
 
-        for phy in if_phy:
-            df_if_phy = df.loc[df["IF PHY"] == phy]
+        for if_phy in if_phys:
+            df_if_phy = df.loc[df["IF PHY"] == if_phy]
             
-            if (phy, payload_size not in graph_info):
-                graph_info.setdefault((phy, payload_size), {})
+            if (if_phy, payload_size not in graph_info):
+                graph_info.setdefault((if_phy, payload_size), {})
             
-            if (offset not in graph_info[phy, payload_size]):
-                graph_info[phy, payload_size].setdefault(offset, {})
+            if (offset not in graph_info[if_phy, payload_size]):
+                graph_info[if_phy, payload_size].setdefault(offset, {})
 
-            graph_info[phy, payload_size][offset].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
+            graph_info[if_phy, payload_size][offset].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
 
     else:
         raise ValueError("CSV filename %s incorrectly formatted" % csv_file)
 
-print(graph_info)
+# print(graph_info)
+
+for if_phy, payload_size in graph_info:
+    # title = "Interference: " + if_phy + ", Payload: " + payload_size
+    pd.DataFrame(graph_info[if_phy, payload_size]).T.plot(kind='bar')
+    plt.show()
+    # print(graph_info[if_phy, payload_size])
