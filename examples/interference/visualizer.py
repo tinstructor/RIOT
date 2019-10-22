@@ -51,11 +51,12 @@ for csv_file in file_list:
 for if_phy, payload_size in graph_info:
     title = "Interference: " + if_phy + ", Payload: " + payload_size
     graph_info[if_phy, payload_size] = dict(sorted(graph_info[if_phy, payload_size].items(), key=lambda x: x[0].lower()))
-    ax = pd.DataFrame(graph_info[if_phy, payload_size]).T.plot(kind='bar')
+    ax = pd.DataFrame(graph_info[if_phy, payload_size]).T.plot(kind='bar', figsize=(10,7))
     ax.set_xlabel('Offset between TX and IF')
     ax.set_ylabel('Packet Reception Rate [%]')
-    ax.set_ylim([0, 110])
+    ax.set_ylim([0, 120])
+    ax.set_yticks([0,20,40,60,80,100])
     for i in ax.patches:
-        ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1, str(round(i.get_height(),2)), fontsize=7, color='dimgrey', rotation=90, ha="center", va="bottom")
+        ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1.2, str(round(i.get_height(),2)), fontsize=8, color='dimgrey', rotation=90, ha="center", va="bottom")
     plt.title(title)
-    plt.show()
+    plt.savefig(if_phy + "_" + payload_size + ".png")
