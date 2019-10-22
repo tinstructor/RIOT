@@ -48,11 +48,19 @@ for csv_file in file_list:
 
             bar_info[if_phy, payload_size, sir][offset].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
 
+            if (if_phy, payload_size, offset not in line_info):
+                line_info.setdefault((if_phy, payload_size, offset), {})
+
+            if (sir not in line_info[if_phy, payload_size, offset]):
+                line_info[if_phy, payload_size, offset].setdefault(sir, {})
+
+            line_info[if_phy, payload_size, offset][sir].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
+
     else:
         raise ValueError("CSV filename %s incorrectly formatted" % csv_file)
 
 for if_phy, payload_size, sir in bar_info:
-    title = "Interference: " + if_phy + ", Payload: " + payload_size
+    title = "Interference: " + if_phy + ", Payload: " + payload_size + ", SIR: " + sir
     bar_info[if_phy, payload_size, sir] = dict(sorted(bar_info[if_phy, payload_size, sir].items(), key=lambda x: x[0].lower()))
     ax = pd.DataFrame(bar_info[if_phy, payload_size, sir]).T.plot(kind='bar', figsize=(10,7))
     ax.set_xlabel('Offset between TX and IF')
@@ -63,3 +71,14 @@ for if_phy, payload_size, sir in bar_info:
         ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1.2, str(round(i.get_height(),2)), fontsize=8, color='dimgrey', rotation=90, ha="center", va="bottom")
     plt.title(title)
     plt.savefig(if_phy + "_" + payload_size + "_" + sir + ".png")
+
+for if_phy, payload_size, offset in line_info:
+    title = "Interference: " + if_phy + ", Payload: " + payload_size + ", Offset: " + offset
+    line_info[if_phy, payload_size, offset] = dict(sorted(line_info[if_phy, payload_size, offset].items(), key=lambda x: x[0].lower()))
+    ax = pd.DataFrame(line_info[if_phy, payload_size, offset]).T.plot(kind='line', figsize=(10,7))
+    ax.set_xlabel('SIR between TX and IF')
+    ax.set_ylabel('Packet Reception Rate [%]')
+    ax.set_ylim([0, 120])
+    ax.set_yticks([0,20,40,60,80,100])
+    plt.title(title)
+    plt.savefig(if_phy + "_" + payload_size + "_" + offset + ".png")
