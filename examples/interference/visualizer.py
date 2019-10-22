@@ -73,15 +73,18 @@ for if_phy, payload_size, sir in bar_info:
     plt.savefig(if_phy + "_" + payload_size + "_" + sir + ".png")
     plt.close()
 
+styles = ['s-', 'o-', '^-', 'x-', 'd-', 'h-']
 for if_phy, payload_size, offset in line_info:
     title = "Interference: " + if_phy + ", Payload: " + payload_size + ", Offset: " + offset
     line_info[if_phy, payload_size, offset] = dict(sorted(line_info[if_phy, payload_size, offset].items(), key=lambda x: x[0].lower()))
-    ax = pd.DataFrame(line_info[if_phy, payload_size, offset]).T.plot(kind='line', figsize=(10,7))
+    df = pd.DataFrame(line_info[if_phy, payload_size, offset]).T
+    ax = df.plot(kind='line', figsize=(10,7), style=styles, xticks=range(len(list(df.index.values))))
     ax.legend(loc='lower right')
     ax.set_xlabel('SIR between TX and IF')
     ax.set_ylabel('Packet Reception Rate [%]')
     ax.set_ylim([0, 120])
     ax.set_yticks([0,20,40,60,80,100])
+    ax.set_xlim([-0.05,len(list(df.index.values)) - 0.95])
     plt.title(title)
     plt.savefig(if_phy + "_" + payload_size + "_" + offset + ".png")
     plt.close()
