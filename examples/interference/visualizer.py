@@ -32,6 +32,7 @@ for csv_file in file_list:
 
         df = pd.read_csv(csv_file, header=None)
         df.columns = ["TRX PHY","IF PHY","PRR"]
+        df["PRR"] *= 100
 
         for if_phy in if_phys:
             df_if_phy = df.loc[df["IF PHY"] == if_phy]
@@ -47,10 +48,14 @@ for csv_file in file_list:
     else:
         raise ValueError("CSV filename %s incorrectly formatted" % csv_file)
 
-# print(graph_info)
-
 for if_phy, payload_size in graph_info:
-    # title = "Interference: " + if_phy + ", Payload: " + payload_size
-    pd.DataFrame(graph_info[if_phy, payload_size]).T.plot(kind='bar')
+    title = "Interference: " + if_phy + ", Payload: " + payload_size
+    graph_info[if_phy, payload_size] = dict(sorted(graph_info[if_phy, payload_size].items(), key=lambda x: x[0].lower()))
+    ax = pd.DataFrame(graph_info[if_phy, payload_size]).T.plot(kind='bar')
+    ax.set_xlabel('Offset between TX and IF')
+    ax.set_ylabel('Packet Reception Rate [%]')
+    ax.set_ylim([0, 110])
+    for i in ax.patches:
+        ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1, str(round(i.get_height(),2)), fontsize=7, color='dimgrey', rotation=90, ha="center", va="bottom")
+    plt.title(title)
     plt.show()
-    # print(graph_info[if_phy, payload_size])
