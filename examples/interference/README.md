@@ -142,7 +142,32 @@ $ make -j flash BOARD=openmote-b GNRC_NETIF_NUMOF=1 PORT_BSL=/dev/ttyUSB1
 ## Usage
 The basic usage of this example application is pretty straighforward. Currently, you can only use this application to its full potential if you're using one of the platforms / configurations specified in [this post](https://github.com/RIOT-OS/RIOT/pull/12128#issue-312769776). Everything is written for OpenMote-B nodes, so those should work out of the box. When using a different platform, the pins to be used on that platform can be changes in `RIOT > examples > interference > interference_constants.h`. This header file also includes several other configuration constants that may be changed for your purposes.
 
+Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger a transmission of a message over the AT86RF215's Sub-GHz interface. By default, this interface is configured for the [SUN-FSK PHY in Operating Mode 1](https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf?#page=499), i.e., 2-FSK with a data-rate of 50 kbps, a modulation index of 1, a channel spacing of 200 kHz and a channel 0 center frequency at 863 125 kHz (for a total of 34 channels in the 863-870 MHz range). A rising edge on pin PB2 will cycle through all available PHY configurations contained in the `phy_cfg_sub_ghz[]` array defined in `interference_constants.h`. Transmissions are also defined as constants of type `if_tx_t` (containing the interface to send on, the destination MAC addr, and the actual payload of the 802.15.4 data frame) and the transmission used can be set on line 45 of `RIOT > examples > interference > main.c`. In similar fashion a rising edge on PB1 and PB3 triggers a transmission and a PHY reconfiguration on the AT86RF215 2.4GHz interface respectively.
+
+For your convenience a python script (see `RIOT > examples > interference > capture.py`) is provided that creates a logfile from the serial output passed to it (via a pipe). Creating a logfile with a name of your choice is done as follows:
+
+```bash
+$ make BOARD=openmote-b term PORT=/dev/ttyUSB | python3 capture.py -f <name of logfile>
+Created logfile "test.log"
+/home/relsas/RIOT-benpicco/dist/tools/pyterm/pyterm -p "/dev/ttyUSB1" -b "115200" 
+2019-10-16 13:04:13,124 # Connect to serial port /dev/ttyUSB1
+Welcome to pyterm!
+Type '/exit' to exit.
+2019-10-16 13:04:21,351 # PKTDUMP: data received:
+2019-10-16 13:04:21,355 # ~~ SNIP  0 - size:  25 byte, type: NETTYPE_UNDEF (0)
+2019-10-16 13:04:21,356 # 00000000  30  31  32  33  34  35  36  37  38  39  30  31  32  33  34  35
+2019-10-16 13:04:21,365 # 00000010  36  37  38  39  30  31  32  33  34
+2019-10-16 13:04:21,366 # ~~ SNIP  1 - size:  18 byte, type: NETTYPE_NETIF (-1)
+2019-10-16 13:04:21,366 # if_pid: 4  rssi: -29  lqi: 0
+2019-10-16 13:04:21,367 # flags: 0x0
+2019-10-16 13:04:21,367 # src_l2addr: 22:68
+2019-10-16 13:04:21,381 # dst_l2addr: 22:68:31:23:9D:F1:96:37
+2019-10-16 13:04:21,381 # ~~ PKT    -  2 snips, total size:  43 byte
+```
+
 Coming soon.
+
+>**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
 
 ## Recommended Reads
 - [**IEEE 802.15.4-2015**](https://standards.ieee.org/standard/802_15_4-2015.html): The currently active PHY + MAC layer standard for 802.15.4 networks. Although this is the official standard, many developers seem to have a total disregard for certain aspects of it. Especially on the Sub-GHz PHY layers, there seems to be a lot of confusion as to what is actually standardised and what is not. The fact that IEEE standards are very expensive to obtain doesn't help this confusion either.
