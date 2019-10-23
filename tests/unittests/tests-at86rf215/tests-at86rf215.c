@@ -272,6 +272,74 @@ static void test_at86rf215_tx_ack(void)
     TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
 }
 
+/*
+ * Simulates sending a message (with spurious ACK)
+ */
+static void test_at86rf215_tx_spurious_ack(void)
+{
+    uint8_t tx_buffer_len;
+    char tx_buffer[128];
+    at86rf215_t *dev = &test_dev[0];
+    const char payload[] = "Hello Test, do you hear me?";
+
+    dev->flags |= AT86RF215_OPT_ACK_REQUESTED;
+    dev->ack_timeout_usec = 1000;
+
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), at86rf215_send(dev, payload, sizeof(payload)));
+
+    /* read TX buffer */
+    tx_buffer_len = at86rf215_reg_read(dev, dev->BBC->RG_TXFLL) - IEEE802154_FCS_LEN;
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), tx_buffer_len);
+
+    at86rf215_reg_read_bytes(dev, dev->BBC->RG_FBTXS, tx_buffer, tx_buffer_len);
+    TEST_ASSERT_EQUAL_STRING(payload, tx_buffer);
+
+    /* set energy detect interrupt */
+    at86rf215_reg_write(dev, dev->RF->RG_IRQS, RF_IRQ_EDC);
+
+    /* set TX done interrupt */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_TXFE);
+
+    /* set channel clear */
+    at86rf215_reg_write(dev, dev->BBC->RG_AMCS, 0);
+
+    _isr(&test_dev[0].netdev.netdev);
+
+    /* set RX 'seq_no' to bogus value */
+    at86rf215_reg_write(dev, dev->BBC->RG_FBRXS + 2, 255);
+
+    /* set RX done interrupt */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_RXFE);
+    _isr(&test_dev[0].netdev.netdev);
+
+    /* frame will be sent again */
+
+    /* set energy detect interrupt */
+    at86rf215_reg_write(dev, dev->RF->RG_IRQS, RF_IRQ_EDC);
+
+    /* set TX done interrupt */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_TXFE);
+
+    _isr(&test_dev[0].netdev.netdev);
+
+    /* simulate ACK RX */
+
+    /* set RX 'seq_no' to TX 'seq_no' */
+    at86rf215_reg_write(dev, dev->BBC->RG_FBRXS + 2, at86rf215_reg_read(dev, dev->BBC->RG_FBTXS + 2));
+
+    /* set RX done interrupt */
+    at86rf215_reg_write(dev, dev->BBC->RG_IRQS, BB_IRQ_RXFE);
+    _isr(&test_dev[0].netdev.netdev);
+
+    /* ACK timeout should be disabled now */
+    msg_t m;
+    TEST_ASSERT_EQUAL_INT(-1, xtimer_msg_receive_timeout(&m, dev->ack_timeout_usec + 10));
+
+    TEST_ASSERT_EQUAL_INT(AT86RF215_STATE_IDLE, dev->state);
+}
+
 
 Test *tests_at86rf215_tests(void)
 {
@@ -280,6 +348,7 @@ Test *tests_at86rf215_tests(void)
         new_TestFixture(test_at86rf215_rx_ack),
         new_TestFixture(test_at86rf215_tx),
         new_TestFixture(test_at86rf215_tx_ack),
+        new_TestFixture(test_at86rf215_tx_spurious_ack),
     };
 
     EMB_UNIT_TESTCALLER(at86rf215_tests, _setup, NULL, fixtures);

@@ -29,6 +29,13 @@
 
 void led_init(void);
 
+/*
+ * Add an empty led_init() as fall back.
+ * If at link time another implementation of led_init() not marked as weak
+ * (a.k.a. a strong symbol) is present, it will be linked in instead.
+ */
+void __attribute__((weak)) led_init(void) {}
+
 void board_init(void)
 {
 #ifdef CPU_ATMEGA32U4
@@ -39,6 +46,8 @@ void board_init(void)
     atmega_set_prescaler(CPU_ATMEGA_CLK_SCALE_INIT);
 
     cpu_init();
+#ifdef LED0_ON
     led_init();
+#endif
     irq_enable();
 }

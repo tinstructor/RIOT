@@ -22,6 +22,7 @@
 #include "byteorder.h"
 #include "net/ieee802154.h"
 #include "net/gnrc.h"
+#include "unaligned.h"
 #include "at86rf215_internal.h"
 #include "at86rf215_netdev.h"
 
@@ -152,7 +153,7 @@ void at86rf215_reset(at86rf215_t *dev)
     uint64_t long_addr;
     memcpy(&long_addr, dev->netdev.long_addr, sizeof(long_addr));
     at86rf215_set_addr_long(dev, long_addr);
-    at86rf215_set_addr_short(dev, *(uint16_t *)&dev->netdev.short_addr[0]);
+    at86rf215_set_addr_short(dev, unaligned_get_u16(dev->netdev.short_addr));
 
     /*** set default PAN id ***/
     at86rf215_set_pan(dev, dev->netdev.pan);

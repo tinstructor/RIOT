@@ -506,11 +506,17 @@ static void _netif_list_ipv6(ipv6_addr_t *addr, uint8_t flags)
     printf("inet6 addr: ");
     ipv6_addr_to_str(addr_str, addr, sizeof(addr_str));
     printf("%s  scope: ", addr_str);
-    if ((ipv6_addr_is_link_local(addr))) {
-        printf("local");
+    if (ipv6_addr_is_link_local(addr)) {
+        printf("link");
+    }
+    else if (ipv6_addr_is_site_local(addr)) {
+        printf("site");
+    }
+    else if (ipv6_addr_is_global(addr)) {
+        printf("global");
     }
     else {
-        printf("global");
+        printf("unknown");
     }
     if (flags & GNRC_NETIF_IPV6_ADDRS_FLAGS_ANYCAST) {
         printf(" [anycast]");
@@ -613,7 +619,7 @@ static void _netif_list(kernel_pid_t iface)
             if (res >= 0) {
                 printf(" rate mode: %d %s ", u8 & ~IEEE802154_OQPSK_FLAG_LEGACY,
                                             (u8 & IEEE802154_OQPSK_FLAG_LEGACY) ?
-                                            "(legacy) " : "");
+                                            "(legacy)" : "");
             }
 
             break;

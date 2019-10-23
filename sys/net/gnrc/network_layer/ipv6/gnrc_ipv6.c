@@ -276,7 +276,7 @@ static void _send_to_iface(gnrc_netif_t *netif, gnrc_pktsnip_t *pkt)
 #endif
 
 #ifdef MODULE_GNRC_SIXLOWPAN
-    if (gnrc_netif_is_6ln(netif)) {
+    if (gnrc_netif_is_6lo(netif)) {
         DEBUG("ipv6: send to 6LoWPAN instead\n");
         if (!gnrc_netapi_dispatch_send(GNRC_NETTYPE_SIXLOWPAN, GNRC_NETREG_DEMUX_CTX_ALL, pkt)) {
             DEBUG("ipv6: no 6LoWPAN thread found\n");
@@ -382,7 +382,7 @@ static int _fill_ipv6_hdr(gnrc_netif_t *netif, gnrc_pktsnip_t *ipv6)
         int idx;
 
         gnrc_netif_acquire(netif);
-        invalid_src = ((idx = gnrc_netif_ipv6_addr_idx(netif, &hdr->src)) == -1) ||
+        invalid_src = ((idx = gnrc_netif_ipv6_addr_idx(netif, &hdr->src)) >= 0) &&
             (gnrc_netif_ipv6_addr_get_state(netif, idx) != GNRC_NETIF_IPV6_ADDRS_FLAGS_STATE_VALID);
         gnrc_netif_release(netif);
         if (invalid_src) {
@@ -563,28 +563,33 @@ static void _send_multicast(gnrc_pktsnip_t *pkt, bool prep_hdr,
         gnrc_pktbuf_hold(pkt, ifnum - 1);
 
         while ((netif = gnrc_netif_iter(netif))) {
+            gnrc_pktsnip_t *send_pkt = pkt;
+            /* for !prep_hdr just use pkt as we don't duplicate IPv6 header as
+             * it is already filled and thus isn't filled with potentially
+             * interface-specific data */
             if (prep_hdr) {
                 DEBUG("ipv6: prepare IPv6 header for sending\n");
                 /* need to get second write access (duplication) to fill IPv6
-                 * header interface-local */
-                gnrc_pktsnip_t *tmp = gnrc_pktbuf_start_write(pkt);
+                 * header with interface-specific data */
+                send_pkt = gnrc_pktbuf_start_write(pkt);
 
-                if (tmp == NULL) {
+                if (send_pkt == NULL) {
                     DEBUG("ipv6: unable to get write access to IPv6 header, "
                           "for interface %" PRIkernel_pid "\n", netif->pid);
                     gnrc_pktbuf_release(pkt);
                     return;
                 }
-                if (_fill_ipv6_hdr(netif, tmp) < 0) {
+                if (_fill_ipv6_hdr(netif, send_pkt) < 0) {
                     /* error on filling up header */
-                    if (tmp != pkt) {
-                        gnrc_pktbuf_release(tmp);
+                    if (send_pkt != pkt) {
+                        gnrc_pktbuf_release(send_pkt);
                     }
                     gnrc_pktbuf_release(pkt);
                     return;
                 }
             }
-            _send_multicast_over_iface(pkt, prep_hdr, netif, netif_hdr_flags);
+            _send_multicast_over_iface(send_pkt, prep_hdr, netif,
+                                       netif_hdr_flags);
         }
     }
     else {
