@@ -165,6 +165,8 @@ Type '/exit' to exit.
 2019-10-16 13:04:21,381 # ~~ PKT    -  2 snips, total size:  43 byte
 ```
 
+The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to whic log-derived information must be appended: $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv. It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<TX bytes>` is the amount of bytes in the PHY payload (i.e., L2 payload size + L2 header), ...
+
 Coming soon.
 
 >**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
