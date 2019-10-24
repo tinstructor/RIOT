@@ -165,11 +165,13 @@ Type '/exit' to exit.
 2019-10-16 13:04:21,381 # ~~ PKT    -  2 snips, total size:  43 byte
 ```
 
-The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to whic log-derived information must be appended: $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv. It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<TX bytes>` is the amount of bytes in the PHY payload (i.e., L2 payload size + L2 header), ...
-
-Coming soon.
+The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to which log-derived information must be appended: $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv. It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<TX bytes>` is the amount of bytes in the PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `TX_40B_OF_1MS_SIR_10DB.csv` and `TX_40B_OF_2MS_SIR_30DB.csv`.
 
 >**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
+
+After performing a number of experiments (again, with the help of the `timing_control` example explained in `RIOT > examples > timing_control > README.md`), ...
+
+Coming soon.
 
 ## Recommended Reads
 - [**IEEE 802.15.4-2015**](https://standards.ieee.org/standard/802_15_4-2015.html): The currently active PHY + MAC layer standard for 802.15.4 networks. Although this is the official standard, many developers seem to have a total disregard for certain aspects of it. Especially on the Sub-GHz PHY layers, there seems to be a lot of confusion as to what is actually standardised and what is not. The fact that IEEE standards are very expensive to obtain doesn't help this confusion either.
