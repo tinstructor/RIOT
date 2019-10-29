@@ -42,6 +42,7 @@ static const if_phy_cfg_t phy_cfg_sub_ghz[NUM_PHY_CFG_SUB_GHZ] = {
     {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
 };
 
+#ifndef IS_INTERFERER_SUB_GHZ
 static const if_tx_t TX_40B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
                                                                                  "01234"};
 static const if_tx_t TX_80B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
@@ -54,7 +55,20 @@ static const if_tx_t TX_120B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37"
                                                                                   "01234567890123456789"
                                                                                   "01234567890123456789"
                                                                                   "01234"};  
-
+#else
+static const if_tx_t TX_40B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
+                                                                                 "01234"};
+static const if_tx_t TX_80B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
+                                                                                 "01234567890123456789"
+                                                                                 "01234567890123456789"
+                                                                                 "01234"}; 
+static const if_tx_t TX_120B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234"};
+#endif /* IS_INTERFERER_SUB_GHZ */
 #if (GNRC_NETIF_NUMOF >= 2)
 #define IFACE_2_4_GHZ           5
 
@@ -67,6 +81,7 @@ static const if_phy_cfg_t phy_cfg_2_4_ghz[NUM_PHY_CFG_2_4_GHZ] = {
     {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
 };
 
+#ifndef IS_INTERFERER_2_4_GHZ
 static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
                                                                                  "01234"};
 static const if_tx_t TX_80B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
@@ -79,6 +94,20 @@ static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37"
                                                                                   "01234567890123456789"
                                                                                   "01234567890123456789"
                                                                                   "01234"};  
+#else
+static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
+                                                                                 "01234"};
+static const if_tx_t TX_80B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
+                                                                                 "01234567890123456789"
+                                                                                 "01234567890123456789"
+                                                                                 "01234"}; 
+static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234567890123456789"
+                                                                                  "01234"};
+#endif /* IS_INTERFERER_2_4_GHZ */
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */
 
