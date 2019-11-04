@@ -30,6 +30,14 @@
  extern "C" {
 #endif
 
+#define TX_SUB_GHZ_PIN           GPIO_PIN(PORT_B, 0)
+#define TX_2_4_GHZ_PIN           GPIO_PIN(PORT_B, 1)
+#define PHY_CFG_SUB_GHZ_PIN      GPIO_PIN(PORT_B, 2)
+#define PHY_CFG_2_4_GHZ_PIN      GPIO_PIN(PORT_B, 3)
+
+#define IF_DEFAULT_CHANNEL       0UL
+// #define IS_INTERFERER_SUB_GHZ
+
 #ifdef MODULE_AT86RF215
 #define IFACE_SUB_GHZ           4
 
@@ -110,11 +118,6 @@ static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37"
 #endif /* IS_INTERFERER_2_4_GHZ */
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */
-
-#define TX_SUB_GHZ_PIN           GPIO_PIN(PORT_B, 0)
-#define TX_2_4_GHZ_PIN           GPIO_PIN(PORT_B, 1)
-#define PHY_CFG_SUB_GHZ_PIN      GPIO_PIN(PORT_B, 2)
-#define PHY_CFG_2_4_GHZ_PIN      GPIO_PIN(PORT_B, 3)
 
 #ifdef __cplusplus
 } /* end extern "C" */

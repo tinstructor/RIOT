@@ -306,6 +306,7 @@ int main(void)
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
     
     netopt_enable_t disable = NETOPT_DISABLE;
+    uint16_t default_channel = IF_DEFAULT_CHANNEL;
     netif = gnrc_netif_iter(netif);
     while (netif)
     {
@@ -313,6 +314,7 @@ int main(void)
         gnrc_netapi_set(netif->pid, NETOPT_ACK_REQ, 0, &disable, sizeof(disable));
         gnrc_netapi_set(netif->pid, NETOPT_CSMA, 0, &disable, sizeof(disable));
         gnrc_netapi_set(netif->pid, NETOPT_AUTOCCA, 0, &disable, sizeof(disable));
+        gnrc_netapi_set(netif->pid, NETOPT_CHANNEL, 0, &default_channel, sizeof(default_channel));
         netif = gnrc_netif_iter(netif);
     }
 
