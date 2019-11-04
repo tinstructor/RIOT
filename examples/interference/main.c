@@ -87,6 +87,13 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
         return 1;
     }
 
+    res = gnrc_netapi_set(phy_cfg->iface, NETOPT_TX_POWER, 0, 
+        &phy_cfg->pac_txpwr, sizeof(phy_cfg->pac_txpwr));
+    if (res < 0) {
+        DEBUG("Unable to set PAC.TXPWR to %d\n", phy_cfg->pac_txpwr);
+        return 1;
+    }
+
     res = gnrc_netapi_set(phy_cfg->iface, NETOPT_IEEE802154_PHY, 0,
         &phy_cfg->ieee802154_phy, sizeof(phy_cfg->ieee802154_phy));
     if (res < 0) {

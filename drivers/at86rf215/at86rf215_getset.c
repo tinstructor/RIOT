@@ -120,39 +120,57 @@ void at86rf215_set_pan(at86rf215_t *dev, uint16_t pan)
 // TODO: take modulation into account
 int16_t at86rf215_get_txpower(const at86rf215_t *dev)
 {
+    // uint8_t pac = at86rf215_reg_read(dev, dev->RF->RG_PAC);
+
+    // /* almost linear, each PACUR step adds ~1 dBm */
+    // return PAC_DBM_MIN + (pac & PAC_TXPWR_MASK) +
+    //        ((pac & PAC_PACUR_MASK) >> PAC_PACUR_SHIFT);
+
     uint8_t pac = at86rf215_reg_read(dev, dev->RF->RG_PAC);
 
-    /* almost linear, each PACUR step adds ~1 dBm */
-    return PAC_DBM_MIN + (pac & PAC_TXPWR_MASK) +
-           ((pac & PAC_PACUR_MASK) >> PAC_PACUR_SHIFT);
+    uint8_t pacur = (pac & PAC_PACUR_MASK) >> PAC_PACUR_SHIFT;
+    uint8_t txpwr = (pac & PAC_TXPWR_MASK) >> PAC_TXPWR_SHIFT;
+
+    return 0x3 - pacur + txpwr;
 }
 
 // TODO: take modulation into account
 void at86rf215_set_txpower(const at86rf215_t *dev, int16_t txpower)
 {
+    // uint8_t pacur = 0;
+
+    // txpower -= PAC_DBM_MIN;
+
+    // if (txpower < 0) {
+    //     txpower = 0;
+    // }
+
+    // if (txpower > PAC_TXPWR_MASK) {
+    //     switch (txpower - PAC_TXPWR_MASK) {
+    //         case 1:
+    //             pacur = 1 << PAC_PACUR_SHIFT;
+    //             break;
+    //         case 2:
+    //             pacur = 2 << PAC_PACUR_SHIFT;
+    //             break;
+    //         default:
+    //             pacur = 3 << PAC_PACUR_SHIFT;
+    //             break;
+    //     }
+
+    //     txpower = PAC_TXPWR_MASK;
+    // }
+
+    // at86rf215_reg_write(dev, dev->RF->RG_PAC, pacur | txpower);
+
     uint8_t pacur = 0;
 
-    txpower -= PAC_DBM_MIN;
-
     if (txpower < 0) {
-            txpower = 0;
+        txpower = 0;
     }
 
-    if (txpower > PAC_TXPWR_MASK) {
-        switch (txpower - PAC_TXPWR_MASK) {
-            case 1:
-                pacur = 1 << PAC_PACUR_SHIFT;
-                break;
-            case 2:
-                pacur = 2 << PAC_PACUR_SHIFT;
-                break;
-            default:
-                pacur = 3 << PAC_PACUR_SHIFT;
-                break;
-        }
-
-        txpower = PAC_TXPWR_MASK;
-    }
+    pacur = 0x3 << PAC_PACUR_SHIFT;
+    txpower = txpower % (PAC_TXPWR_MASK + 1);
 
     at86rf215_reg_write(dev, dev->RF->RG_PAC, pacur | txpower);
 }

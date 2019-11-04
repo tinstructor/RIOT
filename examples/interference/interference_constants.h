@@ -36,18 +36,24 @@
 #define PHY_CFG_2_4_GHZ_PIN      GPIO_PIN(PORT_B, 3)
 
 #define IF_DEFAULT_CHANNEL       0UL
+#define IF_FSK_9_DBM_SUB_GHZ     21
+#define IF_OFDM_9_DBM_SUB_GHZ    29
+#define IF_FSK_9_DBM_2_4_GHZ     22
+#define IF_OFDM_9_DBM_2_4_GHZ    30
+
 // #define IS_INTERFERER_SUB_GHZ
+// #define IS_INTERFERER_2_4_GHZ
 
 #ifdef MODULE_AT86RF215
 #define IFACE_SUB_GHZ           4
 
 static const if_phy_cfg_t phy_cfg_sub_ghz[NUM_PHY_CFG_SUB_GHZ] = {
-    {IFACE_SUB_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {50, 200, 64, 2}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {100, 400, 64, 2}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 2}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 3}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 1}},
-    {IFACE_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
+    {IFACE_SUB_GHZ, IF_FSK_9_DBM_SUB_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {50, 200, 64, 2}},
+    {IFACE_SUB_GHZ, IF_FSK_9_DBM_SUB_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {100, 400, 64, 2}},
+    {IFACE_SUB_GHZ, IF_OFDM_9_DBM_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 2}},
+    {IFACE_SUB_GHZ, IF_OFDM_9_DBM_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 3}},
+    {IFACE_SUB_GHZ, IF_OFDM_9_DBM_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 1}},
+    {IFACE_SUB_GHZ, IF_OFDM_9_DBM_SUB_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
 };
 
 #ifndef IS_INTERFERER_SUB_GHZ
@@ -81,12 +87,12 @@ static const if_tx_t TX_120B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37"
 #define IFACE_2_4_GHZ           5
 
 static const if_phy_cfg_t phy_cfg_2_4_ghz[NUM_PHY_CFG_2_4_GHZ] = {
-    {IFACE_2_4_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {50, 200, 64, 2}},
-    {IFACE_2_4_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {100, 400, 32, 2}},
-    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 2}},
-    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 3}},
-    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 1}},
-    {IFACE_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
+    {IFACE_2_4_GHZ, IF_FSK_9_DBM_2_4_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {50, 200, 64, 2}},
+    {IFACE_2_4_GHZ, IF_FSK_9_DBM_2_4_GHZ, IEEE802154_PHY_FSK, .fsk_cfg = {100, 400, 32, 2}},
+    {IFACE_2_4_GHZ, IF_OFDM_9_DBM_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 2}},
+    {IFACE_2_4_GHZ, IF_OFDM_9_DBM_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {4, 3}},
+    {IFACE_2_4_GHZ, IF_OFDM_9_DBM_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 1}},
+    {IFACE_2_4_GHZ, IF_OFDM_9_DBM_2_4_GHZ, IEEE802154_PHY_OFDM, .ofdm_cfg = {3, 2}}
 };
 
 #ifndef IS_INTERFERER_2_4_GHZ
