@@ -40,10 +40,10 @@
 #define NUM_OF_TX           (100UL)
 #define NUM_OF_PHY          (6UL)
 
-#define TX_WUP_INTERVAL     (500UL * US_PER_MS)
+#define TX_WUP_INTERVAL     (400UL * US_PER_MS)
 #define PHY_CFG_INTERVAL    (TX_WUP_INTERVAL * NUM_OF_TX)
 
-#define WAITING_PERIOD_US   (100UL * US_PER_MS)
+#define WAITING_PERIOD_US   (300UL * US_PER_MS)
 #define IF_TX_OFFSET_US     (1UL * US_PER_MS)
 #define PULSE_DURATION_US   (150UL * US_PER_MS)
 

@@ -147,7 +147,7 @@ Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger 
 For your convenience a python script (see `RIOT > examples > interference > capture.py`) is provided that creates a logfile from the serial output passed to it (via a pipe). Creating a logfile with a name of your choice is done as follows:
 
 ```bash
-$ make BOARD=openmote-b term PORT=/dev/ttyUSB | python3 capture.py -f <name of logfile>
+$ make BOARD=openmote-b term PORT=/dev/ttyUSB1 | python3 capture.py -f <name of logfile>
 Created logfile "test.log"
 /home/relsas/RIOT-benpicco/dist/tools/pyterm/pyterm -p "/dev/ttyUSB1" -b "115200" 
 2019-10-16 13:04:13,124 # Connect to serial port /dev/ttyUSB1
