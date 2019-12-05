@@ -38,7 +38,8 @@
 #define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 0)
 
 #define NUM_OF_TX           (100UL)
-#define NUM_OF_PHY          (6UL)
+#define NUM_OF_PHY_TRX      (6UL)
+#define NUM_OF_PHY_IF       (6UL)
 
 #define TX_WUP_INTERVAL     (400UL * US_PER_MS)
 #define PHY_CFG_INTERVAL    (TX_WUP_INTERVAL * NUM_OF_TX)

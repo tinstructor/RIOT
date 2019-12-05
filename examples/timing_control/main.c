@@ -99,7 +99,7 @@ static void *thread_tc_handler(void *arg)
     last_wup_tc = xtimer_now();
     xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
 
-    while (experiments < NUM_OF_PHY) {
+    while (experiments < NUM_OF_PHY_IF) {
         xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - IF_TX_OFFSET_US - PULSE_DURATION_US);
         gpio_set(TX_TX_PIN);
         DEBUG("tx tx on: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
@@ -127,7 +127,7 @@ static void *thread_tc_handler(void *arg)
 
             phy_reconfigs++;
 
-            if (phy_reconfigs >= NUM_OF_PHY) {
+            if (phy_reconfigs >= NUM_OF_PHY_TRX) {
                 gpio_set(IF_PHY_CFG_PIN);
                 DEBUG("if phy cfg on: %"PRIu32"\n",xtimer_usec_from_ticks(last_wup_tc));
                 xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);

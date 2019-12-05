@@ -56,7 +56,10 @@ LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
 LOG_REGEXP_PHY = re.compile("^.*?PHY")
 
 NUM_OF_TX = 100
-PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
+TRX_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
+               "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
+               "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
+IF_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
                "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
                "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
 
@@ -64,7 +67,7 @@ experiments = {}
 trx_phy_index = 0
 if_phy_index = 0
 experiment_index = 0
-current_experiment = experiment(NUM_OF_TX, PHY_CONFIGS[trx_phy_index], PHY_CONFIGS[if_phy_index])
+current_experiment = experiment(NUM_OF_TX, TRX_PHY_CONFIGS[trx_phy_index], IF_PHY_CONFIGS[if_phy_index])
 
 csv_filename = args.csvfile
 log_filename = args.logfile
@@ -78,8 +81,9 @@ with open(log_filename, "r") as log:
 
         if (pkt_match):
             current_experiment.set_rx_count(current_experiment.get_rx_count() + 1)
-        elif (phy_match):
-            if (trx_phy_index >= len(PHY_CONFIGS) - 1):
+        
+        if (phy_match):
+            if (trx_phy_index >= len(TRX_PHY_CONFIGS) - 1):
                 trx_phy_index = 0
                 if_phy_index += 1
             else:
@@ -87,9 +91,11 @@ with open(log_filename, "r") as log:
 
             experiments[experiment_index] = current_experiment
 
-            if (experiment_index < (len(PHY_CONFIGS) ** 2) - 1):
-                current_experiment = experiment(NUM_OF_TX, PHY_CONFIGS[trx_phy_index], PHY_CONFIGS[if_phy_index])
+            if (experiment_index < (len(TRX_PHY_CONFIGS) * len(IF_PHY_CONFIGS)) - 1):
+                current_experiment = experiment(NUM_OF_TX, TRX_PHY_CONFIGS[trx_phy_index], IF_PHY_CONFIGS[if_phy_index])
                 experiment_index += 1
+            else:
+                break
 
 for e in experiments:
     print("Results of experiment %d:\n" %(e))
