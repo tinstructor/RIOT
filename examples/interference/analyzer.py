@@ -4,6 +4,8 @@ import re
 import argparse
 import csv
 import math
+import os
+import errno
 
 ################################################################################
 
@@ -103,6 +105,13 @@ for e in experiments:
     print("PHY of IF:\t\t%s" % (experiments[e].get_if_phy()))
     print("PRR:\t\t\t%.2f" % (experiments[e].packet_success()))
     print("---------------------------------------------------")
+
+if not os.path.exists(os.path.dirname(csv_filename)):
+    try:
+        os.makedirs(os.path.dirname(csv_filename))
+    except OSError as exc: # Guard against race condition
+        if exc.errno != errno.EEXIST:
+            raise
 
 with open(csv_filename, "w", newline='') as output_file:
     for e in experiments:
