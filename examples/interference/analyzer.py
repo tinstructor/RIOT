@@ -51,7 +51,8 @@ class experiment:
 
 parser = argparse.ArgumentParser()
 parser.add_argument("logfile", help="The logfile to be analyzed.")
-parser.add_argument("csvfile", help="The csv file to which log-derived info must be appended.")
+parser.add_argument("csvfile", help="The csv file to which log-derived info must be written / appended.")
+parser.add_argument("-a", "--append", action="store_true", help="Append to the csv file, overwrite it otherwise.")
 args = parser.parse_args()
 
 LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
@@ -106,6 +107,7 @@ for e in experiments:
     print("PRR:\t\t\t%.2f" % (experiments[e].packet_success()))
     print("---------------------------------------------------")
 
+csv_filename = "./" + csv_filename
 if not os.path.exists(os.path.dirname(csv_filename)):
     try:
         os.makedirs(os.path.dirname(csv_filename))
@@ -113,6 +115,11 @@ if not os.path.exists(os.path.dirname(csv_filename)):
         if exc.errno != errno.EEXIST:
             raise
 
-with open(csv_filename, "w", newline='') as output_file:
+if args.append and os.path.exists(os.path.dirname(csv_filename)):
+    append_write = "a"
+else:
+    append_write = "w"
+
+with open(csv_filename, append_write, newline='') as output_file:
     for e in experiments:
         output_file.write("%s,%s,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].packet_success()))
