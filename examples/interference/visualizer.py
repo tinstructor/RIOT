@@ -14,9 +14,15 @@ for file in glob.glob(os.path.join(script_dir,"*.csv")):
 
 REGEXP = re.compile(r"^.*_(?P<bytes>\d+)B.*_(?P<time>\d+)(?P<prefix>[UM]*)S.*_(?P<sir>-?\d{1,2})DB\.csv$")
 
-df = pd.read_csv(file_list[0], header=None)
-df.columns = ["TRX PHY","IF PHY","PRR"]
-if_phys = df["IF PHY"].unique()
+frame_list = []
+
+for filename in file_list:
+    foo = pd.read_csv(filename, header=None)
+    foo.columns = ["TRX PHY","IF PHY","PRR"]
+    frame_list.append(foo)
+
+frame = pd.concat(frame_list, axis=0, ignore_index=True)
+if_phys = frame["IF PHY"].unique()
 
 bar_info = {}
 line_info = {}
@@ -38,6 +44,7 @@ for csv_file in file_list:
         df["PRR"] *= 100
 
         for if_phy in if_phys:
+            # NOTE selects all rows whose column value equals if_phy
             df_if_phy = df.loc[df["IF PHY"] == if_phy]
             
             if (if_phy, payload_size, sir not in bar_info):
