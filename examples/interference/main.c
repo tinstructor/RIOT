@@ -97,7 +97,7 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
     res = gnrc_netapi_set(phy_cfg->iface, NETOPT_IEEE802154_PHY, 0,
         &phy_cfg->ieee802154_phy, sizeof(phy_cfg->ieee802154_phy));
     if (res < 0) {
-        DEBUG("Unable to set IEEE802154 PHY to %d\n", phy_cfg->ieee802154_phy);
+        DEBUG("Unable to set IEEE802154 PHY to %s\n", phy_cfg->phy_descriptor);
         return 1;
     }
 
@@ -151,11 +151,11 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
             break;
 
         default:
-            DEBUG("PHY not supported\n");
+            DEBUG("PHY \"%s\" not supported\n", phy_cfg->phy_descriptor);
             return 1;
     }
 
-    DEBUG("PHY reconfigured\n");
+    DEBUG("PHY reconfigured to %s\n", phy_cfg->phy_descriptor);
 
     return 0;
 }

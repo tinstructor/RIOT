@@ -87,6 +87,7 @@ typedef struct {
     kernel_pid_t iface; /**< PID of the interface to configure */
     uint8_t pac_txpwr;
     uint8_t ieee802154_phy;
+    char *phy_descriptor;
     union {
         if_fsk_cfg_t fsk_cfg;
         if_ofdm_cfg_t ofdm_cfg;
