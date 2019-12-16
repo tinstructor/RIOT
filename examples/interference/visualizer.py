@@ -78,13 +78,17 @@ for csv_file in file_list:
 # NOTE loops over each (if_phy, payload_size, sir) tuple in bar_info
 for if_phy, payload_size, sir in bar_info:
     title = "Interference: " + if_phy + ", Payload: " + payload_size + ", SIR: " + sir
-    # NOTE sort by offset
+    # NOTE sort (alfabetically) by offset
     bar_info[if_phy, payload_size, sir] = dict(sorted(bar_info[if_phy, payload_size, sir].items(), key=lambda x: x[0].lower()))
+    # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
+    # diagonal by writing rows as columns and vice-versa) and plot it as a bar plot
     ax = pd.DataFrame(bar_info[if_phy, payload_size, sir]).T.plot(kind='bar', figsize=(10,7))
     ax.set_xlabel('Offset between TX and IF')
     ax.set_ylabel('Packet Reception Rate [%]')
     ax.set_ylim([0, 120])
     ax.set_yticks([0,20,40,60,80,100])
+    # NOTE for each bar: print the height of each bar 1.2 above the top of the bar
+    # tags are centered and rotated 90 degrees counter-clockwise
     for i in ax.patches:
         ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1.2, str(round(i.get_height(),2)), fontsize=8, color='dimgrey', rotation=90, ha="center", va="bottom")
     plt.title(title)
@@ -95,7 +99,10 @@ styles = ['s-', 'o-', '^-', 'x-', 'd-', 'h-']
 # NOTE loops over each (if_phy, payload_size, offset) tuple in line_info
 for if_phy, payload_size, offset in line_info:
     title = "Interference: " + if_phy + ", Payload: " + payload_size + ", Offset: " + offset
+    # NOTE sort (alfabetically) by sir
     line_info[if_phy, payload_size, offset] = dict(sorted(line_info[if_phy, payload_size, offset].items(), key=lambda x: x[0].lower()))
+    # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
+    # diagonal by writing rows as columns and vice-versa) and plot it as a line plot
     df = pd.DataFrame(line_info[if_phy, payload_size, offset]).T
     ax = df.plot(kind='line', figsize=(10,7), style=styles, xticks=range(len(list(df.index.values))))
     ax.legend(loc='lower right')
