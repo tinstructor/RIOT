@@ -53,7 +53,7 @@ typedef enum {
     PHY_CFG_SUB_GHZ_OFDM_2,
     PHY_CFG_SUB_GHZ_OFDM_3,
     PHY_CFG_SUB_GHZ_OFDM_4,
-    NUM_PHY_CFG_SUB_GHZ = 6
+    NUM_PHY_CFG_SUB_GHZ
 } phy_cfg_idx_sub_ghz_t;
 
 #if (GNRC_NETIF_NUMOF >= 2)
@@ -64,7 +64,7 @@ typedef enum {
     PHY_CFG_2_4_GHZ_OFDM_2,
     PHY_CFG_2_4_GHZ_OFDM_3,
     PHY_CFG_2_4_GHZ_OFDM_4,
-    NUM_PHY_CFG_2_4_GHZ = 6
+    NUM_PHY_CFG_2_4_GHZ
 } phy_cfg_idx_2_4_ghz_t;
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 

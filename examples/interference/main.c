@@ -175,7 +175,8 @@ static uint8_t set_phy_sub_ghz(phy_cfg_idx_sub_ghz_t phy_cfg_idx)
 
 static uint8_t init_phy_sub_ghz(void) 
 {
-    return set_phy_sub_ghz(PHY_CFG_SUB_GHZ_FSK_1);
+    // initialize the first available PHY from interference_types.h
+    return set_phy_sub_ghz(0);
 }
 
 static uint8_t next_phy_sub_ghz(void) 
@@ -199,7 +200,8 @@ static uint8_t set_phy_2_4_ghz(phy_cfg_idx_2_4_ghz_t phy_cfg_idx)
 
 static uint8_t init_phy_2_4_ghz(void) 
 {
-    return set_phy_2_4_ghz(PHY_CFG_2_4_GHZ_FSK_1);
+    // initialize the first available PHY from interference_types.h
+    return set_phy_2_4_ghz(0);
 }
 
 static uint8_t next_phy_2_4_ghz(void) 
