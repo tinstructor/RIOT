@@ -51,6 +51,8 @@
 static const msg_t msg_phy_cfg = {.type = TC_MSG_PHY_CFG};
 static const msg_t msg_start = {.type = TC_MSG_START};
 
+#define CHAR_TO_INT(c)      (c - '0')
+
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif

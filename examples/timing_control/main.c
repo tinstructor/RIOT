@@ -31,6 +31,8 @@
 #include "board.h"
 #include "xtimer.h"
 #include "periph/gpio.h"
+#include "periph/uart.h"
+#include "periph/pm.h"
 #include "timing_control_constants.h"
 
 #define ENABLE_DEBUG    (0)
@@ -38,9 +40,11 @@
 
 kernel_pid_t pid_tc;
 kernel_pid_t pid_btn;
+kernel_pid_t pid_ua;
 
 static char stack_tc[THREAD_STACKSIZE_MAIN];
 static char stack_btn[THREAD_STACKSIZE_MAIN];
+static char stack_ua[THREAD_STACKSIZE_MAIN];
 
 xtimer_ticks32_t last_wup_tc;
 xtimer_t phy_cfg_timer;
@@ -59,6 +63,15 @@ static bool allowed_to_start(void)
     return allowed;
 }
 
+static void uart_cb(void *arg, uint8_t data)
+{
+    (void) arg;
+
+    msg_t msg;
+    msg.content.value = data;
+    msg_send(&msg, pid_ua);
+}
+
 static void gpio_cb(void *arg)
 {
     (void) arg;
@@ -66,6 +79,49 @@ static void gpio_cb(void *arg)
     msg_t msg;
     msg = msg_start;
     msg_send(&msg, pid_btn);
+}
+
+static void *thread_ua_handler(void *arg)
+{
+    (void) arg;
+
+    msg_t msg;
+    msg_t msg_queue[8];
+    msg_init_queue(msg_queue, 8);
+
+    while (1) {
+        msg_receive(&msg);
+
+        switch ((char)msg.content.value)
+        {
+            case 's':
+                {
+                    mutex_lock(&start_flag.lock);
+                    start_flag.flag = true;
+                    mutex_unlock(&start_flag.lock);
+                }
+                break;
+            case 'r':
+                {
+                    pm_reboot();
+                }
+                break;
+            case 'o':
+                {
+                    msg_try_receive(&msg);
+                    int index = CHAR_TO_INT((char)msg.content.value);
+                    if (index >= 0 && index <= 9) {
+                        // TODO add capability to set offset
+                        printf("Offset index: %d\n", index);
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    return NULL;
 }
 
 static void *thread_btn_handler(void *arg)
@@ -169,6 +225,12 @@ int main(void)
               NULL, "thread btn");
 
     gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, gpio_cb, NULL);
+
+    pid_ua = thread_create(stack_ua, sizeof(stack_ua), 
+             THREAD_PRIORITY_MAIN - 1, 0, thread_ua_handler, 
+             NULL, "thread ua");
+
+    uart_init(UART_DEV(0), 115200, uart_cb, NULL);
 
     pid_tc = thread_create(stack_tc, sizeof(stack_tc), 
              THREAD_PRIORITY_MAIN - 1, 0, thread_tc_handler, 
