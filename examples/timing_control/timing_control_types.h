@@ -36,7 +36,8 @@ typedef enum {
 } tc_msg_t;
 
 typedef struct {
-    bool flag;
+    bool can_start;
+    bool has_started;
     mutex_t lock;
 } tc_flag_t;
 

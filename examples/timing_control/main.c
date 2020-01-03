@@ -49,18 +49,48 @@ static char stack_ua[THREAD_STACKSIZE_MAIN];
 xtimer_ticks32_t last_wup_tc;
 xtimer_t phy_cfg_timer;
 
-static tc_flag_t start_flag = {.flag = false};
+static tc_flag_t start_flag = {.can_start = false, .has_started = false};
 
-static bool allowed_to_start(void)
+static bool set_can_start(void)
+{
+    bool succes = false;
+
+    mutex_lock(&start_flag.lock);
+    if (!start_flag.has_started) {
+        start_flag.can_start = true;
+        succes = true;
+    }
+    mutex_unlock(&start_flag.lock);
+
+    return succes;
+}
+
+static bool get_can_start(void)
 {
     bool allowed = false;
 
     mutex_lock(&start_flag.lock);
-    allowed = start_flag.flag;
-    start_flag.flag = false;
+    if (!start_flag.has_started) {
+        allowed = start_flag.can_start;
+    }
     mutex_unlock(&start_flag.lock);
 
     return allowed;
+}
+
+static bool set_has_started(void)
+{
+    bool succes = false;
+
+    mutex_lock(&start_flag.lock);
+    if (!start_flag.has_started && start_flag.can_start) {
+        start_flag.has_started = true;
+        start_flag.can_start = false;
+        succes = true;
+    }
+    mutex_unlock(&start_flag.lock);
+
+    return succes;
 }
 
 static void uart_cb(void *arg, uint8_t data)
@@ -96,9 +126,7 @@ static void *thread_ua_handler(void *arg)
         {
             case 's':
                 {
-                    mutex_lock(&start_flag.lock);
-                    start_flag.flag = true;
-                    mutex_unlock(&start_flag.lock);
+                    set_can_start();
                 }
                 break;
             case 'r':
@@ -130,9 +158,7 @@ static void *thread_btn_handler(void *arg)
     msg_t msg;
     msg_receive(&msg);
 
-    mutex_lock(&start_flag.lock);
-    start_flag.flag = true;
-    mutex_unlock(&start_flag.lock);
+    set_can_start();
 
     return NULL;
 }
@@ -148,7 +174,8 @@ static void *thread_tc_handler(void *arg)
     uint8_t phy_reconfigs = 0;
     uint8_t experiments = 0;
 
-    while (!allowed_to_start()) { thread_yield(); };
+    while (!get_can_start()) { thread_yield(); };
+    set_has_started();
     xtimer_sleep(5); // allows to close the lid
 
     msg = msg_phy_cfg;
