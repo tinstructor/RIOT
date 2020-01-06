@@ -37,7 +37,7 @@
 
 #define IF_DEFAULT_CHANNEL       0UL
 #define IF_FSK_9_DBM_SUB_GHZ     21
-#define IF_OFDM_9_DBM_SUB_GHZ    29
+#define IF_OFDM_9_DBM_SUB_GHZ    30
 #define IF_FSK_9_DBM_2_4_GHZ     22
 #define IF_OFDM_9_DBM_2_4_GHZ    30
 

@@ -213,8 +213,6 @@ static void *thread_tc_handler(void *arg)
     while (!get_can_start()) { thread_yield(); };
     set_has_started();
 
-
-
     msg = msg_phy_cfg;
     last_wup_tc = xtimer_now();
     xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
