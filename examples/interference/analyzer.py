@@ -53,6 +53,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("logfile", help="The logfile to be analyzed.")
 parser.add_argument("csvfile", help="The csv file to which log-derived info must be written / appended.")
 parser.add_argument("-a", "--append", action="store_true", help="Append to the csv file, overwrite it otherwise.")
+parser.add_argument("-i", "--interferer", help="The interferer PHY in case there's only one.")
+parser.add_argument("-t", "--transmitter", help="The transmitter PHY in case there's only one.")
 args = parser.parse_args()
 
 LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
@@ -65,6 +67,11 @@ TRX_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
 IF_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
                "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
                "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
+
+# TODO allow to pass a single interferer and/or transmitter PHY as argument and replace
+# corresponding PHY config list with just that single config. The only prerequisite is 
+# that the given PHY config must already be part of the above config lists before they
+# can be replaced.
 
 experiments = {}
 trx_phy_index = 0
