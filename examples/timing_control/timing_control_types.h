@@ -22,6 +22,7 @@
 #define TIMING_CONTROL_TYPES_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "kernel_types.h"
 #include "periph/gpio.h"
@@ -47,6 +48,11 @@ typedef struct {
     gpio_t second_pin;
     mutex_t lock;
 } tc_pin_cfg_t;
+
+typedef struct {
+    uint32_t offset;
+    mutex_t lock;
+} tc_offset_t;
 
 #ifdef __cplusplus
 } /* end extern "C" */

@@ -51,7 +51,7 @@ xtimer_t phy_cfg_timer;
 
 static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
 static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX_PIN};
-static uint32_t if_tx_offset = IF_TX_OFFSET_US;
+static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US};
 
 static bool set_can_start(void)
 {
@@ -154,20 +154,38 @@ static void *thread_ua_handler(void *arg)
                                 case 0:
                                     {
                                         // NOTE: if payload starts at tx sync
-                                        if_tx_offset = 2800UL;
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 2800UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
                                         if_tx_pin_cfg.first_pin = IF_TX_PIN;
                                         if_tx_pin_cfg.second_pin = TX_TX_PIN;
                                         mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
                                     }
                                     break;
                                 case 1:
-                                    // NOTE: if and tx center aligned
-                                    if_tx_offset = 15840UL;
+                                    {
+                                        // NOTE: if and tx center aligned
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 15840UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
                                     break;
                                 case 2:
-                                    // NOTE: if overlaps with FCS of tx
-                                    if_tx_offset = 31700UL;
+                                    {
+                                        // NOTE: if overlaps with FCS of tx
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 31700UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
                                     break;
                                 default:
                                     DEBUG("Index option %d not supported\n", index);
@@ -218,16 +236,18 @@ static void *thread_tc_handler(void *arg)
     xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
 
     while (experiments < NUM_OF_PHY_IF) {
+        mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
-        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - if_tx_offset - PULSE_DURATION_US);
+        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - if_tx_offset.offset - PULSE_DURATION_US);
         gpio_set(if_tx_pin_cfg.first_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset);
+        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset.offset);
         gpio_set(if_tx_pin_cfg.second_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - if_tx_offset);
+        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - if_tx_offset.offset);
         gpio_clear(if_tx_pin_cfg.first_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset);
+        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset.offset);
         gpio_clear(if_tx_pin_cfg.second_pin);
         mutex_unlock(&if_tx_pin_cfg.lock);
+        mutex_unlock(&if_tx_offset.lock);
         if (msg_try_receive(&msg) == 1) {
             xtimer_periodic_wakeup(&last_wup_tc, WAITING_PERIOD_US);
             gpio_set(TX_PHY_CFG_PIN);
