@@ -24,6 +24,7 @@
 #include <stdbool.h>
 
 #include "kernel_types.h"
+#include "periph/gpio.h"
 #include "mutex.h"
 
 #ifdef __cplusplus
@@ -39,7 +40,13 @@ typedef struct {
     bool can_start;
     bool has_started;
     mutex_t lock;
-} tc_flag_t;
+} tc_start_flag_t;
+
+typedef struct {
+    gpio_t first_pin;
+    gpio_t second_pin;
+    mutex_t lock;
+} tc_pin_cfg_t;
 
 #ifdef __cplusplus
 } /* end extern "C" */

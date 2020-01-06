@@ -49,14 +49,16 @@ static char stack_ua[THREAD_STACKSIZE_MAIN];
 xtimer_ticks32_t last_wup_tc;
 xtimer_t phy_cfg_timer;
 
-static tc_flag_t start_flag = {.can_start = false, .has_started = false};
+static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
+static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX_PIN};
+static uint32_t if_tx_offset = IF_TX_OFFSET_US;
 
 static bool set_can_start(void)
 {
     bool succes = false;
 
     mutex_lock(&start_flag.lock);
-    if (!start_flag.has_started) {
+    if (!start_flag.has_started && !start_flag.can_start) {
         start_flag.can_start = true;
         succes = true;
     }
@@ -67,15 +69,15 @@ static bool set_can_start(void)
 
 static bool get_can_start(void)
 {
-    bool allowed = false;
+    bool can_start = false;
 
     mutex_lock(&start_flag.lock);
     if (!start_flag.has_started) {
-        allowed = start_flag.can_start;
+        can_start = start_flag.can_start;
     }
     mutex_unlock(&start_flag.lock);
 
-    return allowed;
+    return can_start;
 }
 
 static bool set_has_started(void)
@@ -91,6 +93,17 @@ static bool set_has_started(void)
     mutex_unlock(&start_flag.lock);
 
     return succes;
+}
+
+static bool get_has_started(void)
+{
+    bool has_started = false;
+
+    mutex_lock(&start_flag.lock);
+    has_started = start_flag.has_started;
+    mutex_unlock(&start_flag.lock);
+
+    return has_started;
 }
 
 static void uart_cb(void *arg, uint8_t data)
@@ -125,22 +138,45 @@ static void *thread_ua_handler(void *arg)
         switch ((char)msg.content.value)
         {
             case 's':
-                {
-                    set_can_start();
-                }
+                set_can_start();
                 break;
             case 'r':
-                {
-                    pm_reboot();
-                }
+                pm_reboot();
                 break;
             case 'o':
                 {
-                    msg_try_receive(&msg);
-                    int index = CHAR_TO_INT((char)msg.content.value);
-                    if (index >= 0 && index <= 9) {
-                        // TODO add capability to set offset
-                        printf("Offset index: %d\n", index);
+                    if (!get_has_started()) {
+                        msg_try_receive(&msg);
+                        int index = CHAR_TO_INT((char)msg.content.value);
+                        if (index >= 0 && index <= 9) {
+                            switch (index)
+                            {
+                                case 0:
+                                    {
+                                        // NOTE: if payload starts at tx sync
+                                        if_tx_offset = 2800UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = IF_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = TX_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                    }
+                                    break;
+                                case 1:
+                                    // NOTE: if and tx center aligned
+                                    if_tx_offset = 15840UL;
+                                    break;
+                                case 2:
+                                    // NOTE: if overlaps with FCS of tx
+                                    if_tx_offset = 31700UL;
+                                    break;
+                                default:
+                                    DEBUG("Index option %d not supported\n", index);
+                                    break;
+                            }
+                        }
+                    }
+                    else {
+                        DEBUG("Experiment has already started: can't set offset\n");
                     }
                 }
                 break;
@@ -176,46 +212,39 @@ static void *thread_tc_handler(void *arg)
 
     while (!get_can_start()) { thread_yield(); };
     set_has_started();
-    xtimer_sleep(5); // allows to close the lid
+
+
 
     msg = msg_phy_cfg;
     last_wup_tc = xtimer_now();
     xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
 
     while (experiments < NUM_OF_PHY_IF) {
-        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - IF_TX_OFFSET_US - PULSE_DURATION_US);
-        gpio_set(TX_TX_PIN);
-        DEBUG("tx tx on: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
-        xtimer_periodic_wakeup(&last_wup_tc, IF_TX_OFFSET_US);
-        gpio_set(IF_TX_PIN);
-        DEBUG("if tx on: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
-        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - IF_TX_OFFSET_US);
-        gpio_clear(TX_TX_PIN);
-        DEBUG("tx tx off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
-        xtimer_periodic_wakeup(&last_wup_tc, IF_TX_OFFSET_US);
-        gpio_clear(IF_TX_PIN);
-        DEBUG("if tx off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
+        mutex_lock(&if_tx_pin_cfg.lock);
+        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - if_tx_offset - PULSE_DURATION_US);
+        gpio_set(if_tx_pin_cfg.first_pin);
+        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset);
+        gpio_set(if_tx_pin_cfg.second_pin);
+        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - if_tx_offset);
+        gpio_clear(if_tx_pin_cfg.first_pin);
+        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset);
+        gpio_clear(if_tx_pin_cfg.second_pin);
+        mutex_unlock(&if_tx_pin_cfg.lock);
         if (msg_try_receive(&msg) == 1) {
             xtimer_periodic_wakeup(&last_wup_tc, WAITING_PERIOD_US);
             gpio_set(TX_PHY_CFG_PIN);
-            DEBUG("tx phy cfg on: %"PRIu32"\n",xtimer_usec_from_ticks(last_wup_tc));
             xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
             gpio_clear(TX_PHY_CFG_PIN);
-            DEBUG("tx phy cfg off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
             gpio_set(RX_PHY_CFG_PIN);
-            DEBUG("rx phy cfg on: %"PRIu32"\n",xtimer_usec_from_ticks(last_wup_tc));
             xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
             gpio_clear(RX_PHY_CFG_PIN);
-            DEBUG("rx phy cfg off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
 
             phy_reconfigs++;
 
             if (phy_reconfigs >= NUM_OF_PHY_TRX) {
                 gpio_set(IF_PHY_CFG_PIN);
-                DEBUG("if phy cfg on: %"PRIu32"\n",xtimer_usec_from_ticks(last_wup_tc));
                 xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
                 gpio_clear(IF_PHY_CFG_PIN);
-                DEBUG("if phy cfg off: %"PRIu32"\n", xtimer_usec_from_ticks(last_wup_tc));
 
                 experiments++;
                 phy_reconfigs = 0;
