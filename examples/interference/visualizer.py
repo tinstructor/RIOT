@@ -12,7 +12,7 @@ script_dir = os.path.dirname(__file__)
 for file in glob.glob(os.path.join(script_dir,"*.csv")):
     file_list.append(file)
 
-REGEXP = re.compile(r"^.*_(?P<bytes>\d+)B.*_(?P<time>\d+)(?P<prefix>[UM]*)S.*_(?P<sir>-?\d{1,2})DB\.csv$")
+REGEXP = re.compile(r"^.*_(?P<bytes>\d+)B.*_(?P<time>-?\d+)(?P<prefix>[UM]*)S.*_(?P<sir>-?\d{1,2})DB\.csv$")
 
 frame_list = []
 
