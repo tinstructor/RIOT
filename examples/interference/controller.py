@@ -44,11 +44,9 @@ for index, value in enumerate(offset_values):
     # after a given test duration and some fixed buffering offset (just being safe).
     rx_shell = subprocess.Popen(shlex.split('make term PORT=/dev/ttyUSB1 BOARD=openmote-b'),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True,bufsize=1)
     time.sleep(2)
-    rx_log = logging.getLogger('rx_logger')
-    rx_log.setLevel(logging.INFO)
     rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
-    rx_log.addHandler(logging.FileHandler(rx_log_filename))
-    rx_log.info("Created logfile %s" % (rx_log_filename))
+    rx_logfile = open(rx_log_filename,"w",newline='')
+    rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
     threading.Timer(test_duration + 5, halt_event.set).start()
 
     # Send the appropriate command to the timing controller which causes it to trigger signalling pins
@@ -56,13 +54,13 @@ for index, value in enumerate(offset_values):
     timing_shell.stdin.write("s\n")
     while True:
         # NOTE readline is blocking and if nothing is read this may cause you a headache
-        rx_log.info("%s" % (rx_shell.stdout.readline().strip()))
+        rx_logfile.write("%s\n" % (rx_shell.stdout.readline().strip().strip("\r\n")))
         if halt_event.is_set():
             break
 
     # When a test is over, the stream to the logfile must be closed when the given test duration
     # has elapsed.
-    logging.shutdown()
+    rx_logfile.close()
 
     # When the timer runs out, the analyzer script can be started. The filenames can be constructed
     # from all information available in this script. Make sure to pass the append argument to the
