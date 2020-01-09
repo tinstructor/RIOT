@@ -26,9 +26,12 @@ class Queue(queue.Queue):
             self.not_full.notify_all()
 
 def enqueue_output(out, queue):
-    for line in iter(out.readline, b''):
-        queue.put(line)
-    out.close()
+    try:
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
+    except ValueError:
+        pass
 
 def exit_handler():
     if isinstance(timing_shell, subprocess.Popen):
@@ -54,12 +57,7 @@ timing_cmd = "make term PORT=/dev/ttyUSB4 BOARD=remote-revb -C /home/relsas/RIOT
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
 
-rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
-
 rx_q = Queue()
-rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
-rx_t.daemon = True
-rx_t.start()
 
 for index, value in enumerate(offset_values):
 
@@ -75,7 +73,13 @@ for index, value in enumerate(offset_values):
     except TimeoutExpired:
         timing_shell.kill()
 
+    rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
+
     rx_q.clear()
+    rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
+    rx_t.daemon = True
+    rx_t.start()
+    
     rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
     rx_logfile = open(rx_log_filename,"w",newline='')
     rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
@@ -109,6 +113,11 @@ for index, value in enumerate(offset_values):
         tx_shell.communicate(input="reboot\n",timeout=2)
     except TimeoutExpired:
         tx_shell.kill()
+
+    try:
+        rx_shell.communicate(input="reboot\n",timeout=2)
+    except TimeoutExpired:
+        rx_shell.kill()
     
     csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,value,sinr)
     analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\"" % (rx_log_filename,csv_filename,interferer_phy,transmitter_phy)
