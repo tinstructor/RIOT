@@ -1,100 +1,123 @@
 import shlex
 import subprocess
-from subprocess import PIPE, TimeoutExpired
+from subprocess import PIPE, TimeoutExpired, STDOUT
 import io
 import datetime
 import threading
+from threading import Thread
 import time
 import os
+import atexit
+import sys
+import queue
+
+ON_POSIX = 'posix' in sys.builtin_module_names
+
+class Queue(queue.Queue):
+    def clear(self):
+        with self.mutex:
+            unfinished = self.unfinished_tasks - len(self.queue)
+            if unfinished <= 0:
+                if unfinished < 0:
+                    raise ValueError('task_done() called too many times')
+                self.all_tasks_done.notify_all()
+            self.unfinished_tasks = unfinished
+            self.queue.clear()
+            self.not_full.notify_all()
+
+def enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
+    out.close()
+
+def exit_handler():
+    if isinstance(timing_shell, subprocess.Popen):
+        timing_shell.kill()
+    if isinstance(rx_shell, subprocess.Popen):
+        rx_shell.kill()
+    if isinstance(tx_shell, subprocess.Popen):
+        tx_shell.kill()
+    print("Exiting")
+
+atexit.register(exit_handler)
 
 transmitter_phy = "SUN-OFDM 863-870MHz O3 MCS1"
 interferer_phy = "SUN-OFDM 863-870MHz O4 MCS2"
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-test_duration = 5 # in seconds
+test_duration = 10 # in seconds
 offset_values = [-2800,15840,31700]
 
 halt_event = threading.Event()
 
 timing_cmd = "make term PORT=/dev/ttyUSB4 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
-# tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
+tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
 
-timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True)
-rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True)
-# tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True)
+rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
 
-try:
-    outs, errs = timing_shell.communicate(input="s",timeout=5)
-except TimeoutExpired:
-    timing_shell.kill()
-    outs, errs = timing_shell.communicate()
+rx_q = Queue()
+rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
+rx_t.daemon = True
+rx_t.start()
 
-timing_shell.kill()
+for index, value in enumerate(offset_values):
 
-while rx_shell.poll() != None:
+    timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
     try:
-        outs, errs = rx_shell.communicate(timeout=5)
+        timing_shell.communicate(input="o%s\n" % (index),timeout=5)
     except TimeoutExpired:
-        rx_shell.kill()
-        outs, errs = rx_shell.communicate()
+        timing_shell.kill()
 
-rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
-rx_logfile = open(rx_log_filename,"w",newline='')
-rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
-rx_logfile.write("%s\n" % (outs))
-rx_logfile.close()
+    timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+    try:
+        timing_shell.communicate(input="s\n",timeout=2)
+    except TimeoutExpired:
+        timing_shell.kill()
 
-rx_shell.kill()
+    rx_q.clear()
+    rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
+    rx_logfile = open(rx_log_filename,"w",newline='')
+    rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
 
+    threading.Timer(test_duration + 3, halt_event.set).start()
+    while True:
+        try:  
+            line = rx_q.get_nowait()
+        except queue.Empty:
+            if halt_event.is_set():
+                halt_event.clear()
+                break
+        else: # got line
+            if line == '' and rx_shell.poll() is not None:
+                break
+            if line != '':
+                print("%s" % (line.strip().strip("\r\n")))
+                rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
 
-# for index, value in enumerate(offset_values):
-#     # First set the next offset option by sending the appropriate command over a serial connection
-#     # to the timing controller node.
-#     timing_shell.stdin.write("o%d\n" % (index))
+    rx_logfile.write(" PHY \n")
+    rx_logfile.close()
 
-#     # Second capture the RX serial output of the interference test between the given PHYs in a logfile.
-#     # The name of the logfile can be anything and is preferrably removed after the next step (analysis).
-#     # Use a formatted timestamp for the names of the logfiles so that they're unique! Stop capturing
-#     # after a given test duration and some fixed buffering offset (just being safe).
-#     rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
-#     rx_logfile = open(rx_log_filename,"w",newline='')
-#     rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
-#     threading.Timer(test_duration + 5, halt_event.set).start()
+    timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+    try:
+        timing_shell.communicate(input="r\n",timeout=2)
+    except TimeoutExpired:
+        timing_shell.kill()
 
-#     # Send the appropriate command to the timing controller which causes it to trigger signalling pins
-#     # and thus effectively starts the experiment
-#     timing_shell.stdin.write("s\n")
-#     while True:
-#         # NOTE readline is blocking and if nothing is read this may cause you a headache
-#         rx_logfile.write("%s\n" % (rx_shell.stdout.readline().strip().strip("\r\n")))
-#         if halt_event.is_set():
-#             break
-
-#     # When a test is over, the stream to the logfile must be closed when the given test duration
-#     # has elapsed.
-#     rx_logfile.close()
-
-#     # When the timer runs out, the analyzer script can be started. The filenames can be constructed
-#     # from all information available in this script. Make sure to pass the append argument to the
-#     # analyzer script if the csv file with the constructed name is already present in the output
-#     # directory
-#     csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,value,sinr)
-#     analyzer_cmd = 'python3 analyzer.py %s %s -i \"%s\" -t \"%s\"' % (rx_log_filename,csv_filename,interferer_phy,transmitter_phy)
-#     if os.path.exists(os.path.dirname(csv_filename)):
-#         analyzer_cmd = analyzer_cmd + " -a"
-#     py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdin=PIPE,stdout=IPE,stderr=PIPE,universal_newlines=True)
-
-#     # Reset all nodes before closing down the connections
-#     timing_shell.stdin.write("r\n")
-#     # rx_shell.stdin.write("reboot\n")
-#     # tx_shell.stdin.write("reboot\n")
-
-#     timing_shell.stdin.close()
-#     timing_shell.terminate()
-#     rx_shell.stdin.close()
-#     rx_shell.terminate()
-#     py_shell.stdin.close()
-#     py_shell.terminate()
-#     tx_shell.stdin.close()
-#     tx_shell.terminate()
+    tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+    try:
+        tx_shell.communicate(input="reboot\n",timeout=2)
+    except TimeoutExpired:
+        tx_shell.kill()
+    
+    csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,value,sinr)
+    analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\"" % (rx_log_filename,csv_filename,interferer_phy,transmitter_phy)
+    if os.path.exists(os.path.dirname(csv_filename)):
+        analyzer_cmd = analyzer_cmd + " -a"
+    py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdout=PIPE,stderr=PIPE,universal_newlines=True)
+    try:
+        outs, errs = py_shell.communicate(timeout=30)
+    except TimeoutExpired:
+        py_shell.kill()
+        outs, errs = py_shell.communicate()
+    print(outs)
