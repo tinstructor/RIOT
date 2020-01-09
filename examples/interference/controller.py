@@ -30,7 +30,10 @@ def enqueue_output(out, queue):
         for line in iter(out.readline, b''):
             queue.put(line)
         out.close()
-    except ValueError:
+    except ValueError: 
+        # NOTE an exception is thrown when trying to read a line from out when the
+        # subproccess to which this stream belongs was previously killed in another
+        # thread
         pass
 
 def exit_handler():
@@ -44,6 +47,8 @@ def exit_handler():
 
 atexit.register(exit_handler)
 
+# NOTE changes the following set of values before starting the script in order
+# to reflect the correct scenario
 transmitter_phy = "SUN-OFDM 863-870MHz O3 MCS1"
 interferer_phy = "SUN-OFDM 863-870MHz O4 MCS2"
 payload_size = 120 # in bytes
@@ -53,6 +58,8 @@ offset_values = [-2800,15840,31700]
 
 halt_event = threading.Event()
 
+# NOTE you might have to change the serial port numbers of the devices
+# depending on the order in which you plugged them into the USB ports
 timing_cmd = "make term PORT=/dev/ttyUSB4 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
