@@ -43,6 +43,8 @@ def exit_handler():
         rx_shell.kill()
     if isinstance(tx_shell, subprocess.Popen):
         tx_shell.kill()
+    if isinstance(if_shell, subprocess.Popen):
+        if_shell.kill()
     print("Exiting")
 
 atexit.register(exit_handler)
@@ -60,9 +62,10 @@ halt_event = threading.Event()
 
 # NOTE you might have to change the serial port numbers of the devices
 # depending on the order in which you plugged them into the USB ports
-timing_cmd = "make term PORT=/dev/ttyUSB4 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
+timing_cmd = "make term PORT=/dev/ttyUSB6 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
+if_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 
 rx_q = Queue()
 
@@ -120,6 +123,12 @@ for index, value in enumerate(offset_values):
         tx_shell.communicate(input="reboot\n",timeout=2)
     except TimeoutExpired:
         tx_shell.kill()
+
+    if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+    try:
+        if_shell.communicate(input="reboot\n",timeout=2)
+    except TimeoutExpired:
+        if_shell.kill()
 
     try:
         rx_shell.communicate(input="reboot\n",timeout=2)
