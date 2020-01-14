@@ -54,6 +54,32 @@ typedef struct {
     mutex_t lock;
 } tc_offset_t;
 
+typedef struct {
+    uint32_t phy_sub_ghz;
+    uint32_t phy_2_4_ghz;
+    mutex_t lock;
+} tc_phy_t;
+
+typedef enum {
+    PHY_CFG_SUB_GHZ_FSK_1,
+    PHY_CFG_SUB_GHZ_FSK_2,
+    PHY_CFG_SUB_GHZ_OFDM_1,
+    PHY_CFG_SUB_GHZ_OFDM_2,
+    PHY_CFG_SUB_GHZ_OFDM_3,
+    PHY_CFG_SUB_GHZ_OFDM_4,
+    NUM_PHY_CFG_SUB_GHZ
+} phy_cfg_idx_sub_ghz_t;
+
+typedef enum {
+    PHY_CFG_2_4_GHZ_FSK_1,
+    PHY_CFG_2_4_GHZ_FSK_2,
+    PHY_CFG_2_4_GHZ_OFDM_1,
+    PHY_CFG_2_4_GHZ_OFDM_2,
+    PHY_CFG_2_4_GHZ_OFDM_3,
+    PHY_CFG_2_4_GHZ_OFDM_4,
+    NUM_PHY_CFG_2_4_GHZ
+} phy_cfg_idx_2_4_ghz_t;
+
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif

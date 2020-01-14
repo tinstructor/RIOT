@@ -52,6 +52,8 @@ xtimer_t phy_cfg_timer;
 static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
 static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX_PIN};
 static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US};
+static tc_phy_t if_trx_phy = {.phy_sub_ghz = PHY_CFG_SUB_GHZ_FSK_1, .phy_2_4_ghz = PHY_CFG_SUB_GHZ_FSK_1};
+static tc_phy_t if_if_phy = {.phy_sub_ghz = PHY_CFG_SUB_GHZ_FSK_1, .phy_2_4_ghz = PHY_CFG_SUB_GHZ_FSK_1};
 
 static bool set_can_start(void)
 {
@@ -142,6 +144,24 @@ static void *thread_ua_handler(void *arg)
                 break;
             case 'r':
                 pm_reboot();
+                break;
+            case 'p':
+                {
+                    if (!get_has_started()) {
+                        msg_try_receive(&msg);
+                        int index = CHAR_TO_INT((char)msg.content.value);
+                        if (index >= 0 && index <= 5) {
+                            mutex_lock(&if_trx_phy.lock);
+                            mutex_lock(&if_if_phy.lock);
+                            // do something
+                            mutex_unlock(&if_if_phy.lock);
+                            mutex_unlock(&if_trx_phy.lock);
+                        }
+                    }
+                    else {
+                        DEBUG("Experiment has already started: can't set offset\n");
+                    }
+                }
                 break;
             case 'o':
                 {
@@ -236,6 +256,8 @@ static void *thread_tc_handler(void *arg)
     last_wup_tc = xtimer_now();
     xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
 
+    mutex_lock(&if_trx_phy.lock);
+    mutex_lock(&if_if_phy.lock);
     while (experiments < NUM_OF_PHY_IF) {
         mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
@@ -273,6 +295,8 @@ static void *thread_tc_handler(void *arg)
             xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
         }
     }
+    mutex_unlock(&if_if_phy.lock);
+    mutex_unlock(&if_trx_phy.lock);
     
     return NULL;
 }
