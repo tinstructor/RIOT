@@ -42,7 +42,7 @@ static char stack[THREAD_STACKSIZE_MAIN];
 static gnrc_netif_t *netif = NULL;
 
 #ifdef MODULE_AT86RF215
-static if_tx_t tx_sub_ghz = TX_40B_SUB_GHZ;
+static if_tx_t tx_sub_ghz = TX_120B_SUB_GHZ;
 static phy_cfg_idx_sub_ghz_t current_phy_cfg_idx_sub_ghz;
 #if (GNRC_NETIF_NUMOF >= 2)
 static if_tx_t tx_2_4_ghz = TX_40B_2_4_GHZ;

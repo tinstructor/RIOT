@@ -51,11 +51,11 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-transmitter_phy = "SUN-OFDM 863-870MHz O3 MCS1"
-interferer_phy = "SUN-OFDM 863-870MHz O4 MCS2"
+transmitter_phy = "SUN-OFDM 863-870MHz O4 MCS2"
+interferer_phy = "SUN-OFDM 863-870MHz O3 MCS1"
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-test_duration = 10 # in seconds
+test_duration = 45 # in seconds
 offset_values = [-2800,15840,31700]
 
 halt_event = threading.Event()

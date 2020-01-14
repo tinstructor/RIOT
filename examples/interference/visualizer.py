@@ -87,6 +87,7 @@ for if_phy, payload_size, sir in bar_info:
     bar_info[if_phy, payload_size, sir] = dict(sorted(bar_info[if_phy, payload_size, sir].items(), key=lambda x: x[0].lower()))
     # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
     # diagonal by writing rows as columns and vice-versa) and plot it as a bar plot
+    plt.rcParams["figure.dpi"] = 400
     ax = pd.DataFrame(bar_info[if_phy, payload_size, sir]).T.plot(kind='bar', figsize=(10,7))
     ax.set_xlabel('Offset between TX and IF')
     ax.set_ylabel('Packet Reception Rate [%]')
@@ -97,7 +98,7 @@ for if_phy, payload_size, sir in bar_info:
     for i in ax.patches:
         ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1.2, str(round(i.get_height(),2)), fontsize=8, color='dimgrey', rotation=90, ha="center", va="bottom")
     plt.title(title)
-    plt.savefig(if_phy + "_" + payload_size + "_" + sir + ".png")
+    plt.savefig(if_phy + "_" + payload_size + "_" + sir + ".png", transparent=True)
     plt.close()
 
 if not args.noline:
@@ -110,6 +111,7 @@ if not args.noline:
         # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
         # diagonal by writing rows as columns and vice-versa) and plot it as a line plot
         df = pd.DataFrame(line_info[if_phy, payload_size, offset]).T
+        plt.rcParams["figure.dpi"] = 400
         ax = df.plot(kind='line', figsize=(10,7), style=styles, xticks=range(len(list(df.index.values))))
         ax.legend(loc='lower right')
         ax.set_xlabel('SIR between TX and IF')
@@ -118,7 +120,7 @@ if not args.noline:
         ax.set_yticks([0,20,40,60,80,100])
         ax.set_xlim([-0.05,len(list(df.index.values)) - 0.95])
         plt.title(title)
-        plt.savefig(if_phy + "_" + payload_size + "_" + offset + ".png")
+        plt.savefig(if_phy + "_" + payload_size + "_" + offset + ".png", transparent=True)
         plt.close()
 else:
     pass
