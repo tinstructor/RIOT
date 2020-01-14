@@ -150,7 +150,8 @@ static void *thread_ua_handler(void *arg)
                     if (!get_has_started()) {
                         msg_try_receive(&msg);
                         int index = CHAR_TO_INT((char)msg.content.value);
-                        if (index >= 0 && index <= 5) {
+                        if (index >= 0 && index <= NUM_OF_PHY_TRX) {
+                            //TODO add for-loop for number of pulses
                             mutex_lock(&if_trx_phy.lock);
                             last_wup_tc = xtimer_now();
                             gpio_set(TX_PHY_CFG_PIN);
@@ -167,6 +168,29 @@ static void *thread_ua_handler(void *arg)
                     }
                     else {
                         DEBUG("Experiment has already started: can't set trx phy\n");
+                    }
+                }
+                break;
+            case 'i':
+                {
+                    if (!get_has_started()) {
+                        msg_try_receive(&msg);
+                        int index = CHAR_TO_INT((char)msg.content.value);
+                        if (index >= 0 && index <= NUM_OF_PHY_IF) {
+                            //TODO add for-loop for number of pulses
+                            mutex_lock(&if_if_phy.lock);
+                            last_wup_tc = xtimer_now();
+                            gpio_set(IF_PHY_CFG_PIN);
+                            xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
+                            gpio_clear(IF_PHY_CFG_PIN);
+                            mutex_unlock(&if_if_phy.lock);
+                        }
+                        else {
+                            DEBUG("IF PHY index %d out of range\n",index);
+                        }
+                    }
+                    else {
+                        DEBUG("Experiment has already started: can't set if phy\n");
                     }
                 }
                 break;
