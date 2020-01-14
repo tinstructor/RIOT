@@ -57,6 +57,7 @@ static const if_phy_cfg_t phy_cfg_sub_ghz[NUM_PHY_CFG_SUB_GHZ] = {
 };
 
 #ifndef IS_INTERFERER_SUB_GHZ
+static const if_tx_t TX_21B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01"};
 static const if_tx_t TX_40B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
                                                                                  "0"};
 static const if_tx_t TX_60B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
@@ -73,9 +74,10 @@ static const if_tx_t TX_120B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37"
                                                                                   "01234567890123456789"
                                                                                   "0"};  
 #else
+static const if_tx_t TX_21B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01"};
 static const if_tx_t TX_40B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
                                                                                  "0"};
-static const if_tx_t TX_60B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
+static const if_tx_t TX_60B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
                                                                                  "01234567890123456789"
                                                                                  "0"};                                
 static const if_tx_t TX_80B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
@@ -102,6 +104,7 @@ static const if_phy_cfg_t phy_cfg_2_4_ghz[NUM_PHY_CFG_2_4_GHZ] = {
 };
 
 #ifndef IS_INTERFERER_2_4_GHZ
+static const if_tx_t TX_21B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01"};
 static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
                                                                                  "0"};
 static const if_tx_t TX_60B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
@@ -118,6 +121,7 @@ static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37"
                                                                                   "01234567890123456789"
                                                                                   "0"};  
 #else
+static const if_tx_t TX_21B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01"};
 static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
                                                                                  "0"};
 static const if_tx_t TX_60B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
