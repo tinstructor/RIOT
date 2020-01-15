@@ -51,8 +51,8 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-transmitter_phy = "SUN-OFDM 863-870MHz O4 MCS2"
-interferer_phy = "SUN-OFDM 863-870MHz O3 MCS1"
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
 test_duration = 45 # in seconds
@@ -69,79 +69,95 @@ if_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 
 rx_q = Queue()
 
-for index, value in enumerate(offset_values):
+for if_idx, if_phy in if_phy_cfg:
 
     timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
     try:
-        timing_shell.communicate(input="o%s\n" % (index),timeout=5)
+        timing_shell.communicate(input="i%s\n" % (if_idx),timeout=2)
     except TimeoutExpired:
         timing_shell.kill()
 
-    timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-    try:
-        timing_shell.communicate(input="s\n",timeout=2)
-    except TimeoutExpired:
-        timing_shell.kill()
+    for trx_idx, trx_phy in trx_phy_cfg:
 
-    rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
+        timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+        try:
+            timing_shell.communicate(input="t%s\n" % (trx_idx),timeout=2)
+        except TimeoutExpired:
+            timing_shell.kill()
 
-    rx_q.clear()
-    rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
-    rx_t.daemon = True
-    rx_t.start()
-    
-    rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
-    rx_logfile = open(rx_log_filename,"w",newline='')
-    rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
+        for of_idx, offset in enumerate(offset_values):
 
-    threading.Timer(test_duration + 3, halt_event.set).start()
-    while True:
-        try:  
-            line = rx_q.get_nowait()
-        except queue.Empty:
-            if halt_event.is_set():
-                halt_event.clear()
-                break
-        else: # got line
-            if line == '' and rx_shell.poll() is not None:
-                break
-            if line != '':
-                print("%s" % (line.strip().strip("\r\n")))
-                rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="o%s\n" % (of_idx),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
 
-    rx_logfile.close()
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="s\n",timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
 
-    timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-    try:
-        timing_shell.communicate(input="r\n",timeout=2)
-    except TimeoutExpired:
-        timing_shell.kill()
+            rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
 
-    tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
-    try:
-        tx_shell.communicate(input="reboot\n",timeout=2)
-    except TimeoutExpired:
-        tx_shell.kill()
+            rx_q.clear()
+            rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
+            rx_t.daemon = True
+            rx_t.start()
+            
+            rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
+            rx_logfile = open(rx_log_filename,"w",newline='')
+            rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
 
-    if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
-    try:
-        if_shell.communicate(input="reboot\n",timeout=2)
-    except TimeoutExpired:
-        if_shell.kill()
+            threading.Timer(test_duration + 3, halt_event.set).start()
+            while True:
+                try:  
+                    line = rx_q.get_nowait()
+                except queue.Empty:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+                else: # got line
+                    if line == '' and rx_shell.poll() is not None:
+                        break
+                    if line != '':
+                        print("%s" % (line.strip().strip("\r\n")))
+                        rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
 
-    try:
-        rx_shell.communicate(input="reboot\n",timeout=2)
-    except TimeoutExpired:
-        rx_shell.kill()
-    
-    csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,value,sinr)
-    analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\"" % (rx_log_filename,csv_filename,interferer_phy,transmitter_phy)
-    if os.path.exists(os.path.dirname(csv_filename)):
-        analyzer_cmd = analyzer_cmd + " -a"
-    py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdout=PIPE,stderr=PIPE,universal_newlines=True)
-    try:
-        outs, errs = py_shell.communicate(timeout=30)
-    except TimeoutExpired:
-        py_shell.kill()
-        outs, errs = py_shell.communicate()
-    print(outs)
+            rx_logfile.close()
+
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="r\n",timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
+            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                tx_shell.communicate(input="reboot\n",timeout=2)
+            except TimeoutExpired:
+                tx_shell.kill()
+
+            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                if_shell.communicate(input="reboot\n",timeout=2)
+            except TimeoutExpired:
+                if_shell.kill()
+
+            try:
+                rx_shell.communicate(input="reboot\n",timeout=2)
+            except TimeoutExpired:
+                rx_shell.kill()
+            
+            csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,offset,sinr)
+            analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\"" % (rx_log_filename,csv_filename,if_phy,trx_phy)
+            if os.path.exists(os.path.dirname(csv_filename)):
+                analyzer_cmd = analyzer_cmd + " -a"
+            py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdout=PIPE,stderr=PIPE,universal_newlines=True)
+            try:
+                outs, errs = py_shell.communicate(timeout=30)
+            except TimeoutExpired:
+                py_shell.kill()
+                outs, errs = py_shell.communicate()
+            print(outs)
