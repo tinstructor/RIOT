@@ -55,7 +55,9 @@ trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-num_of_tx = 10
+num_of_tx_idx = 2
+num_of_tx_values = [5,10,25,100,250]
+num_of_tx = num_of_tx_values[num_of_tx_idx]
 test_duration = int(round(0.4 * num_of_tx)) + 4 # in seconds
 offset_values = [-2800,15840,31700]
 
@@ -83,6 +85,12 @@ for if_idx, if_phy in if_phy_cfg:
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 timing_shell.communicate(input="t%s\n" % (trx_idx),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+            
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="n%s\n" % (num_of_tx_idx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 

@@ -59,6 +59,11 @@ typedef struct {
     mutex_t lock;
 } tc_phy_t;
 
+typedef struct {
+    uint32_t numtx;
+    mutex_t lock;
+} tc_numtx_t;
+
 typedef enum {
     SUN_FSK_OM1,
     SUN_FSK_OM2,

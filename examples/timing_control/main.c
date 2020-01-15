@@ -56,6 +56,7 @@ static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX
 static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US};
 static tc_phy_t if_trx_phy = {.phy = SUN_FSK_OM1};
 static tc_phy_t if_if_phy = {.phy = SUN_FSK_OM1};
+static tc_numtx_t if_numtx = {.numtx = NUM_OF_TX};
 
 static bool set_can_start(void)
 {
@@ -146,6 +147,64 @@ static void *thread_ua_handler(void *arg)
                 break;
             case 'r':
                 pm_reboot();
+                break;
+            case 'n':
+                {
+                    if (!get_has_started()) {
+                        msg_try_receive(&msg);
+                        int index = CHAR_TO_INT((char)msg.content.value);
+                        if (index >= 0 && index <= 9) {
+                            switch (index)
+                            {
+                                case 0:
+                                    {
+                                        mutex_lock(&if_numtx.lock);
+                                        if_numtx.numtx = 5;
+                                        mutex_unlock(&if_numtx.lock);
+                                    }
+                                    break;
+                                case 1:
+                                    {
+                                        mutex_lock(&if_numtx.lock);
+                                        if_numtx.numtx = 10;
+                                        mutex_unlock(&if_numtx.lock);
+                                    }
+                                    break;
+                                case 2:
+                                    {
+                                        mutex_lock(&if_numtx.lock);
+                                        if_numtx.numtx = 25;
+                                        mutex_unlock(&if_numtx.lock);
+                                    }
+                                    break;
+                                case 3:
+                                    {
+                                        mutex_lock(&if_numtx.lock);
+                                        if_numtx.numtx = 100;
+                                        mutex_unlock(&if_numtx.lock);
+                                    }
+                                    break;
+                                case 4:
+                                    {
+                                        mutex_lock(&if_numtx.lock);
+                                        if_numtx.numtx = 250;
+                                        mutex_unlock(&if_numtx.lock);
+                                    }
+                                    break;
+                                default:
+                                    DEBUG("Index option %d not supported\n", index);
+                                    break;
+                            }
+
+                        }
+                        else {
+                            DEBUG("Number of tx index %d out of range\n",index);
+                        }
+                    }
+                    else {
+                        DEBUG("Experiment has already started: can't set number of tx\n");
+                    }
+                }
                 break;
             case 't':
                 {
@@ -291,12 +350,12 @@ static void *thread_tc_handler(void *arg)
     set_has_started();
     xtimer_sleep(2);
 
-    msg = msg_phy_cfg;
-    last_wup_tc = xtimer_now();
-    xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
-
     mutex_lock(&if_trx_phy.lock);
     mutex_lock(&if_if_phy.lock);
+    mutex_lock(&if_numtx.lock);
+    msg = msg_phy_cfg;
+    last_wup_tc = xtimer_now();
+    xtimer_set_msg(&phy_cfg_timer, if_numtx.numtx * TX_WUP_INTERVAL, &msg, thread_getpid());
     while (experiments < NUM_OF_PHY_IF) {
         mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
@@ -331,9 +390,10 @@ static void *thread_tc_handler(void *arg)
             }
 
             xtimer_periodic_wakeup(&last_wup_tc, WAITING_PERIOD_US);
-            xtimer_set_msg(&phy_cfg_timer, PHY_CFG_INTERVAL, &msg, thread_getpid());
+            xtimer_set_msg(&phy_cfg_timer, if_numtx.numtx * TX_WUP_INTERVAL, &msg, thread_getpid());
         }
     }
+    mutex_unlock(&if_numtx.lock);
     mutex_unlock(&if_if_phy.lock);
     mutex_unlock(&if_trx_phy.lock);
     
