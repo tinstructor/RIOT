@@ -56,7 +56,7 @@ if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1
 payload_size = 120 # in bytes
 sinr = 0 # in dB
 num_of_tx = 10
-test_duration = 10 # in seconds
+test_duration = int(round(0.4 * num_of_tx)) + 4 # in seconds
 offset_values = [-2800,15840,31700]
 
 halt_event = threading.Event()
