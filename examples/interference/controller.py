@@ -55,7 +55,8 @@ trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-test_duration = 45 # in seconds
+num_of_tx = 10
+test_duration = 10 # in seconds
 offset_values = [-2800,15840,31700]
 
 halt_event = threading.Event()
@@ -70,22 +71,20 @@ if_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 rx_q = Queue()
 
 for if_idx, if_phy in if_phy_cfg:
-
-    timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-    try:
-        timing_shell.communicate(input="i%s\n" % (if_idx),timeout=2)
-    except TimeoutExpired:
-        timing_shell.kill()
-
     for trx_idx, trx_phy in trx_phy_cfg:
-
-        timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-        try:
-            timing_shell.communicate(input="t%s\n" % (trx_idx),timeout=2)
-        except TimeoutExpired:
-            timing_shell.kill()
-
         for of_idx, offset in enumerate(offset_values):
+
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="i%s\n" % (if_idx),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="t%s\n" % (trx_idx),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
@@ -151,7 +150,7 @@ for if_idx, if_phy in if_phy_cfg:
                 rx_shell.kill()
             
             csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,offset,sinr)
-            analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\"" % (rx_log_filename,csv_filename,if_phy,trx_phy)
+            analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx)
             if os.path.exists(os.path.dirname(csv_filename)):
                 analyzer_cmd = analyzer_cmd + " -a"
             py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdout=PIPE,stderr=PIPE,universal_newlines=True)

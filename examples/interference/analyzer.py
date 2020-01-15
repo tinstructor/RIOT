@@ -55,12 +55,16 @@ parser.add_argument("csvfile", help="The csv file to which log-derived info must
 parser.add_argument("-a", "--append", action="store_true", help="Append to the csv file, overwrite it otherwise.")
 parser.add_argument("-i", "--interferer", type=str, help="The interferer PHY in case there's only one.")
 parser.add_argument("-t", "--transmitter", type=str, help="The transmitter PHY in case there's only one.")
+parser.add_argument("-n", "--numtx", metavar='N', type=int, help="Amount of messages transmitted, set to 100 otherwise.")
 args = parser.parse_args()
 
 LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
 LOG_REGEXP_PHY = re.compile("^.*?PHY")
 
-NUM_OF_TX = 100
+if args.numtx is not None:
+    NUM_OF_TX = args.numtx
+else:
+    NUM_OF_TX = 100
 TRX_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
                "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
                "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
