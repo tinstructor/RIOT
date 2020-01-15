@@ -109,7 +109,6 @@ for index, value in enumerate(offset_values):
                 print("%s" % (line.strip().strip("\r\n")))
                 rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
 
-    rx_logfile.write(" PHY \n")
     rx_logfile.close()
 
     timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)

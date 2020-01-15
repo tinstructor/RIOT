@@ -47,6 +47,8 @@ static char stack_btn[THREAD_STACKSIZE_MAIN];
 static char stack_ua[THREAD_STACKSIZE_MAIN];
 
 xtimer_ticks32_t last_wup_tc;
+xtimer_ticks32_t last_wup_st;
+xtimer_ticks32_t last_wup_si;
 xtimer_t phy_cfg_timer;
 
 static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
@@ -150,16 +152,19 @@ static void *thread_ua_handler(void *arg)
                     if (!get_has_started()) {
                         msg_try_receive(&msg);
                         int index = CHAR_TO_INT((char)msg.content.value);
-                        if (index >= 0 && index <= NUM_OF_PHY_TRX) {
-                            //TODO add for-loop for number of pulses
+                        if (index >= 0 && index <= NUM_PHY_CFG) {
                             mutex_lock(&if_trx_phy.lock);
-                            last_wup_tc = xtimer_now();
-                            gpio_set(TX_PHY_CFG_PIN);
-                            xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
-                            gpio_clear(TX_PHY_CFG_PIN);
-                            gpio_set(RX_PHY_CFG_PIN);
-                            xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
-                            gpio_clear(RX_PHY_CFG_PIN);
+                            uint8_t pulses = (NUM_PHY_CFG - if_trx_phy.phy + index) % NUM_PHY_CFG;
+                            if_trx_phy.phy = index;
+                            last_wup_st = xtimer_now();
+                            for (size_t i = 0; i < pulses; i++) {
+                                gpio_set(TX_PHY_CFG_PIN);
+                                xtimer_periodic_wakeup(&last_wup_st, PULSE_DURATION_US);
+                                gpio_clear(TX_PHY_CFG_PIN);
+                                gpio_set(RX_PHY_CFG_PIN);
+                                xtimer_periodic_wakeup(&last_wup_st, PULSE_DURATION_US);
+                                gpio_clear(RX_PHY_CFG_PIN);
+                            }
                             mutex_unlock(&if_trx_phy.lock);
                         }
                         else {
@@ -176,13 +181,16 @@ static void *thread_ua_handler(void *arg)
                     if (!get_has_started()) {
                         msg_try_receive(&msg);
                         int index = CHAR_TO_INT((char)msg.content.value);
-                        if (index >= 0 && index <= NUM_OF_PHY_IF) {
-                            //TODO add for-loop for number of pulses
+                        if (index >= 0 && index <= NUM_PHY_CFG) {
                             mutex_lock(&if_if_phy.lock);
-                            last_wup_tc = xtimer_now();
-                            gpio_set(IF_PHY_CFG_PIN);
-                            xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
-                            gpio_clear(IF_PHY_CFG_PIN);
+                            uint8_t pulses = (NUM_PHY_CFG - if_if_phy.phy + index) % NUM_PHY_CFG;
+                            if_if_phy.phy = index;
+                            last_wup_si = xtimer_now();
+                            for (size_t i = 0; i < pulses; i++) {
+                                gpio_set(IF_PHY_CFG_PIN);
+                                xtimer_periodic_wakeup(&last_wup_si, PULSE_DURATION_US);
+                                gpio_clear(IF_PHY_CFG_PIN);
+                            }
                             mutex_unlock(&if_if_phy.lock);
                         }
                         else {
