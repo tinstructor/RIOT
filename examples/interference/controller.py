@@ -61,6 +61,8 @@ num_of_tx_idx = 4
 num_of_tx_values = [5,10,25,100,250]
 num_of_tx = num_of_tx_values[num_of_tx_idx]
 test_duration = int(round(0.4 * num_of_tx)) + 2 # in seconds
+# TODO check offset values and add values/mechanism for 2 fast OFDM PHYs
+# current values are emperically based on 50kbps OFDM PHYs only
 offset_values = [-2800,15840,31700]
 
 halt_event = threading.Event()
