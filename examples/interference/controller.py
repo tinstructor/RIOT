@@ -57,7 +57,7 @@ if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-num_of_tx_idx = 0
+num_of_tx_idx = 4
 num_of_tx_values = [5,10,25,100,250]
 num_of_tx = num_of_tx_values[num_of_tx_idx]
 test_duration = int(round(0.4 * num_of_tx)) + 2 # in seconds
@@ -78,17 +78,35 @@ for if_idx, if_phy in if_phy_cfg:
     for trx_idx, trx_phy in trx_phy_cfg:
         for of_idx, offset in enumerate(offset_values):
 
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 timing_shell.communicate(input="i%s\n" % (if_idx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
+            
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 timing_shell.communicate(input="t%s\n" % (trx_idx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
+
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
             
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
@@ -96,11 +114,23 @@ for if_idx, if_phy in if_phy_cfg:
             except TimeoutExpired:
                 timing_shell.kill()
 
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 timing_shell.communicate(input="o%s\n" % (of_idx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
+
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
@@ -141,6 +171,12 @@ for if_idx, if_phy in if_phy_cfg:
                 timing_shell.communicate(input="r\n",timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
+            
+            threading.Timer(2, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
 
             tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
             try:
@@ -148,11 +184,23 @@ for if_idx, if_phy in if_phy_cfg:
             except TimeoutExpired:
                 tx_shell.kill()
 
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+
             if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 if_shell.communicate(input="reboot\n",timeout=2)
             except TimeoutExpired:
                 if_shell.kill()
+            
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
 
             try:
                 rx_shell.communicate(input="reboot\n",timeout=2)
