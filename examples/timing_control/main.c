@@ -223,6 +223,7 @@ static void *thread_ua_handler(void *arg)
                                 gpio_set(RX_PHY_CFG_PIN);
                                 xtimer_periodic_wakeup(&last_wup_st, PULSE_DURATION_US);
                                 gpio_clear(RX_PHY_CFG_PIN);
+                                xtimer_periodic_wakeup(&last_wup_st, PHY_CFG_INTERVAL);
                             }
                             mutex_unlock(&if_trx_phy.lock);
                         }
@@ -249,6 +250,7 @@ static void *thread_ua_handler(void *arg)
                                 gpio_set(IF_PHY_CFG_PIN);
                                 xtimer_periodic_wakeup(&last_wup_si, PULSE_DURATION_US);
                                 gpio_clear(IF_PHY_CFG_PIN);
+                                xtimer_periodic_wakeup(&last_wup_si, PHY_CFG_INTERVAL);
                             }
                             mutex_unlock(&if_if_phy.lock);
                         }

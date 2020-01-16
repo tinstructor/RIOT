@@ -104,7 +104,7 @@ for if_idx, if_phy in if_phy_cfg:
             except TimeoutExpired:
                 timing_shell.kill()
 
-            threading.Timer(1, halt_event.set).start()
+            threading.Timer(2, halt_event.set).start()
             while True:
                 if halt_event.is_set():
                     halt_event.clear()
