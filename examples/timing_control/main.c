@@ -275,7 +275,7 @@ static void *thread_ua_handler(void *arg)
                                     {
                                         // NOTE: if payload starts at tx sync
                                         mutex_lock(&if_tx_offset.lock);
-                                        if_tx_offset.offset = 2800UL;
+                                        if_tx_offset.offset = 1920UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
                                         if_tx_pin_cfg.first_pin = IF_TX_PIN;
                                         if_tx_pin_cfg.second_pin = TX_TX_PIN;
@@ -287,7 +287,7 @@ static void *thread_ua_handler(void *arg)
                                     {
                                         // NOTE: if and tx center aligned
                                         mutex_lock(&if_tx_offset.lock);
-                                        if_tx_offset.offset = 15840UL;
+                                        if_tx_offset.offset = 7920UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
                                         if_tx_pin_cfg.first_pin = TX_TX_PIN;
                                         if_tx_pin_cfg.second_pin = IF_TX_PIN;
@@ -299,7 +299,7 @@ static void *thread_ua_handler(void *arg)
                                     {
                                         // NOTE: if overlaps with FCS of tx
                                         mutex_lock(&if_tx_offset.lock);
-                                        if_tx_offset.offset = 31700UL;
+                                        if_tx_offset.offset = 15840UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
                                         if_tx_pin_cfg.first_pin = TX_TX_PIN;
                                         if_tx_pin_cfg.second_pin = IF_TX_PIN;

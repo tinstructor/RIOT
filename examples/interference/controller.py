@@ -51,19 +51,19 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
+               #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
+              #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-num_of_tx_idx = 4
+num_of_tx_idx = 3
 num_of_tx_values = [5,10,25,100,250]
 num_of_tx = num_of_tx_values[num_of_tx_idx]
 test_duration = int(round(0.4 * num_of_tx)) + 2 # in seconds
 # TODO check offset values and add values/mechanism for 2 fast OFDM PHYs
 # current values are emperically based on 50kbps OFDM PHYs only
-offset_values = [-2800,15840,31700]
+offset_values = [-1920,7920,15840]
 
 halt_event = threading.Event()
 
