@@ -273,7 +273,7 @@ static void *thread_ua_handler(void *arg)
                             {
                                 case 0:
                                     {
-                                        // NOTE: if payload starts at tx sync
+                                        // NOTE: if payload starts at tx sync (all cases)
                                         mutex_lock(&if_tx_offset.lock);
                                         if_tx_offset.offset = 1920UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
@@ -285,7 +285,8 @@ static void *thread_ua_handler(void *arg)
                                     break;
                                 case 1:
                                     {
-                                        // NOTE: if and tx center aligned
+                                        // NOTE: O3M1/O4M2 if and O3M1/O4M2 tx center aligned
+                                        // NOTE: O3M2/O4M3 if overlaps with FCS of O3M2/O4M3 tx
                                         mutex_lock(&if_tx_offset.lock);
                                         if_tx_offset.offset = 7920UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
@@ -297,9 +298,69 @@ static void *thread_ua_handler(void *arg)
                                     break;
                                 case 2:
                                     {
-                                        // NOTE: if overlaps with FCS of tx
+                                        // NOTE: O3M1/O4M2 if overlaps with FCS of O3M1/O4M2 tx
                                         mutex_lock(&if_tx_offset.lock);
                                         if_tx_offset.offset = 15840UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                case 3:
+                                    {
+                                        // NOTE: O3M1/O4M2 if and O3M1/O4M2 tx center aligned
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 3120UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                case 4:
+                                    {
+                                        // NOTE: O3M2/O4M3 if and O3M2/O4M3 tx center aligned
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 3960UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                case 5:
+                                    {
+                                        // NOTE: O3M1/O4M2 if overlaps with FCS of O3M1/O4M2 tx
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 6240UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                case 6:
+                                    {
+                                        // NOTE: O3M2/O4M2 if and O3M2/O4M2 tx center aligned
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 8760UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = TX_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = IF_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                case 7:
+                                    {
+                                        // NOTE: O3M2/O4M2 if overlaps with FCS of O3M2/O4M2 tx
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 17520UL;
                                         mutex_lock(&if_tx_pin_cfg.lock);
                                         if_tx_pin_cfg.first_pin = TX_TX_PIN;
                                         if_tx_pin_cfg.second_pin = IF_TX_PIN;
