@@ -37,33 +37,41 @@ def enqueue_output(out, queue):
         pass
 
 def exit_handler():
-    if isinstance(timing_shell, subprocess.Popen):
-        timing_shell.kill()
-    if isinstance(rx_shell, subprocess.Popen):
-        rx_shell.kill()
-    if isinstance(tx_shell, subprocess.Popen):
-        tx_shell.kill()
-    if isinstance(if_shell, subprocess.Popen):
-        if_shell.kill()
+    # if isinstance(timing_shell, subprocess.Popen):
+    #     timing_shell.kill()
+    # if isinstance(rx_shell, subprocess.Popen):
+    #     rx_shell.kill()
+    # if isinstance(tx_shell, subprocess.Popen):
+    #     tx_shell.kill()
+    # if isinstance(if_shell, subprocess.Popen):
+    #     if_shell.kill()
     print("Exiting")
 
 atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
-               #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
-              #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
 num_of_tx_idx = 3
 num_of_tx_values = [5,10,25,100,250]
 num_of_tx = num_of_tx_values[num_of_tx_idx]
 test_duration = int(round(0.4 * num_of_tx)) + 2 # in seconds
-# TODO check offset values and add values/mechanism for 2 fast OFDM PHYs
-# current values are emperically based on 50kbps OFDM PHYs only
-offset_values = [-1920,7920,15840]
+
+def get_offset_list(phy_tuple):
+    if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
+        return [(0,-1920),(1,7920),(2,15840)]
+    elif (phy_tuple == (3,2) or phy_tuple == (5,2) or phy_tuple == (3,4) or phy_tuple == (5,4)):
+        return [(0,-1920),(6,8760),(7,17520)]
+    elif (phy_tuple == (3,3) or phy_tuple == (5,3) or phy_tuple == (3,5) or phy_tuple == (5,5)):
+        return [(0,-1920),(4,3960),(1,7920)]
+    elif (phy_tuple == (2,3) or phy_tuple == (4,3) or phy_tuple == (2,5) or phy_tuple == (4,5)):
+        return [(0,-1920),(3,3120),(5,6240)]
+    return None
 
 halt_event = threading.Event()
 
@@ -78,8 +86,7 @@ rx_q = Queue()
 
 for if_idx, if_phy in if_phy_cfg:
     for trx_idx, trx_phy in trx_phy_cfg:
-        for of_idx, offset in enumerate(offset_values):
-
+        for of_idx, offset in get_offset_list((if_idx,trx_idx)):
             threading.Timer(1, halt_event.set).start()
             while True:
                 if halt_event.is_set():
