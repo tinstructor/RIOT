@@ -41,7 +41,7 @@
 #define NUM_OF_PHY_TRX      (1UL)
 #define NUM_OF_PHY_IF       (1UL)
 
-#define TX_WUP_INTERVAL     (400UL * US_PER_MS)
+#define TX_WUP_INTERVAL     (500UL * US_PER_MS)
 #define WAITING_PERIOD_US   (300UL * US_PER_MS)
 #define IF_TX_OFFSET_US     (1UL * US_PER_MS)
 #define PULSE_DURATION_US   (150UL * US_PER_MS)

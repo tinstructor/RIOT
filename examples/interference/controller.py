@@ -60,7 +60,7 @@ sinr = 0 # in dB
 num_of_tx_idx = 3
 num_of_tx_values = [5,10,25,100,250]
 num_of_tx = num_of_tx_values[num_of_tx_idx]
-test_duration = int(round(0.4 * num_of_tx)) + 2 # in seconds
+test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 def get_offset_list(phy_tuple):
     if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
