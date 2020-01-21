@@ -37,14 +37,14 @@ def enqueue_output(out, queue):
         pass
 
 def exit_handler():
-    # if isinstance(timing_shell, subprocess.Popen):
-    #     timing_shell.kill()
-    # if isinstance(rx_shell, subprocess.Popen):
-    #     rx_shell.kill()
-    # if isinstance(tx_shell, subprocess.Popen):
-    #     tx_shell.kill()
-    # if isinstance(if_shell, subprocess.Popen):
-    #     if_shell.kill()
+    if isinstance(timing_shell, subprocess.Popen):
+        timing_shell.kill()
+    if isinstance(rx_shell, subprocess.Popen):
+        rx_shell.kill()
+    if isinstance(tx_shell, subprocess.Popen):
+        tx_shell.kill()
+    if isinstance(if_shell, subprocess.Popen):
+        if_shell.kill()
     print("Exiting")
 
 atexit.register(exit_handler)

@@ -12,6 +12,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--noline", action="store_true", help="Omit line plot generation")
 args = parser.parse_args()
 
+def get_offset_lists(if_phy):
+    if (if_phy == "SUN-OFDM 863-870MHz O4 MCS2" or if_phy == "SUN-OFDM 863-870MHz O3 MCS1"):
+        return [["-1920US","3120US","6240US"],["-1920US","7920US","15840US"]]
+    elif (if_phy == "SUN-OFDM 863-870MHz O4 MCS3" or if_phy == "SUN-OFDM 863-870MHz O3 MCS2"):
+        return [["-1920US","3960US","7920US"],["-1920US","8760US","17520US"]]
+    return None
+
 file_list = []
 script_dir = os.path.dirname(__file__)
 for file in glob.glob(os.path.join(script_dir,"*.csv")):
@@ -55,26 +62,29 @@ for csv_file in file_list:
         for if_phy in if_phys:
             # NOTE selects all rows whose column value equals if_phy
             df_if_phy = df.loc[df["IF PHY"] == if_phy]
-            
-            if (if_phy, payload_size, sir not in bar_info):
-                bar_info.setdefault((if_phy, payload_size, sir), {})
-            
-            if (offset not in bar_info[if_phy, payload_size, sir]):
-                bar_info[if_phy, payload_size, sir].setdefault(offset, {})
 
-            # NOTE selects TRX PHY and PRR columns from df_if_phy and sets TRX PHY as index before converting the frame
-            # to a dict with key = TRX PHY and value = PRR and finally appending to bar_info[if_phy, payload_size, sir][offset]
-            bar_info[if_phy, payload_size, sir][offset].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
+            if not df_if_phy.empty:
 
-            if (if_phy, payload_size, offset not in line_info):
-                line_info.setdefault((if_phy, payload_size, offset), {})
+                if (if_phy, payload_size, sir not in bar_info):
+                    bar_info.setdefault((if_phy, payload_size, sir), {})
+                
+                if (offset not in bar_info[if_phy, payload_size, sir]):
+                    bar_info[if_phy, payload_size, sir].setdefault(offset, {})
 
-            if (sir not in line_info[if_phy, payload_size, offset]):
-                line_info[if_phy, payload_size, offset].setdefault(sir, {})
+                # NOTE selects TRX PHY and PRR columns from df_if_phy and sets TRX PHY as index before converting the frame
+                # to a dict with key = TRX PHY and value = PRR and finally appending to bar_info[if_phy, payload_size, sir][offset]
+                bar_info[if_phy, payload_size, sir][offset].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
 
-            # NOTE selects TRX PHY and PRR columns from df_if_phy and sets TRX PHY as index before converting the frame
-            # to a dict with key = TRX PHY and value = PRR and finally appending to line_info[if_phy, payload_size, offset][sir]
-            line_info[if_phy, payload_size, offset][sir].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
+                if not args.noline:
+                    if (if_phy, payload_size, offset not in line_info):
+                        line_info.setdefault((if_phy, payload_size, offset), {})
+
+                    if (sir not in line_info[if_phy, payload_size, offset]):
+                        line_info[if_phy, payload_size, offset].setdefault(sir, {})
+
+                    # NOTE selects TRX PHY and PRR columns from df_if_phy and sets TRX PHY as index before converting the frame
+                    # to a dict with key = TRX PHY and value = PRR and finally appending to line_info[if_phy, payload_size, offset][sir]
+                    line_info[if_phy, payload_size, offset][sir].update(df_if_phy[["TRX PHY","PRR"]].set_index("TRX PHY")["PRR"].to_dict())
    
     # REVIEW removing else clause allows other csv files in directory
     else:
@@ -84,22 +94,27 @@ for csv_file in file_list:
 for if_phy, payload_size, sir in bar_info:
     title = "Interference: " + if_phy + ", Payload: " + payload_size + ", SIR: " + sir
     # NOTE sort (alfabetically) by offset
-    bar_info[if_phy, payload_size, sir] = dict(sorted(bar_info[if_phy, payload_size, sir].items(), key=lambda x: x[0].lower()))
-    # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
-    # diagonal by writing rows as columns and vice-versa) and plot it as a bar plot
-    plt.rcParams["figure.dpi"] = 400
-    ax = pd.DataFrame(bar_info[if_phy, payload_size, sir]).T.plot(kind='bar', figsize=(10,7))
-    ax.set_xlabel('Offset between TX and IF')
-    ax.set_ylabel('Packet Reception Rate [%]')
-    ax.set_ylim([0, 120])
-    ax.set_yticks([0,20,40,60,80,100])
-    # NOTE for each bar: print the height of each bar 1.2 above the top of the bar
-    # tags are centered and rotated 90 degrees counter-clockwise
-    for i in ax.patches:
-        ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1.2, str(round(i.get_height(),2)), fontsize=8, color='dimgrey', rotation=90, ha="center", va="bottom")
-    plt.title(title)
-    plt.savefig(if_phy + "_" + payload_size + "_" + sir + ".png", transparent=True)
-    plt.close()
+    bar_info[if_phy, payload_size, sir] = dict(sorted(bar_info[if_phy, payload_size, sir].items(), key=lambda x: '{0:0>8}'.format(x[0])))
+    for index, offset_list in enumerate(get_offset_lists(if_phy)):
+        # NOTE make a dataframe
+        df = pd.DataFrame(bar_info[if_phy, payload_size, sir])
+        # NOTE check if set of columns (i.e., the offset list) exists in the frame
+        if pd.Series(offset_list).isin(df.columns).all():
+            # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
+            # diagonal by writing rows as columns and vice-versa) and plot it as a bar plot
+            plt.rcParams["figure.dpi"] = 400
+            ax = df[offset_list].dropna().T.plot(kind='bar', figsize=(10,7))
+            ax.set_xlabel('Offset between TX and IF')
+            ax.set_ylabel('Packet Reception Rate [%]')
+            ax.set_ylim([0, 120])
+            ax.set_yticks([0,20,40,60,80,100])
+            # NOTE for each bar: print the height of each bar 1.2 above the top of the bar
+            # tags are centered and rotated 90 degrees counter-clockwise
+            for i in ax.patches:
+                ax.text(i.get_x() + i.get_width() / 2, i.get_height()+1.2, str(round(i.get_height(),2)), fontsize=8, color='dimgrey', rotation=90, ha="center", va="bottom")
+            plt.title(title)
+            plt.savefig("{}_".format(index) + if_phy + "_" + payload_size + "_" + sir + ".png", transparent=True)
+            plt.close()
 
 if not args.noline:
     styles = ['s-', 'o-', '^-', 'x-', 'd-', 'h-']
@@ -107,7 +122,7 @@ if not args.noline:
     for if_phy, payload_size, offset in line_info:
         title = "Interference: " + if_phy + ", Payload: " + payload_size + ", Offset: " + offset
         # NOTE sort (alfabetically) by sir
-        line_info[if_phy, payload_size, offset] = dict(sorted(line_info[if_phy, payload_size, offset].items(), key=lambda x: x[0].lower()))
+        line_info[if_phy, payload_size, offset] = dict(sorted(line_info[if_phy, payload_size, offset].items(), key=lambda x: '{0:0>8}'.format(x[0])))
         # NOTE first transpose the dataframe (i.e., reflect the dataframe over its main 
         # diagonal by writing rows as columns and vice-versa) and plot it as a line plot
         df = pd.DataFrame(line_info[if_phy, payload_size, offset]).T
@@ -122,5 +137,3 @@ if not args.noline:
         plt.title(title)
         plt.savefig(if_phy + "_" + payload_size + "_" + offset + ".png", transparent=True)
         plt.close()
-else:
-    pass
