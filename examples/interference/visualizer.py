@@ -14,9 +14,9 @@ args = parser.parse_args()
 
 def get_offset_lists(if_phy):
     if (if_phy == "SUN-OFDM 863-870MHz O4 MCS2" or if_phy == "SUN-OFDM 863-870MHz O3 MCS1"):
-        return [["-1920US","3120US","6240US"],["-1920US","7920US","15840US"]]
+        return [["-1440US","3120US","6240US"],["-1440US","7920US","15840US"]]
     elif (if_phy == "SUN-OFDM 863-870MHz O4 MCS3" or if_phy == "SUN-OFDM 863-870MHz O3 MCS2"):
-        return [["-1920US","3960US","7920US"],["-1920US","8760US","17520US"]]
+        return [["-1440US","3960US","7920US"],["-1440US","8760US","17520US"]]
     return None
 
 file_list = []
