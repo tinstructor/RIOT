@@ -51,10 +51,10 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
+               #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
+              #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
 num_of_tx_idx = 3
@@ -64,13 +64,13 @@ test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 def get_offset_list(phy_tuple):
     if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
-        return [(0,-1440),(1,7920),(2,15840)]
+        return [(0,-1440),(1,7920),(2,16320)]
     elif (phy_tuple == (3,2) or phy_tuple == (5,2) or phy_tuple == (3,4) or phy_tuple == (5,4)):
-        return [(0,-1440),(6,8760),(7,17520)]
+        return [(0,-1440),(6,8760),(7,18000)]
     elif (phy_tuple == (3,3) or phy_tuple == (5,3) or phy_tuple == (3,5) or phy_tuple == (5,5)):
-        return [(0,-1440),(4,3960),(1,7920)]
+        return [(0,-1440),(4,3960),(8,8400)]
     elif (phy_tuple == (2,3) or phy_tuple == (4,3) or phy_tuple == (2,5) or phy_tuple == (4,5)):
-        return [(0,-1440),(3,3120),(5,6240)]
+        return [(0,-1440),(3,3120),(5,6720)]
     return None
 
 halt_event = threading.Event()
