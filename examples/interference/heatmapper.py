@@ -3,6 +3,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+extension = "pdf"
+
 tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_-1440US_SIR_0DB.csv",header=None)
 tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
 tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
@@ -30,7 +32,7 @@ for ticklabel, tickcolor in zip(plt.gca().get_xticklabels(), my_colors):
 for ticklabel, tickcolor in zip(plt.gca().get_yticklabels(), my_colors):
     ticklabel.set_color(tickcolor)
 
-plt.savefig("begin.png",bbox_inches='tight',dpi=330)
+plt.savefig("begin.%s" % extension,bbox_inches='tight',dpi=330)
 plt.close()
 
 tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_3120US_SIR_0DB.csv",header=None)
@@ -65,7 +67,7 @@ for ticklabel, tickcolor in zip(plt.gca().get_xticklabels(), my_colors):
 for ticklabel, tickcolor in zip(plt.gca().get_yticklabels(), my_colors):
     ticklabel.set_color(tickcolor)
 
-plt.savefig("middle.png",bbox_inches='tight',dpi=330)
+plt.savefig("middle.%s" % extension,bbox_inches='tight',dpi=330)
 plt.close()
 
 tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_6720US_SIR_0DB.csv",header=None)
@@ -100,5 +102,5 @@ for ticklabel, tickcolor in zip(plt.gca().get_xticklabels(), my_colors):
 for ticklabel, tickcolor in zip(plt.gca().get_yticklabels(), my_colors):
     ticklabel.set_color(tickcolor)
 
-plt.savefig("end.png",bbox_inches='tight',dpi=330)
+plt.savefig("end.%s" % extension,bbox_inches='tight',dpi=330)
 plt.close()
