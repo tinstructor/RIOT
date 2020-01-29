@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np 
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.font_manager._rebuild()
+
+sns.set(rc={"font.family":"sans-serif","font.sans-serif":["Fira Sans"]})
 
 extension = "png"
 
