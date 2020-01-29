@@ -49,7 +49,7 @@ cbar_tick_color = "#707070"
 for ticklabel in ax.collections[0].colorbar.ax.get_yticklabels():
     ticklabel.set_color(cbar_tick_color)
 
-plt.savefig("begin.%s" % extension,bbox_inches='tight',dpi=330)
+plt.savefig("begin.%s" % extension,bbox_inches='tight',dpi=330,transparent=True)
 plt.close()
 
 tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_3120US_SIR_0DB.csv",header=None)
@@ -99,7 +99,7 @@ cbar_tick_color = "#707070"
 for ticklabel in ax.collections[0].colorbar.ax.get_yticklabels():
     ticklabel.set_color(cbar_tick_color)
 
-plt.savefig("middle.%s" % extension,bbox_inches='tight',dpi=330)
+plt.savefig("middle.%s" % extension,bbox_inches='tight',dpi=330,transparent=True)
 plt.close()
 
 tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_6720US_SIR_0DB.csv",header=None)
@@ -149,5 +149,5 @@ cbar_tick_color = "#707070"
 for ticklabel in ax.collections[0].colorbar.ax.get_yticklabels():
     ticklabel.set_color(cbar_tick_color)
 
-plt.savefig("end.%s" % extension,bbox_inches='tight',dpi=330)
+plt.savefig("end.%s" % extension,bbox_inches='tight',dpi=330,transparent=True)
 plt.close()
