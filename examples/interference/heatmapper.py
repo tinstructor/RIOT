@@ -13,7 +13,7 @@ tx_matrix = tx_raw.pivot("TX / RX PHY\nconfiguration","Interferer PHY\nconfigura
 
 plt.figure(figsize=(6,6))
 
-ax = sns.heatmap(tx_matrix,cmap="Blues",linewidths=1.4,linecolor="#a9a9a9",vmin=0,vmax=1.0,annot=True,square=True,cbar_kws={"shrink":0.804,"aspect":14})
+ax = sns.heatmap(tx_matrix,cmap="Reds",linewidths=1.4,linecolor="#a9a9a9",vmin=0,vmax=1.0,annot=True,square=True,cbar_kws={"shrink":0.804,"aspect":14})
 ax.collections[0].colorbar.set_label("PRR",labelpad=8,fontsize=11)
 ax.collections[0].colorbar.ax.set_frame_on(True)
 ax.tick_params(axis='both', colors="#a9a9a9", labelsize=11,width=1.6,length=7)
@@ -61,7 +61,7 @@ tx_matrix = tx_raw.pivot("TX / RX PHY\nconfiguration","Interferer PHY\nconfigura
 
 plt.figure(figsize=(6,6))
 
-ax = sns.heatmap(tx_matrix,cmap="Blues",linewidths=1.4,linecolor="#a9a9a9",vmin=0,vmax=1.0,annot=True,square=True,cbar_kws={"shrink":0.804,"aspect":14})
+ax = sns.heatmap(tx_matrix,cmap="Reds",linewidths=1.4,linecolor="#a9a9a9",vmin=0,vmax=1.0,annot=True,square=True,cbar_kws={"shrink":0.804,"aspect":14})
 ax.collections[0].colorbar.set_label("PRR",labelpad=8,fontsize=11)
 ax.collections[0].colorbar.ax.set_frame_on(True)
 ax.tick_params(axis='both', colors="#a9a9a9", labelsize=11,width=1.6,length=7)
@@ -109,7 +109,7 @@ tx_matrix = tx_raw.pivot("TX / RX PHY\nconfiguration","Interferer PHY\nconfigura
 
 plt.figure(figsize=(6,6))
 
-ax = sns.heatmap(tx_matrix,cmap="Blues",linewidths=1.4,linecolor="#a9a9a9",vmin=0,vmax=1.0,annot=True,square=True,cbar_kws={"shrink":0.804,"aspect":14})
+ax = sns.heatmap(tx_matrix,cmap="Reds",linewidths=1.4,linecolor="#a9a9a9",vmin=0,vmax=1.0,annot=True,square=True,cbar_kws={"shrink":0.804,"aspect":14})
 ax.collections[0].colorbar.set_label("PRR",labelpad=8,fontsize=11)
 ax.collections[0].colorbar.ax.set_frame_on(True)
 ax.tick_params(axis='both', colors="#a9a9a9", labelsize=11,width=1.6,length=7)
