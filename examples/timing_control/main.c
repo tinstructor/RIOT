@@ -384,6 +384,36 @@ static void *thread_ua_handler(void *arg)
                                     break;
                             }
                         }
+                        else {
+                            switch ((char)msg.content.value)
+                            {
+                                case 'a':
+                                    {
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 1800UL - 480UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = IF_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = TX_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                case 'b':
+                                    {
+                                        mutex_lock(&if_tx_offset.lock);
+                                        if_tx_offset.offset = 3480UL - 480UL;
+                                        mutex_lock(&if_tx_pin_cfg.lock);
+                                        if_tx_pin_cfg.first_pin = IF_TX_PIN;
+                                        if_tx_pin_cfg.second_pin = TX_TX_PIN;
+                                        mutex_unlock(&if_tx_pin_cfg.lock);
+                                        mutex_unlock(&if_tx_offset.lock);
+                                    }
+                                    break;
+                                default:
+                                    DEBUG("Index option %c not supported\n", (char)msg.content.value);
+                                    break;
+                            }
+                        }
                     }
                     else {
                         DEBUG("Experiment has already started: can't set offset\n");
