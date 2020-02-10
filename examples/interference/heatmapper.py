@@ -7,7 +7,10 @@ sns.set(rc={"font.family":"sans-serif","font.weight":"regular","font.sans-serif"
 
 extension = "png"
 
-tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_-1440US_SIR_0DB.csv",header=None)
+tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_-3480US_SIR_0DB.csv",header=None)
+tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/TX_120B_OF_-1800US_SIR_0DB.csv",header=None)])
+tx_raw.reset_index(drop=True,inplace=True)
+
 tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
 tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
 
@@ -28,7 +31,7 @@ for axis in ['top','bottom','left','right']:
     ax.spines[axis].set_color('#a9a9a9')
     ax.collections[0].colorbar.ax.spines[axis].set_color('#a9a9a9')
 
-plt.title("Packet Reception Ratio under 21B\nACK interference @ -1.44 ms offset",fontsize=15,pad=16,fontweight="regular")
+plt.title("Packet Reception Ratio under 21B\nACK interference @ begin offset",fontsize=15,pad=16,fontweight="regular")
 plt.gca().yaxis.get_label().set_fontsize(11)
 plt.gca().yaxis.get_label().set_weight("regular")
 plt.gca().yaxis.labelpad = 10

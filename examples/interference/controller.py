@@ -64,13 +64,13 @@ test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 def get_offset_list(phy_tuple):
     if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
-        return [(0,-1440),(1,7920),(2,16320)]
+        return [('b',-3480)]#,(1,7920),(2,16320)]
     elif (phy_tuple == (3,2) or phy_tuple == (5,2) or phy_tuple == (3,4) or phy_tuple == (5,4)):
-        return [(0,-1440),(6,8760),(7,18000)]
+        return [('a',-1800)]#,(6,8760),(7,18000)]
     elif (phy_tuple == (3,3) or phy_tuple == (5,3) or phy_tuple == (3,5) or phy_tuple == (5,5)):
-        return [(0,-1440),(4,3960),(8,8400)]
+        return [('a',-1800)]#,(4,3960),(8,8400)]
     elif (phy_tuple == (2,3) or phy_tuple == (4,3) or phy_tuple == (2,5) or phy_tuple == (4,5)):
-        return [(0,-1440),(3,3120),(5,6720)]
+        return [('b',-3480)]#,(3,3120),(5,6720)]
     return None
 
 halt_event = threading.Event()
