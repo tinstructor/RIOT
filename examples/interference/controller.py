@@ -57,20 +57,18 @@ if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1
               #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 payload_size = 120 # in bytes
 sinr = 0 # in dB
-num_of_tx_idx = 3
-num_of_tx_values = [5,10,25,100,250]
-num_of_tx = num_of_tx_values[num_of_tx_idx]
+num_of_tx = 5
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 def get_offset_list(phy_tuple):
     if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
-        return [('b',-3480),(1,7920),(2,16320)]
+        return [-3480,7920,16320]
     elif (phy_tuple == (3,2) or phy_tuple == (5,2) or phy_tuple == (3,4) or phy_tuple == (5,4)):
-        return [('a',-1800),(6,8760),(7,18000)]
+        return [-1800,8760,18000]
     elif (phy_tuple == (3,3) or phy_tuple == (5,3) or phy_tuple == (3,5) or phy_tuple == (5,5)):
-        return [('a',-1800),(4,3960),(8,8400)]
+        return [-1800,3960,8400]
     elif (phy_tuple == (2,3) or phy_tuple == (4,3) or phy_tuple == (2,5) or phy_tuple == (4,5)):
-        return [('b',-3480),(3,3120),(5,6720)]
+        return [-3480,3120,6720]
     return None
 
 halt_event = threading.Event()
@@ -86,7 +84,7 @@ rx_q = Queue()
 
 for if_idx, if_phy in if_phy_cfg:
     for trx_idx, trx_phy in trx_phy_cfg:
-        for of_idx, offset in get_offset_list((if_idx,trx_idx)):
+        for offset in get_offset_list((if_idx,trx_idx)):
             threading.Timer(1, halt_event.set).start()
             while True:
                 if halt_event.is_set():
@@ -95,7 +93,7 @@ for if_idx, if_phy in if_phy_cfg:
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="i%s\n" % (if_idx),timeout=2)
+                timing_shell.communicate(input="ifphy %s\n" % (if_idx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
             
@@ -107,7 +105,7 @@ for if_idx, if_phy in if_phy_cfg:
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="t%s\n" % (trx_idx),timeout=2)
+                timing_shell.communicate(input="trxphy %s\n" % (trx_idx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 
@@ -119,7 +117,7 @@ for if_idx, if_phy in if_phy_cfg:
             
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="n%s\n" % (num_of_tx_idx),timeout=2)
+                timing_shell.communicate(input="numtx %s\n" % (num_of_tx),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 
@@ -131,7 +129,7 @@ for if_idx, if_phy in if_phy_cfg:
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="o%s\n" % (of_idx),timeout=2)
+                timing_shell.communicate(input="offset %s\n" % (offset),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 
@@ -143,7 +141,7 @@ for if_idx, if_phy in if_phy_cfg:
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="s\n",timeout=2)
+                timing_shell.communicate(input="start\n",timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 
@@ -177,7 +175,7 @@ for if_idx, if_phy in if_phy_cfg:
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="r\n",timeout=2)
+                timing_shell.communicate(input="reboot\n",timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
             
