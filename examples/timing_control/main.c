@@ -55,6 +55,8 @@ static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US};
 static tc_phy_t if_trx_phy = {.phy = SUN_FSK_OM1};
 static tc_phy_t if_if_phy = {.phy = SUN_FSK_OM1};
 static tc_numtx_t if_numtx = {.numtx = NUM_OF_TX};
+static tc_numphy_t if_if_numphy = {.numphy = NUM_OF_PHY_IF};
+static tc_numphy_t if_trx_numphy = {.numphy = NUM_OF_PHY_TRX};
 
 static bool set_can_start(void)
 {
@@ -140,6 +142,9 @@ static void *thread_tc_handler(void *arg)
     uint8_t phy_reconfigs = 0;
     uint8_t experiments = 0;
 
+    // FIXME yielding a thread only causes threads of the same or higher priority to execute.
+    // Hence, this thread will be stuck in this loop forever (unless the user button is pressed)
+    // because the main thread has lower priority and issuing the "start" command has no effect.
     while (!get_can_start()) { thread_yield(); };
     set_has_started();
     xtimer_sleep(2);
@@ -147,10 +152,12 @@ static void *thread_tc_handler(void *arg)
     mutex_lock(&if_trx_phy.lock);
     mutex_lock(&if_if_phy.lock);
     mutex_lock(&if_numtx.lock);
+    mutex_lock(&if_if_numphy.lock);
+    mutex_lock(&if_trx_numphy.lock);
     msg = msg_phy_cfg;
     last_wup_tc = xtimer_now();
     xtimer_set_msg(&phy_cfg_timer, if_numtx.numtx * TX_WUP_INTERVAL, &msg, thread_getpid());
-    while (experiments < NUM_OF_PHY_IF) {
+    while (experiments < if_if_numphy.numphy) {
         mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
         xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - if_tx_offset.offset - PULSE_DURATION_US);
@@ -174,7 +181,7 @@ static void *thread_tc_handler(void *arg)
 
             phy_reconfigs++;
 
-            if (phy_reconfigs >= NUM_OF_PHY_TRX) {
+            if (phy_reconfigs >= if_trx_numphy.numphy) {
                 gpio_set(IF_PHY_CFG_PIN);
                 xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US);
                 gpio_clear(IF_PHY_CFG_PIN);
@@ -187,10 +194,12 @@ static void *thread_tc_handler(void *arg)
             xtimer_set_msg(&phy_cfg_timer, if_numtx.numtx * TX_WUP_INTERVAL, &msg, thread_getpid());
         }
     }
+    mutex_unlock(&if_trx_numphy.lock);
+    mutex_unlock(&if_if_numphy.lock);
     mutex_unlock(&if_numtx.lock);
     mutex_unlock(&if_if_phy.lock);
     mutex_unlock(&if_trx_phy.lock);
-    
+
     return NULL;
 }
 
@@ -248,6 +257,46 @@ static int numtx_handler(int argc, char **argv)
     }
     else {
         DEBUG("experiment has already started: can't set numtx\n");
+    }
+
+    return 0;
+}
+
+static int numphy_handler(int argc, char **argv)
+{
+    if (argc != 2 || atoi(argv[1]) <= 0) {
+        printf("usage: %s <# of %s phy configs>\n",argv[0],(!strcmp("ifnumphy",argv[0]) ? "IF" : "TRX"));
+        return 1;
+    }
+
+    if (!get_has_started()) {
+        uint8_t numphy = atoi(argv[1]);
+
+        if (!strcmp("ifnumphy",argv[0])) {
+            // NOTE enters this block when strings are equal
+            if (numphy <= NUM_PHY_CFG) {
+                mutex_lock(&if_if_numphy.lock);
+                if_if_numphy.numphy = numphy;
+                mutex_unlock(&if_if_numphy.lock);
+            }
+            else {
+                DEBUG("IF phy config index %d out of range\n",numphy);
+            }
+        }
+        else {
+            // NOTE enters this block when strings are not equal
+            if (numphy <= NUM_PHY_CFG) {
+                mutex_lock(&if_trx_numphy.lock);
+                if_trx_numphy.numphy = numphy;
+                mutex_unlock(&if_trx_numphy.lock);
+            }
+            else {
+                DEBUG("TRX phy index %d out of range\n",numphy);
+            }
+        }
+    }
+    else {
+        DEBUG("experiment has already started: can't set # of %s phy configs\n", !strcmp("ifphy",argv[0]) ? "IF" : "TRX");
     }
 
     return 0;
@@ -316,6 +365,8 @@ static const shell_command_t shell_commands[] = {
     {"start", "starts the interference experiment", start_handler},
     {"offset", "sets an IF/TX offset (in microseconds)", offset_handler},
     {"numtx", "sets the number of messages transmitted for each IF/TX PHY combination", numtx_handler},
+    {"ifnumphy", "sets the number of IF PHY reconfigurations", numphy_handler},
+    {"trxnumphy", "sets the number of TRX PHY reconfigurations", numphy_handler},
     {"ifphy", "set the IF phy configuration", phy_handler},
     {"trxphy", "set the TRX phy configuration", phy_handler},
     {NULL, NULL, NULL}
@@ -339,14 +390,29 @@ int main(void)
     gpio_clear(RX_PHY_CFG_PIN);
     gpio_clear(IF_PHY_CFG_PIN);
     
+    // pid_btn = thread_create(stack_btn, sizeof(stack_btn), 
+    //           THREAD_PRIORITY_MAIN - 1, 0, thread_btn_handler, 
+    //           NULL, "thread btn");
     pid_btn = thread_create(stack_btn, sizeof(stack_btn), 
-              THREAD_PRIORITY_MAIN - 1, 0, thread_btn_handler, 
+              THREAD_PRIORITY_MAIN, 0, thread_btn_handler, 
               NULL, "thread btn");
 
     gpio_init_int(BTN0_PIN, BTN0_MODE, GPIO_RISING, gpio_cb, NULL);
 
+    // FIXME thread priority is higher than main thread and therefore higher than shell priority.
+    // This causes the tc thread to hang when checking the status of the can_start flag because
+    // yielding the thread only allows threads of the same or higher priority to execute instead.
+    // Previously this worked because the btn & ua threads had the same priority as the tc thread
+    // (1 priority above main). Threads of the same priority execute in chronological order and
+    // although both these threads started before the tc thread, they blocked immediately, awaiting 
+    // a msg originating from an isr. Hence, the tc thread was reached, constantly yealding to the
+    // other 2 threads of the same priority if they were awaiting execution because they had received
+    // a message from an isr.
+    // pid_tc = thread_create(stack_tc, sizeof(stack_tc), 
+    //          THREAD_PRIORITY_MAIN - 1, 0, thread_tc_handler, 
+    //          NULL, "thread tc");
     pid_tc = thread_create(stack_tc, sizeof(stack_tc), 
-             THREAD_PRIORITY_MAIN + 1, 0, thread_tc_handler, 
+             THREAD_PRIORITY_MAIN, 0, thread_tc_handler, 
              NULL, "thread tc");
     
     char line_buf[SHELL_DEFAULT_BUFSIZE];
