@@ -325,7 +325,7 @@ static void *thread_handler(void *arg)
 static int numbyte_handler(int argc, char **argv)
 {
     if (argc != 2 || atoi(argv[1]) < 1 || atoi(argv[1]) > 128) {
-        printf("usage: %s <# of %s payload bytes [1-128]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
+        printf("usage: %s <# of %s L2 payload bytes [1-128]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
         return 1;
     }
 
@@ -392,25 +392,30 @@ static int taddr_handler(int argc, char **argv)
 
 static int saddr_handler(int argc, char **argv)
 {
-    if (argc != 2) {
+    if (argc != 2 || strlen(argv[1]) != 23) {
         printf("usage: %s <address string>\n",argv[0]);
         return 1;
     }
-    
-    // char addr[24];
-    // sprintf(addr,)
-    // sprintf
+
+    uint8_t foo[GNRC_NETIF_L2ADDR_MAXLEN];
+    if (!gnrc_netif_addr_from_str(argv[1], foo)) {
+        DEBUG("Incorrectly formatted address string was passed!\n");
+        printf("usage: %s <address string>\n",argv[0]);
+        return 1;
+    }
 
 #ifdef MODULE_AT86RF215
     if (!strcmp("numbytesub",argv[0])) {
         // NOTE enters this block when strings are equal
         mutex_lock(&tx_sub_ghz.lock);
+        strcpy(tx_sub_ghz.dest, argv[1]);
         mutex_unlock(&tx_sub_ghz.lock);
     }
 #if (GNRC_NETIF_NUMOF >= 2)
     else {
         // NOTE enters this block when strings are not equal
         mutex_lock(&tx_2_4_ghz.lock);
+        strcpy(tx_2_4_ghz.dest, argv[1]);
         mutex_unlock(&tx_2_4_ghz.lock);
     }
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
