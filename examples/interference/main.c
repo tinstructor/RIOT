@@ -363,9 +363,69 @@ static int numbyte_handler(int argc, char **argv)
     return 0;
 }
 
+static int taddr_handler(int argc, char **argv)
+{
+    if (argc != 1) {
+        printf("usage: %s\n", argv[0]);
+        return 1;
+    }
+
+#ifdef MODULE_AT86RF215
+    if (!strcmp("numbytesub",argv[0])) {
+        // NOTE enters this block when strings are equal
+        mutex_lock(&tx_sub_ghz.lock);
+        strcpy(tx_sub_ghz.dest, !strcmp(TRX_DEST_ADDR, tx_sub_ghz.dest) ? IF_DEST_ADDR : TRX_DEST_ADDR);
+        mutex_unlock(&tx_sub_ghz.lock);
+    }
+#if (GNRC_NETIF_NUMOF >= 2)
+    else {
+        // NOTE enters this block when strings are not equal
+        mutex_lock(&tx_2_4_ghz.lock);
+        strcpy(tx_2_4_ghz.dest, !strcmp(TRX_DEST_ADDR, tx_2_4_ghz.dest) ? IF_DEST_ADDR : TRX_DEST_ADDR);
+        mutex_unlock(&tx_2_4_ghz.lock);
+    }
+#endif /* (GNRC_NETIF_NUMOF >= 2) */
+#endif /* MODULE_AT86RF215 */   
+
+    return 0;
+}
+
+static int saddr_handler(int argc, char **argv)
+{
+    if (argc != 2) {
+        printf("usage: %s <address string>\n",argv[0]);
+        return 1;
+    }
+    
+    // char addr[24];
+    // sprintf(addr,)
+    // sprintf
+
+#ifdef MODULE_AT86RF215
+    if (!strcmp("numbytesub",argv[0])) {
+        // NOTE enters this block when strings are equal
+        mutex_lock(&tx_sub_ghz.lock);
+        mutex_unlock(&tx_sub_ghz.lock);
+    }
+#if (GNRC_NETIF_NUMOF >= 2)
+    else {
+        // NOTE enters this block when strings are not equal
+        mutex_lock(&tx_2_4_ghz.lock);
+        mutex_unlock(&tx_2_4_ghz.lock);
+    }
+#endif /* (GNRC_NETIF_NUMOF >= 2) */
+#endif /* MODULE_AT86RF215 */   
+
+    return 0;
+}
+
 static const shell_command_t shell_commands[] = {
     {"numbytesub", "set the number of payload bytes in a sub-ghz message", numbyte_handler},
     {"numbytesup", "set the number of payload bytes in a 2.4-ghz message", numbyte_handler},
+    {"taddrsub", "toggle between a preset IF and TRX destination address (sub-GHz)", taddr_handler},
+    {"taddrsup", "toggle between a preset IF and TRX destination address (2.4 GHz)", taddr_handler},
+    {"saddrsub", "set a destination address (sub-GHz)", saddr_handler},
+    {"saddrsup", "set a destination address (2.4 GHz)", saddr_handler},
     {NULL, NULL, NULL}
 };
 
