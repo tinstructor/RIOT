@@ -41,9 +41,6 @@
 #define IF_FSK_9_DBM_2_4_GHZ     22
 #define IF_OFDM_9_DBM_2_4_GHZ    30
 
-// #define IS_INTERFERER_SUB_GHZ
-// #define IS_INTERFERER_2_4_GHZ
-
 #ifdef MODULE_AT86RF215
 #define IFACE_SUB_GHZ           4
 
@@ -56,41 +53,17 @@ static const if_phy_cfg_t phy_cfg_sub_ghz[NUM_PHY_CFG_SUB_GHZ] = {
     {IFACE_SUB_GHZ, IF_OFDM_9_DBM_SUB_GHZ, IEEE802154_PHY_OFDM, "SUN-OFDM 863-870MHz O3 MCS2", .ofdm_cfg = {3, 2}}
 };
 
-#ifndef IS_INTERFERER_SUB_GHZ
-static const if_tx_t TX_21B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01"};
-static const if_tx_t TX_40B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                 "0"};
-static const if_tx_t TX_60B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"};                                                                               
-static const if_tx_t TX_80B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"};
-static const if_tx_t TX_120B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "0"};  
-#else
-static const if_tx_t TX_21B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01"};
-static const if_tx_t TX_40B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                 "0"};
-static const if_tx_t TX_60B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"};                                
-static const if_tx_t TX_80B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"}; 
-static const if_tx_t TX_120B_SUB_GHZ = {IFACE_SUB_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "0"};
-#endif /* IS_INTERFERER_SUB_GHZ */
+#define TX_21B                  "01"
+#define TX_120B                 "01234567890123456789"\
+                                "01234567890123456789"\
+                                "01234567890123456789"\
+                                "01234567890123456789"\
+                                "01234567890123456789"\
+                                "0"
+
+#define TRX_DEST_ADDR           "22:68:31:23:9D:F1:96:37"
+#define IF_DEST_ADDR            "22:68:31:23:14:F1:99:37"
+
 #if (GNRC_NETIF_NUMOF >= 2)
 #define IFACE_2_4_GHZ           5
 
@@ -103,41 +76,6 @@ static const if_phy_cfg_t phy_cfg_2_4_ghz[NUM_PHY_CFG_2_4_GHZ] = {
     {IFACE_2_4_GHZ, IF_OFDM_9_DBM_2_4_GHZ, IEEE802154_PHY_OFDM, "SUN-OFDM 2.4GHz O3 MCS2", .ofdm_cfg = {3, 2}}
 };
 
-#ifndef IS_INTERFERER_2_4_GHZ
-static const if_tx_t TX_21B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01"};
-static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                 "0"};
-static const if_tx_t TX_60B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"};                                                                                
-static const if_tx_t TX_80B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"}; 
-static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:9D:F1:96:37", "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "0"};  
-#else
-static const if_tx_t TX_21B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01"};
-static const if_tx_t TX_40B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                 "0"};
-static const if_tx_t TX_60B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"};                                                                                 
-static const if_tx_t TX_80B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "01234567890123456789"
-                                                                                 "0"}; 
-static const if_tx_t TX_120B_2_4_GHZ = {IFACE_2_4_GHZ, "22:68:31:23:14:F1:99:37", "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "01234567890123456789"
-                                                                                  "0"};
-#endif /* IS_INTERFERER_2_4_GHZ */
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */
 

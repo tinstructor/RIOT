@@ -22,27 +22,24 @@
 #define INTERFERENCE_TYPES_H
 
 #include "kernel_types.h"
+#include "mutex.h"
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
-/**
- * @brief   Interference application message types
- */
 typedef enum {
-    IF_MSG_TX,
+    IF_MSG_TX_SUB_GHZ,
+    IF_MSG_TX_2_4_GHZ,
     IF_MSG_PHY_CFG_SUB_GHZ,
     IF_MSG_PHY_CFG_2_4_GHZ,
 } if_msg_t;
 
-/**
- * @brief   Interference application transmission type
- */
 typedef struct {
-    kernel_pid_t iface; /**< PID of interface to transmit on */
-    char *dest;         /**< HW addr of destination */
-    char *payload;      /**< Bytes to send */
+    kernel_pid_t iface;
+    char dest[24];
+    char payload[129];
+    mutex_t lock;
 } if_tx_t;
 
 #ifdef MODULE_AT86RF215
@@ -80,11 +77,8 @@ typedef struct {
     uint8_t mcs;
 } if_ofdm_cfg_t;
 
-/**
- * @brief   Interference application PHY configuration type
- */
 typedef struct {
-    kernel_pid_t iface; /**< PID of the interface to configure */
+    kernel_pid_t iface;
     uint8_t pac_txpwr;
     uint8_t ieee802154_phy;
     char *phy_descriptor;

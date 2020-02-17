@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "thread.h"
+#include "mutex.h"
 #include "msg.h"
 #include "shell.h"
 #include "shell_commands.h"
@@ -42,10 +43,10 @@ static char stack[THREAD_STACKSIZE_MAIN];
 static gnrc_netif_t *netif = NULL;
 
 #ifdef MODULE_AT86RF215
-static if_tx_t tx_sub_ghz = TX_120B_SUB_GHZ;
+static if_tx_t tx_sub_ghz = {.iface = IFACE_SUB_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_120B};
 static phy_cfg_idx_sub_ghz_t current_phy_cfg_idx_sub_ghz;
 #if (GNRC_NETIF_NUMOF >= 2)
-static if_tx_t tx_2_4_ghz = TX_40B_2_4_GHZ;
+static if_tx_t tx_2_4_ghz = {.iface = IFACE_2_4_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_120B};
 static phy_cfg_idx_2_4_ghz_t current_phy_cfg_idx_2_4_ghz;
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */
@@ -275,13 +276,22 @@ static void *thread_handler(void *arg)
         msg_t msg;
         msg_receive(&msg);
         switch (msg.type) {
-            case IF_MSG_TX:
-                if (msg.content.ptr != NULL) {
-                    if_tx_t *tx = (if_tx_t *)msg.content.ptr;
-                    send(tx->iface, tx->dest, tx->payload);
-                } else {
-                    DEBUG("TX pointer is NULL\n");
-                }
+            case IF_MSG_TX_SUB_GHZ:
+#ifdef MODULE_AT86RF215
+                mutex_lock(&tx_sub_ghz.lock);
+                send(tx_sub_ghz.iface, tx_sub_ghz.dest, tx_sub_ghz.payload);
+                mutex_unlock(&tx_sub_ghz.lock);
+#endif /* MODULE_AT86RF215 */  
+                break;
+            
+            case IF_MSG_TX_2_4_GHZ:
+#ifdef MODULE_AT86RF215
+#if (GNRC_NETIF_NUMOF >= 2)
+                mutex_lock(&tx_2_4_ghz.lock);
+                send(tx_2_4_ghz.iface, tx_2_4_ghz.dest, tx_2_4_ghz.payload);
+                mutex_unlock(&tx_2_4_ghz.lock);
+#endif /* (GNRC_NETIF_NUMOF >= 2) */
+#endif /* MODULE_AT86RF215 */  
                 break;
     
             case IF_MSG_PHY_CFG_SUB_GHZ:
@@ -311,6 +321,53 @@ static void *thread_handler(void *arg)
 
     return NULL;
 }
+
+static int numbyte_handler(int argc, char **argv)
+{
+    if (argc != 2 || atoi(argv[1]) < 1 || atoi(argv[1]) > 128) {
+        printf("usage: %s <# of %s payload bytes [1-128]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
+        return 1;
+    }
+
+#ifdef MODULE_AT86RF215
+    if (!strcmp("numbytesub",argv[0])) {
+        // NOTE enters this block when strings are equal
+        uint8_t payload_size = atoi(argv[1]);
+        char *payload = malloc(sizeof(char) * payload_size + 1);
+        for (uint8_t i = 0; i < payload_size; i++) {
+            memset(payload + i, (i % 10) +'0', 1);
+        }
+        payload[payload_size] = '\0';
+        mutex_lock(&tx_sub_ghz.lock);
+        strcpy(tx_sub_ghz.payload, payload);
+        mutex_unlock(&tx_sub_ghz.lock);
+        free(payload);
+    }
+#if (GNRC_NETIF_NUMOF >= 2)
+    else {
+        // NOTE enters this block when strings are not equal
+        uint8_t payload_size = atoi(argv[1]);
+        char *payload = malloc(sizeof(char) * payload_size + 1);
+        for (uint8_t i = 0; i < payload_size; i++) {
+            memset(payload + i, (i % 10) +'0', 1);
+        }
+        payload[payload_size] = '\0';
+        mutex_lock(&tx_2_4_ghz.lock);
+        strcpy(tx_2_4_ghz.payload, payload);
+        mutex_unlock(&tx_2_4_ghz.lock);
+        free(payload);
+    }
+#endif /* (GNRC_NETIF_NUMOF >= 2) */
+#endif /* MODULE_AT86RF215 */   
+
+    return 0;
+}
+
+static const shell_command_t shell_commands[] = {
+    {"numbytesub", "set the number of payload bytes in a sub-ghz message", numbyte_handler},
+    {"numbytesup", "set the number of payload bytes in a 2.4-ghz message", numbyte_handler},
+    {NULL, NULL, NULL}
+};
 
 int main(void)
 {
@@ -343,19 +400,12 @@ int main(void)
     pid = thread_create(stack, sizeof(stack), THREAD_PRIORITY_MAIN - 1,
                         0, thread_handler, NULL, "thread");
 
-    msg_t tx_message_sub_ghz = {.type = IF_MSG_TX};
-#ifdef MODULE_AT86RF215
-    tx_message_sub_ghz.content.ptr = &tx_sub_ghz;
-#endif /* MODULE_AT86RF215 */
-    msg_t tx_message_2_4_ghz = {.type = IF_MSG_TX};
-#if defined(MODULE_AT86RF215) && (GNRC_NETIF_NUMOF >= 2)
-    tx_message_2_4_ghz.content.ptr = &tx_2_4_ghz;
-#endif /* MODULE_AT86RF215 && (GNRC_NETIF_NUMOF >= 2) */
-    msg_t phy_cfg_sub_ghz_message;
-    phy_cfg_sub_ghz_message.type = IF_MSG_PHY_CFG_SUB_GHZ;
-    msg_t phy_cfg_2_4_ghz_message;
-    phy_cfg_2_4_ghz_message.type = IF_MSG_PHY_CFG_2_4_GHZ;
+    msg_t tx_message_sub_ghz = {.type = IF_MSG_TX_SUB_GHZ};
+    msg_t tx_message_2_4_ghz = {.type = IF_MSG_TX_2_4_GHZ};
+    msg_t phy_cfg_sub_ghz_message = {.type = IF_MSG_PHY_CFG_SUB_GHZ};
+    msg_t phy_cfg_2_4_ghz_message = {.type = IF_MSG_PHY_CFG_2_4_GHZ};
     /* initialize input pins */
+    // REVIEW this initialization is probably redudant and should be removed if so
     gpio_init(TX_SUB_GHZ_PIN, GPIO_IN);
     gpio_init(TX_2_4_GHZ_PIN, GPIO_IN);
     gpio_init(PHY_CFG_SUB_GHZ_PIN, GPIO_IN);
@@ -367,7 +417,7 @@ int main(void)
     gpio_init_int(PHY_CFG_2_4_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_2_4_ghz_message);
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 
     return 0;
 }
