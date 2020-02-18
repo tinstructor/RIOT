@@ -51,7 +51,7 @@ xtimer_t phy_cfg_timer;
 
 static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
 static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX_PIN};
-static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US};
+static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US, .compensation = COMPENSATION_US};
 static tc_phy_t if_trx_phy = {.phy = SUN_FSK_OM1};
 static tc_phy_t if_if_phy = {.phy = SUN_FSK_OM1};
 static tc_numtx_t if_numtx = {.numtx = NUM_OF_TX};
@@ -160,13 +160,14 @@ static void *thread_tc_handler(void *arg)
     while (experiments < if_if_numphy.numphy) {
         mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
-        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - if_tx_offset.offset - PULSE_DURATION_US);
+        uint32_t compensated_offset = labs(if_tx_offset.offset + if_tx_offset.compensation);
+        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - compensated_offset - PULSE_DURATION_US);
         gpio_set(if_tx_pin_cfg.first_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset.offset);
+        xtimer_periodic_wakeup(&last_wup_tc, compensated_offset);
         gpio_set(if_tx_pin_cfg.second_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - if_tx_offset.offset);
+        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - compensated_offset);
         gpio_clear(if_tx_pin_cfg.first_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, if_tx_offset.offset);
+        xtimer_periodic_wakeup(&last_wup_tc, compensated_offset);
         gpio_clear(if_tx_pin_cfg.second_pin);
         mutex_unlock(&if_tx_pin_cfg.lock);
         mutex_unlock(&if_tx_offset.lock);
@@ -217,22 +218,42 @@ static int start_handler(int argc, char **argv)
 
 static int offset_handler(int argc, char **argv)
 {
-    if (argc != 2 || atoi(argv[1]) == 0) {
-        printf("usage: %s <useconds>\n", argv[0]);
+    if (argc != 2 || atol(argv[1]) == 0) {
+        printf("usage: %s <useconds (non-zero)>\n", argv[0]);
         return 1;
     }
 
     if (!get_has_started()) {
-        int32_t raw_offset = atoi(argv[1]);
-        raw_offset += 480;
-        bool is_negative = (raw_offset >= 0 ? false : true);
-        uint16_t abs_offset = abs(raw_offset);
-
+        int64_t raw_offset = atol(argv[1]);
         mutex_lock(&if_tx_offset.lock);
-        if_tx_offset.offset = abs_offset;
+        if_tx_offset.offset = raw_offset;
         mutex_lock(&if_tx_pin_cfg.lock);
-        if_tx_pin_cfg.first_pin = (is_negative ? IF_TX_PIN : TX_TX_PIN);
-        if_tx_pin_cfg.second_pin = (is_negative ? TX_TX_PIN : IF_TX_PIN);
+        if_tx_pin_cfg.first_pin = (raw_offset + if_tx_offset.compensation < 0 ? IF_TX_PIN : TX_TX_PIN);
+        if_tx_pin_cfg.second_pin = (raw_offset + if_tx_offset.compensation < 0 ? TX_TX_PIN : IF_TX_PIN);
+        mutex_unlock(&if_tx_pin_cfg.lock);
+        mutex_unlock(&if_tx_offset.lock);
+    }
+    else {
+        DEBUG("experiment has already started: can't set offset\n");
+    }
+
+    return 0;
+}
+
+static int comp_handler(int argc, char **argv)
+{
+    if (argc != 2 || atol(argv[1]) < 0) {
+        printf("usage: %s <useconds (positive or zero)>\n", argv[0]);
+        return 1;
+    }
+
+    if (!get_has_started()) {
+        uint32_t compensation = atol(argv[1]);
+        mutex_lock(&if_tx_offset.lock);
+        if_tx_offset.compensation = compensation;
+        mutex_lock(&if_tx_pin_cfg.lock);
+        if_tx_pin_cfg.first_pin = (if_tx_offset.offset + compensation < 0 ? IF_TX_PIN : TX_TX_PIN);
+        if_tx_pin_cfg.second_pin = (if_tx_offset.offset + compensation < 0 ? TX_TX_PIN : IF_TX_PIN);
         mutex_unlock(&if_tx_pin_cfg.lock);
         mutex_unlock(&if_tx_offset.lock);
     }
@@ -364,6 +385,7 @@ static int phy_handler(int argc, char **argv)
 static const shell_command_t shell_commands[] = {
     {"start", "starts the interference experiment", start_handler},
     {"offset", "sets an IF/TX offset (in microseconds)", offset_handler},
+    {"comp", "sets an IF/TX offset compensation (in microseconds)", comp_handler},
     {"numtx", "sets the number of messages transmitted for each IF/TX PHY combination", numtx_handler},
     {"ifnumphy", "sets the number of IF PHY reconfigurations", numphy_handler},
     {"trxnumphy", "sets the number of TRX PHY reconfigurations", numphy_handler},

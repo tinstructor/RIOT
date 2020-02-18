@@ -50,7 +50,8 @@ typedef struct {
 } tc_pin_cfg_t;
 
 typedef struct {
-    uint32_t offset;
+    int64_t offset;
+    uint32_t compensation;
     mutex_t lock;
 } tc_offset_t;
 
