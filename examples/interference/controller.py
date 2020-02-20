@@ -277,7 +277,7 @@ for if_idx, if_phy in if_phy_cfg:
             except TimeoutExpired:
                 rx_shell.kill()
             
-            csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (trx_payload_size,offset,sinr)
+            csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
             analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx)
             if os.path.exists(os.path.dirname(csv_filename)):
                 analyzer_cmd = analyzer_cmd + " -a"
