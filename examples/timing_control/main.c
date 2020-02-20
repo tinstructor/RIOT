@@ -240,17 +240,15 @@ static int offset_handler(int argc, char **argv)
     return 0;
 }
 
-// TODO currently, only an offset compensation greater than or equal to 0 is accepted.
-// In the future, a negative compensation should also be made possible.
 static int comp_handler(int argc, char **argv)
 {
-    if (argc != 2 || atol(argv[1]) < 0) {
-        printf("usage: %s <useconds (positive or zero)>\n", argv[0]);
+    if (argc != 2) {
+        printf("usage: %s <useconds>\n", argv[0]);
         return 1;
     }
 
     if (!get_has_started()) {
-        uint32_t compensation = atol(argv[1]);
+        int32_t compensation = atoi(argv[1]);
         mutex_lock(&if_tx_offset.lock);
         if_tx_offset.compensation = compensation;
         mutex_lock(&if_tx_pin_cfg.lock);

@@ -66,9 +66,6 @@ test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 # NOTE offset compensation is calculated by means of 2D interpolation. You can get 
 # the appropriate compensation by calling rbf(if_payload_size,trx_payload_size)
-# TODO while a negative compensation is possible and calling rbf might well give
-# back a negative value, it is not currently possible to instruct the timing controller
-# to make use of a negative offset compensation.
 x = np.ogrid[20:130:10]
 x = np.tile(x,11)
 y = np.ogrid[20:130:10]
