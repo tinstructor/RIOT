@@ -12,6 +12,7 @@ import sys
 import queue
 import numpy as np
 from scipy import interpolate
+import math
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
@@ -86,17 +87,16 @@ z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
 rbf = interpolate.Rbf(x,y,z)
 compensation = int(round(rbf(if_payload_size,trx_payload_size).tolist()))
 
-# TODO calculate offsets based on payload sizes and combination of PHYs
 def get_offset_list(phy_tuple):
-    if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
-        return [-3480,7920,16320]
-    elif (phy_tuple == (3,2) or phy_tuple == (5,2) or phy_tuple == (3,4) or phy_tuple == (5,4)):
-        return [-1800,8760,18000]
-    elif (phy_tuple == (3,3) or phy_tuple == (5,3) or phy_tuple == (3,5) or phy_tuple == (5,5)):
-        return [-1800,3960,8400]
-    elif (phy_tuple == (2,3) or phy_tuple == (4,3) or phy_tuple == (2,5) or phy_tuple == (4,5)):
-        return [-3480,3120,6720]
-    return None
+    udbps = {2:6,3:12,4:6,5:12}
+    tail_bits = 6
+    pfhr_sym = 12
+    ofdm_sym_rate = (8 + (1 / 3))
+    pfhr_duration_us = (pfhr_sym / ofdm_sym_rate) * 1000
+    if_duration_us = ((math.ceil(((if_payload_size * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    trx_duration_us = ((math.ceil(((trx_payload_size * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
+    return [mid_trx_payload_offset]
 
 halt_event = threading.Event()
 
@@ -112,6 +112,30 @@ rx_q = Queue()
 for if_idx, if_phy in if_phy_cfg:
     for trx_idx, trx_phy in trx_phy_cfg:
         for offset in get_offset_list((if_idx,trx_idx)):
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+
+            timing_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="numbytesub %s\n" % (trx_payload_size - 19),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+            
+            timing_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="numbytesub %s\n" % (if_payload_size - 19),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
             threading.Timer(1, halt_event.set).start()
             while True:
                 if halt_event.is_set():
