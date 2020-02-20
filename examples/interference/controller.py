@@ -84,7 +84,7 @@ z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
               428,380,332,284,242,194,152,104,62,20,-28,
               476,428,380,332,284,242,194,152,104,62,20])
 rbf = interpolate.Rbf(x,y,z)
-compensation = rbf(if_payload_size,trx_payload_size).tolist()
+compensation = int(round(rbf(if_payload_size,trx_payload_size).tolist()))
 
 # TODO calculate offsets based on payload sizes and combination of PHYs
 def get_offset_list(phy_tuple):
@@ -124,7 +124,7 @@ for if_idx, if_phy in if_phy_cfg:
             except TimeoutExpired:
                 timing_shell.kill()
             
-            threading.Timer(1, halt_event.set).start()
+            threading.Timer(2, halt_event.set).start()
             while True:
                 if halt_event.is_set():
                     halt_event.clear()
@@ -157,6 +157,18 @@ for if_idx, if_phy in if_phy_cfg:
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 timing_shell.communicate(input="offset %s\n" % (offset),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+            
+            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="comp %s\n" % (compensation),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 

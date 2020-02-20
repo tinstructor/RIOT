@@ -240,6 +240,8 @@ static int offset_handler(int argc, char **argv)
     return 0;
 }
 
+// TODO currently, only an offset compensation greater than or equal to 0 is accepted.
+// In the future, a negative compensation should also be made possible.
 static int comp_handler(int argc, char **argv)
 {
     if (argc != 2 || atol(argv[1]) < 0) {
