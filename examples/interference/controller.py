@@ -10,6 +10,8 @@ import os
 import atexit
 import sys
 import queue
+import numpy as np
+from scipy import interpolate
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
@@ -55,11 +57,36 @@ trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS
                #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")]#,
               #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-payload_size = 120 # in bytes
+trx_payload_size = 120 # in bytes
+if_payload_size = 21 # in bytes
 sinr = 0 # in dB
 num_of_tx = 5
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
+# NOTE offset compensation is calculated by means of 2D interpolation. You can get 
+# the appropriate compensation by calling rbf(if_payload_size,trx_payload_size)
+# TODO while a negative compensation is possible and calling rbf might well give
+# back a negative value, it is not currently possible to instruct the timing controller
+# to make use of a negative offset compensation.
+x = np.ogrid[20:130:10]
+x = np.tile(x,11)
+y = np.ogrid[20:130:10]
+y = np.repeat(y,11)
+z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
+              62,20,-28,-70,-118,-154,-208,-256,-298,-352,-388,
+              104,62,20,-28,-70,-118,-154,-208,-256,-298,-352,
+              152,104,62,20,-28,-70,-118,-154,-208,-256,-298,
+              194,152,104,62,20,-28,-70,-118,-154,-208,-256,
+              242,194,152,104,62,20,-28,-70,-118,-154,-208,
+              284,242,194,152,104,62,20,-28,-70,-118,-154,
+              332,284,242,194,152,104,62,20,-28,-70,-118,
+              380,332,284,242,194,152,104,62,20,-28,-70,
+              428,380,332,284,242,194,152,104,62,20,-28,
+              476,428,380,332,284,242,194,152,104,62,20])
+rbf = interpolate.Rbf(x,y,z)
+compensation = rbf(if_payload_size,trx_payload_size).tolist()
+
+# TODO calculate offsets based on payload sizes and combination of PHYs
 def get_offset_list(phy_tuple):
     if (phy_tuple == (2,2) or phy_tuple == (2,4) or phy_tuple == (4,2) or phy_tuple == (4,4)):
         return [-3480,7920,16320]
@@ -214,7 +241,7 @@ for if_idx, if_phy in if_phy_cfg:
             except TimeoutExpired:
                 rx_shell.kill()
             
-            csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (payload_size,offset,sinr)
+            csv_filename = "./TX_%dB_OF_%dUS_SIR_%dDB.csv" % (trx_payload_size,offset,sinr)
             analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx)
             if os.path.exists(os.path.dirname(csv_filename)):
                 analyzer_cmd = analyzer_cmd + " -a"
