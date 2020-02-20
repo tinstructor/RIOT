@@ -60,6 +60,8 @@ if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1
               #(3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 120 # in bytes
 if_payload_size = 21 # in bytes
+trx_dest_addr = "22:68:31:23:9D:F1:96:37"
+if_dest_addr = "22:68:31:23:14:F1:99:37"
 sinr = 0 # in dB
 num_of_tx = 5
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
@@ -127,12 +129,36 @@ for if_idx, if_phy in if_phy_cfg:
                     halt_event.clear()
                     break
             
+            timing_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="saddrsub %s\n" % (trx_dest_addr),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
+            # NOTE an additional waiting period is not needed here because these 2 consecutive shell
+            # commands influence the configuration of 2 seperate nodes (transmitter & interferer)
+            
             timing_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
             try:
                 timing_shell.communicate(input="numbytesub %s\n" % (if_payload_size - 19),timeout=2)
             except TimeoutExpired:
                 timing_shell.kill()
 
+            threading.Timer(1, halt_event.set).start()
+            while True:
+                if halt_event.is_set():
+                    halt_event.clear()
+                    break
+            
+            timing_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                timing_shell.communicate(input="saddrsub %s\n" % (if_dest_addr),timeout=2)
+            except TimeoutExpired:
+                timing_shell.kill()
+
+            # NOTE here, an additional waiting period IS included because, although both shell commands
+            # are sent to different nodes, they both influence the configuration of the interferer albeit
+            # indirectly in case of the next shell command (ifphy ...)
             threading.Timer(1, halt_event.set).start()
             while True:
                 if halt_event.is_set():
