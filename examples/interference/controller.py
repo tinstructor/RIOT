@@ -119,11 +119,11 @@ for if_idx, if_phy in if_phy_cfg:
                     halt_event.clear()
                     break
 
-            timing_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="numbytesub %s\n" % (trx_payload_size - 19),timeout=2)
+                tx_shell.communicate(input="numbytesub %s\n" % (trx_payload_size - 19),timeout=2)
             except TimeoutExpired:
-                timing_shell.kill()
+                tx_shell.kill()
 
             threading.Timer(1, halt_event.set).start()
             while True:
@@ -131,11 +131,11 @@ for if_idx, if_phy in if_phy_cfg:
                     halt_event.clear()
                     break
             
-            timing_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="saddrsub %s\n" % (trx_dest_addr),timeout=2)
+                tx_shell.communicate(input="saddrsub %s\n" % (trx_dest_addr),timeout=2)
             except TimeoutExpired:
-                timing_shell.kill()
+                tx_shell.kill()
 
             threading.Timer(1, halt_event.set).start()
             while True:
@@ -143,20 +143,29 @@ for if_idx, if_phy in if_phy_cfg:
                     halt_event.clear()
                     break
             
-            timing_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
+                tx_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
             except TimeoutExpired:
-                timing_shell.kill()
+                tx_shell.kill()
 
             # NOTE an additional waiting period is not needed here because these 2 consecutive shell
-            # commands influence the configuration of 2 seperate nodes (transmitter & interferer)
-            
-            timing_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            # commands influence the configuration of 2 seperate nodes (transmitter & receiver)
+
+            rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="numbytesub %s\n" % (if_payload_size - 19),timeout=2)
+                rx_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
             except TimeoutExpired:
-                timing_shell.kill()
+                rx_shell.kill()
+
+            # NOTE an additional waiting period is not needed here because these 2 consecutive shell
+            # commands influence the configuration of 2 seperate nodes (receiver & interferer)
+            
+            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            try:
+                if_shell.communicate(input="numbytesub %s\n" % (if_payload_size - 19),timeout=2)
+            except TimeoutExpired:
+                if_shell.kill()
 
             threading.Timer(1, halt_event.set).start()
             while True:
@@ -164,11 +173,11 @@ for if_idx, if_phy in if_phy_cfg:
                     halt_event.clear()
                     break
             
-            timing_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="saddrsub %s\n" % (if_dest_addr),timeout=2)
+                if_shell.communicate(input="saddrsub %s\n" % (if_dest_addr),timeout=2)
             except TimeoutExpired:
-                timing_shell.kill()
+                if_shell.kill()
 
             threading.Timer(1, halt_event.set).start()
             while True:
@@ -176,11 +185,11 @@ for if_idx, if_phy in if_phy_cfg:
                     halt_event.clear()
                     break
             
-            timing_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
             try:
-                timing_shell.communicate(input="physub %s\n" % (if_idx),timeout=2)
+                if_shell.communicate(input="physub %s\n" % (if_idx),timeout=2)
             except TimeoutExpired:
-                timing_shell.kill()
+                if_shell.kill()
 
             # NOTE an additional waiting period is not needed here because these 2 consecutive shell
             # commands influence the configuration of 2 seperate nodes (interferer & timing controller)
@@ -252,7 +261,8 @@ for if_idx, if_phy in if_phy_cfg:
                     if line != '':
                         print("%s" % (line.strip().strip("\r\n")))
                         rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
-
+            
+            rx_logfile.write("PHY\n")
             rx_logfile.close()
 
             timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
