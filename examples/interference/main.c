@@ -45,9 +45,11 @@ static gnrc_netif_t *netif = NULL;
 #ifdef MODULE_AT86RF215
 static if_tx_t tx_sub_ghz = {.iface = IFACE_SUB_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_120B};
 static phy_cfg_idx_sub_ghz_t current_phy_cfg_idx_sub_ghz;
+static mutex_t phy_cfg_sub_ghz_lock;
 #if (GNRC_NETIF_NUMOF >= 2)
 static if_tx_t tx_2_4_ghz = {.iface = IFACE_2_4_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_120B};
 static phy_cfg_idx_2_4_ghz_t current_phy_cfg_idx_2_4_ghz;
+static mutex_t phy_cfg_2_4_ghz_lock;
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */
 
@@ -278,25 +280,31 @@ static void *thread_handler(void *arg)
         switch (msg.type) {
             case IF_MSG_TX_SUB_GHZ:
 #ifdef MODULE_AT86RF215
+                mutex_lock(&phy_cfg_sub_ghz_lock);
                 mutex_lock(&tx_sub_ghz.lock);
                 send(tx_sub_ghz.iface, tx_sub_ghz.dest, tx_sub_ghz.payload);
                 mutex_unlock(&tx_sub_ghz.lock);
+                mutex_unlock(&phy_cfg_sub_ghz_lock);
 #endif /* MODULE_AT86RF215 */  
                 break;
             
             case IF_MSG_TX_2_4_GHZ:
 #ifdef MODULE_AT86RF215
 #if (GNRC_NETIF_NUMOF >= 2)
+                mutex_lock(&phy_cfg_2_4_ghz_lock);
                 mutex_lock(&tx_2_4_ghz.lock);
                 send(tx_2_4_ghz.iface, tx_2_4_ghz.dest, tx_2_4_ghz.payload);
                 mutex_unlock(&tx_2_4_ghz.lock);
+                mutex_unlock(&phy_cfg_2_4_ghz_lock);
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
 #endif /* MODULE_AT86RF215 */  
                 break;
     
             case IF_MSG_PHY_CFG_SUB_GHZ:
 #ifdef MODULE_AT86RF215
+                mutex_lock(&phy_cfg_sub_ghz_lock);
                 next_phy_sub_ghz();
+                mutex_unlock(&phy_cfg_sub_ghz_lock);
 #else
                 DEBUG("PHY is not configurable\n");
 #endif /* MODULE_AT86RF215 */      
@@ -305,7 +313,9 @@ static void *thread_handler(void *arg)
             case IF_MSG_PHY_CFG_2_4_GHZ:
 #ifdef MODULE_AT86RF215
 #if (GNRC_NETIF_NUMOF >= 2)
+                mutex_lock(&phy_cfg_2_4_ghz_lock);
                 next_phy_2_4_ghz();
+                mutex_unlock(&phy_cfg_2_4_ghz_lock);
 #else
                 DEBUG("2.4GHz interface not available\n");
 #endif /* (GNRC_NETIF_NUMOF >= 2) */
@@ -424,6 +434,35 @@ static int saddr_handler(int argc, char **argv)
     return 0;
 }
 
+static int phy_handler(int argc, char **argv)
+{
+    if (argc != 2 || atoi(argv[1]) < 0) {
+        printf("usage: %s <phy cfg idx>\n",argv[0]);
+        return 1;
+    }
+
+#ifdef MODULE_AT86RF215
+    if (!strcmp("physub",argv[0])) {
+        // NOTE enters this block when strings are equal
+        uint8_t index = atoi(argv[1]);
+        mutex_lock(&phy_cfg_sub_ghz_lock);
+        set_phy_sub_ghz(index);
+        mutex_unlock(&phy_cfg_sub_ghz_lock);
+    }
+#if (GNRC_NETIF_NUMOF >= 2)
+    else {
+        // NOTE enters this block when strings are not equal
+        uint8_t index = atoi(argv[1]);
+        mutex_lock(&phy_cfg_2_4_ghz_lock);
+        set_phy_2_4_ghz(index);
+        mutex_unlock(&phy_cfg_2_4_ghz_lock);
+    }
+#endif /* (GNRC_NETIF_NUMOF >= 2) */
+#endif /* MODULE_AT86RF215 */    
+
+    return 0;
+}
+
 static const shell_command_t shell_commands[] = {
     {"numbytesub", "set the number of payload bytes in a sub-ghz message", numbyte_handler},
     {"numbytesup", "set the number of payload bytes in a 2.4-ghz message", numbyte_handler},
@@ -431,6 +470,8 @@ static const shell_command_t shell_commands[] = {
     {"taddrsup", "toggle between a preset IF and TRX destination address (2.4 GHz)", taddr_handler},
     {"saddrsub", "set a destination address (sub-GHz)", saddr_handler},
     {"saddrsup", "set a destination address (2.4 GHz)", saddr_handler},
+    {"physub", "set the sub-GHz PHY configuration (via index)", phy_handler},
+    {"physup", "set the 2.4 GHz PHY configuration (via index)", phy_handler},
     {NULL, NULL, NULL}
 };
 
