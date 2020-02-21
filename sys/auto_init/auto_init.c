@@ -228,7 +228,7 @@ void auto_init(void)
     auto_init_at86rf2xx();
 #endif
 
-#ifdef MODULE_AT86RF215
+#ifdef MODULE_AUTO_INIT_AT86RF215
     extern void auto_init_at86rf215(void);
     auto_init_at86rf215();
 #endif
