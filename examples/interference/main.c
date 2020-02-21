@@ -371,7 +371,7 @@ static int taddr_handler(int argc, char **argv)
     }
 
 #ifdef MODULE_AT86RF215
-    if (!strcmp("numbytesub",argv[0])) {
+    if (!strcmp("taddrsub",argv[0])) {
         // NOTE enters this block when strings are equal
         mutex_lock(&tx_sub_ghz.lock);
         strcpy(tx_sub_ghz.dest, !strcmp(TRX_DEST_ADDR, tx_sub_ghz.dest) ? IF_DEST_ADDR : TRX_DEST_ADDR);
@@ -405,7 +405,7 @@ static int saddr_handler(int argc, char **argv)
     }
 
 #ifdef MODULE_AT86RF215
-    if (!strcmp("numbytesub",argv[0])) {
+    if (!strcmp("saddrsub",argv[0])) {
         // NOTE enters this block when strings are equal
         mutex_lock(&tx_sub_ghz.lock);
         strcpy(tx_sub_ghz.dest, argv[1]);

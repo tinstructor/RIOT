@@ -86,6 +86,8 @@ z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
 rbf = interpolate.Rbf(x,y,z)
 compensation = int(round(rbf(if_payload_size,trx_payload_size).tolist()))
 
+# TODO make this function compatible with FSK again
+# TODO also return a list for offsets in PFHR (if flag is set)
 def get_offset_list(phy_tuple):
     udbps = {2:6,3:12,4:6,5:12}
     tail_bits = 6
