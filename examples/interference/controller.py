@@ -63,7 +63,7 @@ if_payload_sizes = [21] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
 if_dest_addr = "22:68:31:23:14:F1:99:37"
 sinr = 0 # in dB
-num_of_tx = 5
+num_of_tx = 100
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 # NOTE offset compensation is calculated by means of 2D interpolation. You can get 
