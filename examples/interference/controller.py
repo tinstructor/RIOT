@@ -59,7 +59,7 @@ trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 120 # in bytes
-if_payload_size = 21 # in bytes
+if_payload_sizes = [21] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
 if_dest_addr = "22:68:31:23:14:F1:99:37"
 sinr = 0 # in dB
@@ -84,11 +84,16 @@ z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
               428,380,332,284,242,194,152,104,62,20,-28,
               476,428,380,332,284,242,194,152,104,62,20])
 rbf = interpolate.Rbf(x,y,z)
-compensation = int(round(rbf(if_payload_size,trx_payload_size).tolist()))
+
+def get_compensation(size_tuple):
+    # NOTE size_tuple = (if_payload_size,trx_payload_size)
+    compensation = int(round(rbf(size_tuple[0],size_tuple[1]).tolist()))
+    return compensation
 
 # TODO make this function compatible with FSK again
 # TODO also return a list for offsets in PFHR (if flag is set)
 def get_offset_list(phy_tuple):
+    # NOTE phy_tuple(if_idx,trx_idx)
     udbps = {2:6,3:12,4:6,5:12}
     tail_bits = 6
     pfhr_sym = 12
@@ -110,210 +115,211 @@ if_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 
 rx_q = Queue()
 
-for if_idx, if_phy in if_phy_cfg:
-    for trx_idx, trx_phy in trx_phy_cfg:
-        for offset in get_offset_list((if_idx,trx_idx)):
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-
-            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                tx_shell.communicate(input="numbytesub %s\n" % (trx_payload_size - 19),timeout=2)
-            except TimeoutExpired:
-                tx_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-            
-            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                tx_shell.communicate(input="saddrsub %s\n" % (trx_dest_addr),timeout=2)
-            except TimeoutExpired:
-                tx_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-            
-            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                tx_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
-            except TimeoutExpired:
-                tx_shell.kill()
-
-            # NOTE an additional waiting period is not needed here because these 2 consecutive shell
-            # commands influence the configuration of 2 seperate nodes (transmitter & receiver)
-
-            rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                rx_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
-            except TimeoutExpired:
-                rx_shell.kill()
-
-            # NOTE an additional waiting period is not needed here because these 2 consecutive shell
-            # commands influence the configuration of 2 seperate nodes (receiver & interferer)
-            
-            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                if_shell.communicate(input="numbytesub %s\n" % (if_payload_size - 19),timeout=2)
-            except TimeoutExpired:
-                if_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-            
-            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                if_shell.communicate(input="saddrsub %s\n" % (if_dest_addr),timeout=2)
-            except TimeoutExpired:
-                if_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-            
-            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                if_shell.communicate(input="physub %s\n" % (if_idx),timeout=2)
-            except TimeoutExpired:
-                if_shell.kill()
-
-            # NOTE an additional waiting period is not needed here because these 2 consecutive shell
-            # commands influence the configuration of 2 seperate nodes (interferer & timing controller)
-            
-            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                timing_shell.communicate(input="numtx %s\n" % (num_of_tx),timeout=2)
-            except TimeoutExpired:
-                timing_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-
-            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                timing_shell.communicate(input="offset %s\n" % (offset),timeout=2)
-            except TimeoutExpired:
-                timing_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-            
-            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                timing_shell.communicate(input="comp %s\n" % (compensation),timeout=2)
-            except TimeoutExpired:
-                timing_shell.kill()
-
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
-
-            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                timing_shell.communicate(input="start\n",timeout=2)
-            except TimeoutExpired:
-                timing_shell.kill()
-
-            rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
-
-            rx_q.clear()
-            rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
-            rx_t.daemon = True
-            rx_t.start()
-            
-            rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
-            rx_logfile = open(rx_log_filename,"w",newline='')
-            rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
-
-            threading.Timer(test_duration + 3, halt_event.set).start()
-            while True:
-                try:  
-                    line = rx_q.get_nowait()
-                except queue.Empty:
+for if_payload_size in if_payload_sizes:
+    for if_idx, if_phy in if_phy_cfg:
+        for trx_idx, trx_phy in trx_phy_cfg:
+            for offset in get_offset_list((if_idx,trx_idx)):
+                threading.Timer(1, halt_event.set).start()
+                while True:
                     if halt_event.is_set():
                         halt_event.clear()
                         break
-                else: # got line
-                    if line == '' and rx_shell.poll() is not None:
+
+                tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    tx_shell.communicate(input="numbytesub %s\n" % (trx_payload_size - 19),timeout=2)
+                except TimeoutExpired:
+                    tx_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
                         break
-                    if line != '':
-                        print("%s" % (line.strip().strip("\r\n")))
-                        rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
-            
-            rx_logfile.write("PHY\n")
-            rx_logfile.close()
+                
+                tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    tx_shell.communicate(input="saddrsub %s\n" % (trx_dest_addr),timeout=2)
+                except TimeoutExpired:
+                    tx_shell.kill()
 
-            timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                timing_shell.communicate(input="reboot\n",timeout=2)
-            except TimeoutExpired:
-                timing_shell.kill()
-            
-            threading.Timer(2, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+                
+                tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    tx_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
+                except TimeoutExpired:
+                    tx_shell.kill()
 
-            tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                tx_shell.communicate(input="reboot\n",timeout=2)
-            except TimeoutExpired:
-                tx_shell.kill()
+                # NOTE an additional waiting period is not needed here because these 2 consecutive shell
+                # commands influence the configuration of 2 seperate nodes (transmitter & receiver)
 
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
+                rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    rx_shell.communicate(input="physub %s\n" % (trx_idx),timeout=2)
+                except TimeoutExpired:
+                    rx_shell.kill()
 
-            if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
-            try:
-                if_shell.communicate(input="reboot\n",timeout=2)
-            except TimeoutExpired:
-                if_shell.kill()
-            
-            threading.Timer(1, halt_event.set).start()
-            while True:
-                if halt_event.is_set():
-                    halt_event.clear()
-                    break
+                # NOTE an additional waiting period is not needed here because these 2 consecutive shell
+                # commands influence the configuration of 2 seperate nodes (receiver & interferer)
+                
+                if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    if_shell.communicate(input="numbytesub %s\n" % (if_payload_size - 19),timeout=2)
+                except TimeoutExpired:
+                    if_shell.kill()
 
-            try:
-                rx_shell.communicate(input="reboot\n",timeout=2)
-            except TimeoutExpired:
-                rx_shell.kill()
-            
-            csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
-            analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx)
-            if os.path.exists(os.path.dirname(csv_filename)):
-                analyzer_cmd = analyzer_cmd + " -a"
-            py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdout=PIPE,stderr=PIPE,universal_newlines=True)
-            try:
-                outs, errs = py_shell.communicate(timeout=30)
-            except TimeoutExpired:
-                py_shell.kill()
-                outs, errs = py_shell.communicate()
-            print(outs)
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+                
+                if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    if_shell.communicate(input="saddrsub %s\n" % (if_dest_addr),timeout=2)
+                except TimeoutExpired:
+                    if_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+                
+                if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    if_shell.communicate(input="physub %s\n" % (if_idx),timeout=2)
+                except TimeoutExpired:
+                    if_shell.kill()
+
+                # NOTE an additional waiting period is not needed here because these 2 consecutive shell
+                # commands influence the configuration of 2 seperate nodes (interferer & timing controller)
+                
+                timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    timing_shell.communicate(input="numtx %s\n" % (num_of_tx),timeout=2)
+                except TimeoutExpired:
+                    timing_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+
+                timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    timing_shell.communicate(input="offset %s\n" % (offset),timeout=2)
+                except TimeoutExpired:
+                    timing_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+                
+                timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    timing_shell.communicate(input="comp %s\n" % (get_compensation((if_payload_size,trx_payload_size))),timeout=2)
+                except TimeoutExpired:
+                    timing_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+
+                timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    timing_shell.communicate(input="start\n",timeout=2)
+                except TimeoutExpired:
+                    timing_shell.kill()
+
+                rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
+
+                rx_q.clear()
+                rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
+                rx_t.daemon = True
+                rx_t.start()
+                
+                rx_log_filename = "%s.log" % (datetime.datetime.now().strftime("rx_log_%d-%m-%Y_%H-%M-%S-%f"))
+                rx_logfile = open(rx_log_filename,"w",newline='')
+                rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
+
+                threading.Timer(test_duration + 3, halt_event.set).start()
+                while True:
+                    try:  
+                        line = rx_q.get_nowait()
+                    except queue.Empty:
+                        if halt_event.is_set():
+                            halt_event.clear()
+                            break
+                    else: # got line
+                        if line == '' and rx_shell.poll() is not None:
+                            break
+                        if line != '':
+                            print("%s" % (line.strip().strip("\r\n")))
+                            rx_logfile.write("%s\n" % (line.strip().strip("\r\n")))
+                
+                rx_logfile.write("PHY\n")
+                rx_logfile.close()
+
+                timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    timing_shell.communicate(input="reboot\n",timeout=2)
+                except TimeoutExpired:
+                    timing_shell.kill()
+                
+                threading.Timer(2, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+
+                tx_shell = subprocess.Popen(shlex.split(tx_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    tx_shell.communicate(input="reboot\n",timeout=2)
+                except TimeoutExpired:
+                    tx_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+
+                if_shell = subprocess.Popen(shlex.split(if_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    if_shell.communicate(input="reboot\n",timeout=2)
+                except TimeoutExpired:
+                    if_shell.kill()
+                
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+
+                try:
+                    rx_shell.communicate(input="reboot\n",timeout=2)
+                except TimeoutExpired:
+                    rx_shell.kill()
+                
+                csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
+                analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx)
+                if os.path.exists(os.path.dirname(csv_filename)):
+                    analyzer_cmd = analyzer_cmd + " -a"
+                py_shell = subprocess.Popen(shlex.split(analyzer_cmd),stdout=PIPE,stderr=PIPE,universal_newlines=True)
+                try:
+                    outs, errs = py_shell.communicate(timeout=30)
+                except TimeoutExpired:
+                    py_shell.kill()
+                    outs, errs = py_shell.communicate()
+                print(outs)
