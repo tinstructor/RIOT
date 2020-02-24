@@ -82,6 +82,7 @@ typedef struct {
     uint8_t pac_txpwr;
     uint8_t ieee802154_phy;
     char *phy_descriptor;
+    uint16_t channel;
     union {
         if_fsk_cfg_t fsk_cfg;
         if_ofdm_cfg_t ofdm_cfg;

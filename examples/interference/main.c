@@ -84,7 +84,6 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
     int res = 0;
     uint8_t current_opt = 0;
     uint8_t next_opt = 0;
-    uint16_t default_channel = IF_DEFAULT_CHANNEL;
 
     if (!_is_iface(phy_cfg->iface)) {
         DEBUG("error: invalid interface given\n");
@@ -162,9 +161,9 @@ static uint8_t set_phy(if_phy_cfg_t *phy_cfg)
     DEBUG("PHY reconfigured to %s\n", phy_cfg->phy_descriptor);
 
     res = gnrc_netapi_set(phy_cfg->iface, NETOPT_CHANNEL, 0, 
-        &default_channel, sizeof(default_channel));
+        &phy_cfg->channel, sizeof(phy_cfg->channel));
     if (res < 0) {
-        DEBUG("Unable to set channel to %d\n", default_channel);
+        DEBUG("Unable to set channel to %d\n", phy_cfg->channel);
         return 1;
     }
 
