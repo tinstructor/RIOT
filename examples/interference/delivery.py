@@ -80,6 +80,14 @@ tx_raw["Interferer payload"] = 38
 tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
 tx_complete = pd.concat([tx_complete,tx_raw])
 tx_complete.reset_index(drop=True,inplace=True)
+tx_raw["Interferer payload"] = 40
+tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
+tx_complete = pd.concat([tx_complete,tx_raw])
+tx_complete.reset_index(drop=True,inplace=True)
+tx_raw["Interferer payload"] = 42
+tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
+tx_complete = pd.concat([tx_complete,tx_raw])
+tx_complete.reset_index(drop=True,inplace=True)
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap((phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]]),(row["Interferer payload"],row["TX / RX payload"])),axis=1)
@@ -98,15 +106,15 @@ for index, trx_phy in enumerate(trx_phy_list):
     dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="PRR")
     # print(dfp)
     dfp_i = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="PRR")
-    for i in np.arange(0.0,1.0,0.0025):
+    for i in np.arange(dfp_i.index.min(),dfp_i.index.max(),0.0025):
         if not i in dfp_i.index:
             dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
     dfp_i = dfp_i.sort_index().interpolate(method="quadratic",limit_area="inside")
 
     dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
     ax = dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
-    axes[coord[index][0],coord[index][1]].set_xlim(-0.05,1.05)
-    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(0.0,1.1,0.1).tolist())
+    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(0.0,1.0,0.02 if coord[index][1] == 0 else 0.04).tolist())
+    axes[coord[index][0],coord[index][1]].set_xlim(dfp_i.index.min()-0.01,dfp_i.index.max()+0.02)
     axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)
     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
