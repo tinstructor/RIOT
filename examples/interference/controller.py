@@ -13,6 +13,7 @@ import queue
 import numpy as np
 from scipy import interpolate
 import math
+from numpy import nan as NaN
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
@@ -59,11 +60,11 @@ trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [21] # in bytes
+if_payload_sizes = [40,45] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
 if_dest_addr = "22:68:31:23:14:F1:99:37"
 sinr = 0 # in dB
-num_of_tx = 100
+num_of_tx = 250
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 # NOTE offset compensation is calculated by means of 2D interpolation. You can get 
@@ -104,6 +105,19 @@ def get_offset_list(phy_tuple):
     mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
     return [mid_trx_payload_offset]
 
+# TODO check if combination of payload sizes and PHYs would exceed 100% overlap
+# and don't execute experiment if that's the case. Make sure to leave opening 
+# for future versions where not all overlap is strictly in the payload.
+def get_payload_overlap(phy_tuple,payload_tuple):
+    # NOTE phy_tuple(if_idx,trx_idx)
+    # NOTE payload_tuple(if_payload_size,trx_payload_size)
+    udbps = {2:6,3:12,4:6,5:12}
+    tail_bits = 6
+    pfhr_sym = 12
+    if_sym = (math.ceil(((payload_tuple[0] * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym)
+    trx_sym = (math.ceil(((payload_tuple[1] * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym)
+    return (NaN if trx_sym - pfhr_sym < if_sym else if_sym / (trx_sym - pfhr_sym))
+
 halt_event = threading.Event()
 
 # NOTE you might have to change the serial port numbers of the devices
@@ -115,6 +129,9 @@ if_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 
 rx_q = Queue()
 
+# TODO check if combination of payload sizes and PHYs would exceed 100% overlap
+# and don't execute experiment if that's the case. Make sure to leave opening 
+# for future versions where not all overlap is strictly in the payload.
 for if_payload_size in if_payload_sizes:
     for if_idx, if_phy in if_phy_cfg:
         for trx_idx, trx_phy in trx_phy_cfg:
