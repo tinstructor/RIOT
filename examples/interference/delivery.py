@@ -7,7 +7,6 @@ from numpy import nan as NaN
 import math
 import random
 from matplotlib import rc
-import itertools
 
 rc("font",**{"family":"sans-serif","weight":"regular","sans-serif":["Fira Sans"]})
 
@@ -40,9 +39,6 @@ transparent_flag = False
 trx_payload_size = 120 # in bytes
 if_payload_sizes = [20,25,30,35] # in bytes
 
-# TODO given a list of IF payload sizes and a TRX payload size, for each size combination,
-# make a list of offsets for each combination of PHYs. This list will be used to build a
-# dataframe containing all data.
 tx_complete = pd.DataFrame()
 for i,if_payload_size in enumerate(if_payload_sizes):
     a = [2,3,4,5]
@@ -70,62 +66,7 @@ for i,if_payload_size in enumerate(if_payload_sizes):
         
     tx_complete.reset_index(drop=True,inplace=True)
         
-# tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_21B_TX_120B_OF_3900US_SIR_0DB.csv",header=None)
-# tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_21B_TX_120B_OF_4740US_SIR_0DB.csv",header=None)])
-# tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_21B_TX_120B_OF_8700US_SIR_0DB.csv",header=None)])
-# tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_21B_TX_120B_OF_9540US_SIR_0DB.csv",header=None)])
-# tx_raw.reset_index(drop=True,inplace=True)
-
-# tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
-# tx_raw.insert(0,"TX / RX payload",120)
-# tx_raw.insert(0,"Interferer payload",21)
-# tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
-
-# tx_complete = tx_raw
-
-# tx_raw = pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_23B_TX_120B_OF_3660US_SIR_0DB.csv",header=None)
-# tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_23B_TX_120B_OF_4620US_SIR_0DB.csv",header=None)])
-# tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_23B_TX_120B_OF_8460US_SIR_0DB.csv",header=None)])
-# tx_raw = pd.concat([tx_raw,pd.read_csv("/home/relsas/RIOT-benpicco/examples/interference/IF_23B_TX_120B_OF_9420US_SIR_0DB.csv",header=None)])
-# tx_raw.reset_index(drop=True,inplace=True)
-
-# tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
-# tx_raw.insert(0,"TX / RX payload",120)
-# tx_raw.insert(0,"Interferer payload",23)
-# tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
-
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-
 # # NOTE the following data is fake and serves merely to develop
-# tx_raw["Interferer payload"] = 25
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-# tx_raw["Interferer payload"] = 27
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-# tx_raw["Interferer payload"] = 29
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-# tx_raw["Interferer payload"] = 31
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-# tx_raw["Interferer payload"] = 33
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-# tx_raw["Interferer payload"] = 35
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
-# tx_raw["Interferer payload"] = 36
-# tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
-# tx_complete = pd.concat([tx_complete,tx_raw])
-# tx_complete.reset_index(drop=True,inplace=True)
 # tx_raw["Interferer payload"] = 38
 # tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
 # tx_complete = pd.concat([tx_complete,tx_raw])
@@ -138,15 +79,6 @@ for i,if_payload_size in enumerate(if_payload_sizes):
 # tx_raw["PRR"] = tx_complete.apply(lambda row: random.random(),axis=1)
 # tx_complete = pd.concat([tx_complete,tx_raw])
 # tx_complete.reset_index(drop=True,inplace=True)
-
-# # tx_raw = tx_raw.iloc[[0]]
-# # tx_raw["Interferer payload"] = 80
-# # tx_raw["Interferer PHY\nconfiguration"] = "O4 MCS3"
-# # tx_raw["TX / RX PHY\nconfiguration"] = "O3 MCS1"
-# # tx_raw["PRR"] = random.random()
-# # # print(tx_raw)
-# # tx_complete = pd.concat([tx_complete,tx_raw])
-# # tx_complete.reset_index(drop=True,inplace=True)
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap((phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]]),(row["Interferer payload"],row["TX / RX payload"])),axis=1)
@@ -170,7 +102,7 @@ for index, trx_phy in enumerate(trx_phy_list):
     ax = dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
     tick_offset = (0.02 if coord[index][1] == 0 else 0.04)
     axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(dfp_i.index.min(),2),round(dfp_i.index.max(),2)+tick_offset,tick_offset).tolist())
-    axes[coord[index][0],coord[index][1]].set_xlim(round(dfp_i.index.min(),2)-0.01,round(dfp_i.index.max(),2) + 0.01)
+    axes[coord[index][0],coord[index][1]].set_xlim(round(dfp_i.index.min(),2)-0.01,round(dfp_i.index.max(),2)+0.01)
     axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)
     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
