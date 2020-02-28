@@ -7,6 +7,7 @@ from numpy import nan as NaN
 import math
 import random
 from matplotlib import rc
+import os.path
 
 rc("font",**{"family":"sans-serif","weight":"regular","sans-serif":["Fira Sans"]})
 
@@ -32,39 +33,41 @@ def get_payload_overlap(phy_tuple,payload_tuple):
     pfhr_sym = 12
     if_sym = (math.ceil(((payload_tuple[0] * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym)
     trx_sym = (math.ceil(((payload_tuple[1] * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym)
-    return (-1 if trx_sym - pfhr_sym < if_sym else if_sym / (trx_sym - pfhr_sym))
+    return (NaN if trx_sym - pfhr_sym < if_sym else if_sym / (trx_sym - pfhr_sym))
 
 extension = "png"
 transparent_flag = False
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [20,25,30,35] # in bytes
+if_payload_sizes = [20,25,30,35,80] # in bytes
 
 tx_complete = pd.DataFrame()
-for i,if_payload_size in enumerate(if_payload_sizes):
+for if_payload_size in if_payload_sizes:
     a = [2,3,4,5]
     b = [2,3,4,5]
     offset_list = [get_offset((if_idx,trx_idx),(if_payload_size,trx_payload_size)) for if_idx,trx_idx in [(x,y) for x in a for y in b]]
     offset_list = sorted(list(set(offset_list)))
     
     tx_raw = pd.DataFrame()
-    for j,offset in enumerate(offset_list):
+    for offset in offset_list:
         filename = "/home/relsas/RIOT-benpicco/examples/interference/IF_%dB_TX_%dB_OF_%dUS_SIR_0DB.csv"%(if_payload_size,trx_payload_size,offset)
-        if j == 0:
-            tx_raw = pd.read_csv(filename,header=None)
-        else:
-            tx_raw = pd.concat([tx_raw,pd.read_csv(filename,header=None)])
-        
-    tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
-    tx_raw.insert(0,"TX / RX payload",trx_payload_size)
-    tx_raw.insert(0,"Interferer payload",if_payload_size)
-    tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
+        if os.path.isfile(filename):
+            if tx_raw.empty:
+                tx_raw = pd.read_csv(filename,header=None)
+            else:
+                tx_raw = pd.concat([tx_raw,pd.read_csv(filename,header=None)])
 
-    if i == 0:
-        tx_complete = tx_raw
-    else:
-        tx_complete = pd.concat([tx_complete,tx_raw])
-        
-    tx_complete.reset_index(drop=True,inplace=True)
+    if not tx_raw.empty:   
+        tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
+        tx_raw.insert(0,"TX / RX payload",trx_payload_size)
+        tx_raw.insert(0,"Interferer payload",if_payload_size)
+        tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
+
+        if tx_complete.empty:
+            tx_complete = tx_raw
+        else:
+            tx_complete = pd.concat([tx_complete,tx_raw])
+            
+        tx_complete.reset_index(drop=True,inplace=True)
         
 # # NOTE the following data is fake and serves merely to develop
 # tx_raw["Interferer payload"] = 38
@@ -100,7 +103,7 @@ for index, trx_phy in enumerate(trx_phy_list):
 
     dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
     ax = dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
-    tick_offset = (0.02 if coord[index][1] == 0 else 0.04)
+    tick_offset = 0.04
     axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(dfp_i.index.min(),2),round(dfp_i.index.max(),2)+tick_offset,tick_offset).tolist())
     axes[coord[index][0],coord[index][1]].set_xlim(round(dfp_i.index.min(),2)-0.01,round(dfp_i.index.max(),2)+0.01)
     axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)

@@ -3,6 +3,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import math
+import os.path
 
 sns.set(rc={"font.family":"sans-serif","font.weight":"regular","font.sans-serif":["Fira Sans"]})
 
@@ -21,7 +22,7 @@ def get_offset(phy_tuple,payload_tuple):
 extension = "png"
 transparent_flag = False
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [20,25,30,35] # in bytes
+if_payload_sizes = [20,25,30,35,80] # in bytes
 
 for if_payload_size in if_payload_sizes:
     a = [2,3,4,5]
@@ -30,12 +31,13 @@ for if_payload_size in if_payload_sizes:
     offset_list = sorted(list(set(offset_list)))
     
     tx_raw = pd.DataFrame()
-    for i,offset in enumerate(offset_list):
+    for offset in offset_list:
         filename = "/home/relsas/RIOT-benpicco/examples/interference/IF_%dB_TX_%dB_OF_%dUS_SIR_0DB.csv"%(if_payload_size,trx_payload_size,offset)
-        if i == 0:
-            tx_raw = pd.read_csv(filename,header=None)
-        else:
-            tx_raw = pd.concat([tx_raw,pd.read_csv(filename,header=None)])
+        if os.path.isfile(filename):
+            if tx_raw.empty:
+                tx_raw = pd.read_csv(filename,header=None)
+            else:
+                tx_raw = pd.concat([tx_raw,pd.read_csv(filename,header=None)])
     
     tx_raw.reset_index(drop=True,inplace=True)
     tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
