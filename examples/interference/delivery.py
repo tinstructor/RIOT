@@ -75,7 +75,7 @@ tx_complete["Weighted PRR"] = tx_complete["PRR"] * tx_complete["Payload overlap"
 
 trx_phy_list = sorted(tx_complete["TX / RX PHY\nconfiguration"].unique().tolist())
 
-fig, axes = plt.subplots(nrows=2, ncols=2)
+fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(16,9))
 coord = {0:(0,0),1:(0,1),2:(1,0),3:(1,1)}
 cmap = cm.get_cmap('Spectral')
 
@@ -85,7 +85,7 @@ for index, trx_phy in enumerate(trx_phy_list):
     for i in np.arange(dfp_i.index.min(),dfp_i.index.max(),0.001):
         if not i in dfp_i.index:
             dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
-    dfp_i = dfp_i.sort_index().interpolate(method="quadratic",limit_area="inside")
+    dfp_i = dfp_i.sort_index().interpolate(method="cubic",limit_area="inside")
 
     dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
     ax = dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
@@ -106,4 +106,6 @@ handles, labels = ax.get_legend_handles_labels()
 fig.legend(handles[4:8], labels[4:8], loc="lower center",ncol=4)
 
 plt.subplots_adjust(wspace=0.15,hspace=0.35,top=0.9,left=0.1,right=0.9)
-plt.show()
+image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
+plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
+plt.close()
