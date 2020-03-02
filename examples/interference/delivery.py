@@ -38,7 +38,7 @@ def get_payload_overlap(phy_tuple,payload_tuple):
 extension = "png"
 transparent_flag = False
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [20,25,30,35,60,80,100] # in bytes
+if_payload_sizes = [20,25,30] # in bytes
 
 tx_complete = pd.DataFrame()
 for if_payload_size in if_payload_sizes:
@@ -57,7 +57,7 @@ for if_payload_size in if_payload_sizes:
                 tx_raw = pd.concat([tx_raw,pd.read_csv(filename,header=None)])
 
     if not tx_raw.empty:   
-        tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
+        tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","TRX PRR","IF PRR"]
         tx_raw.insert(0,"TX / RX payload",trx_payload_size)
         tx_raw.insert(0,"Interferer payload",if_payload_size)
         tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
@@ -71,7 +71,7 @@ for if_payload_size in if_payload_sizes:
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap((phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]]),(row["Interferer payload"],row["TX / RX payload"])),axis=1)
-tx_complete["Weighted PRR"] = tx_complete["PRR"] * tx_complete["Payload overlap"]
+# tx_complete["Weighted TRX PRR"] = tx_complete["TRX PRR"] * tx_complete["Payload overlap"]
 
 trx_phy_list = sorted(tx_complete["TX / RX PHY\nconfiguration"].unique().tolist())
 
@@ -80,18 +80,27 @@ coord = {0:(0,0),1:(0,1),2:(1,0),3:(1,1)}
 cmap = cm.get_cmap('Spectral')
 
 for index, trx_phy in enumerate(trx_phy_list):
-    dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="PRR")
-    dfp_i = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="PRR")
-    for i in np.arange(dfp_i.index.min(),dfp_i.index.max(),0.001):
-        if not i in dfp_i.index:
-            dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
-    dfp_i = dfp_i.sort_index().interpolate(method="cubic",limit_area="inside")
+    trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
+    trx_dfp_i = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
+    for i in np.arange(trx_dfp_i.index.min(),trx_dfp_i.index.max(),0.001):
+        if not i in trx_dfp_i.index:
+            trx_dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
+    trx_dfp_i = trx_dfp_i.sort_index().interpolate(method="linear",limit_area="inside")
 
-    dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
-    ax = dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
+    if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
+    if_dfp_i = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
+    for i in np.arange(if_dfp_i.index.min(),if_dfp_i.index.max(),0.001):
+        if not i in if_dfp_i.index:
+            if_dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
+    if_dfp_i = if_dfp_i.sort_index().interpolate(method="linear",limit_area="inside")
+
+    trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
+    trx_dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
+    if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
+    ax = if_dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
     tick_offset = 0.04
-    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(dfp_i.index.min(),2),round(dfp_i.index.max(),2)+tick_offset,tick_offset).tolist())
-    axes[coord[index][0],coord[index][1]].set_xlim(round(dfp_i.index.min(),2)-0.01,round(dfp_i.index.max(),2)+0.01)
+    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(trx_dfp_i.index.min(),2),round(trx_dfp_i.index.max(),2)+tick_offset,tick_offset).tolist())
+    axes[coord[index][0],coord[index][1]].set_xlim(round(trx_dfp_i.index.min(),2)-0.01,round(trx_dfp_i.index.max(),2)+0.01)
     axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)
     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)

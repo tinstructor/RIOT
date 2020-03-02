@@ -22,7 +22,7 @@ def get_offset(phy_tuple,payload_tuple):
 extension = "png"
 transparent_flag = False
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [20,25,30,35,60,80,100] # in bytes
+if_payload_sizes = [20,25,30] # in bytes
 
 for if_payload_size in if_payload_sizes:
     a = [2,3,4,5]
@@ -40,7 +40,7 @@ for if_payload_size in if_payload_sizes:
                 tx_raw = pd.concat([tx_raw,pd.read_csv(filename,header=None)])
     
     tx_raw.reset_index(drop=True,inplace=True)
-    tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR"]
+    tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR","foo"]
     tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
 
     tx_matrix = tx_raw.pivot("TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","PRR")
