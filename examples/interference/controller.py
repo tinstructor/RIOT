@@ -124,7 +124,7 @@ timing_cmd = "make term PORT=/dev/ttyUSB6 BOARD=remote-revb -C /home/relsas/RIOT
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
 ift_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
-ifr_cmd = "make term PORT=/dev/ttyUSB8 BOARD=openmote-b"
+ifr_cmd = "make term PORT=/dev/ttyUSB7 BOARD=openmote-b"
 
 rx_q = Queue()
 ifr_q = Queue()
@@ -295,9 +295,21 @@ for if_payload_size in if_payload_sizes:
 
                     threading.Timer(test_duration + 3, halt_event.set).start()
                     while True:
+                        try:
+                            ifr_line = ifr_q.get_nowait()
+                        except queue.Empty:
+                            if halt_event.is_set():
+                                halt_event.clear()
+                                break
+                        else:
+                            if ifr_line == '' and ifr_shell.poll() is not None:
+                                break
+                            if ifr_line != '':
+                                # print("%s" % (ifr_line.strip().strip("\r\n")))
+                                ifr_logfile.write("%s\n" % (ifr_line.strip().strip("\r\n")))
+
                         try:  
                             rx_line = rx_q.get_nowait()
-                            ifr_line = ifr_q.get_nowait()
                         except queue.Empty:
                             if halt_event.is_set():
                                 halt_event.clear()
@@ -305,14 +317,9 @@ for if_payload_size in if_payload_sizes:
                         else: # got line
                             if rx_line == '' and rx_shell.poll() is not None:
                                 break
-                            if ifr_line == '' and ifr_shell.poll() is not None:
-                                break
                             if rx_line != '':
                                 # print("%s" % (rx_line.strip().strip("\r\n")))
                                 rx_logfile.write("%s\n" % (rx_line.strip().strip("\r\n")))
-                            if ifr_line != '':
-                                # print("%s" % (ifr_line.strip().strip("\r\n")))
-                                ifr_logfile.write("%s\n" % (ifr_line.strip().strip("\r\n")))
                     
                     rx_logfile.write("PHY\n")
                     rx_logfile.close()
