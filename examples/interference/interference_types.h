@@ -33,6 +33,7 @@ typedef enum {
     IF_MSG_TX_2_4_GHZ,
     IF_MSG_PHY_CFG_SUB_GHZ,
     IF_MSG_PHY_CFG_2_4_GHZ,
+    IF_MSG_EXP_SIG,
 } if_msg_t;
 
 typedef struct {

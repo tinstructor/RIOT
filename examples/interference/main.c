@@ -327,6 +327,10 @@ static void *thread_handler(void *arg)
 #endif /* MODULE_AT86RF215 */             
                 break;
 
+            case IF_MSG_EXP_SIG:
+                DEBUG("NEXT_EXP\n");
+                break;
+
             default:
                 break;
         }
@@ -513,17 +517,20 @@ int main(void)
     msg_t tx_message_2_4_ghz = {.type = IF_MSG_TX_2_4_GHZ};
     msg_t phy_cfg_sub_ghz_message = {.type = IF_MSG_PHY_CFG_SUB_GHZ};
     msg_t phy_cfg_2_4_ghz_message = {.type = IF_MSG_PHY_CFG_2_4_GHZ};
+    msg_t exp_sig_message = {.type = IF_MSG_EXP_SIG};
     /* initialize input pins */
     // REVIEW this initialization is probably redudant and should be removed if so
     gpio_init(TX_SUB_GHZ_PIN, GPIO_IN);
     gpio_init(TX_2_4_GHZ_PIN, GPIO_IN);
     gpio_init(PHY_CFG_SUB_GHZ_PIN, GPIO_IN);
     gpio_init(PHY_CFG_2_4_GHZ_PIN, GPIO_IN);
+    gpio_init(EXP_SIG_PIN, GPIO_IN);
     /* initialize input pins to be triggered */
     gpio_init_int(TX_SUB_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &tx_message_sub_ghz);
     gpio_init_int(TX_2_4_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &tx_message_2_4_ghz);
     gpio_init_int(PHY_CFG_SUB_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_sub_ghz_message);
     gpio_init_int(PHY_CFG_2_4_GHZ_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &phy_cfg_2_4_ghz_message);
+    gpio_init_int(EXP_SIG_PIN, GPIO_IN_PD, GPIO_RISING, gpio_cb, &exp_sig_message);
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);

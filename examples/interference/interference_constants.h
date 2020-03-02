@@ -34,6 +34,7 @@
 #define TX_2_4_GHZ_PIN           GPIO_PIN(PORT_B, 1)
 #define PHY_CFG_SUB_GHZ_PIN      GPIO_PIN(PORT_B, 2)
 #define PHY_CFG_2_4_GHZ_PIN      GPIO_PIN(PORT_B, 3)
+#define EXP_SIG_PIN              GPIO_PIN(PORT_A, 7)
 
 #define IF_DEFAULT_CHANNEL       0
 #define IF_FSK_9_DBM_SUB_GHZ     21
