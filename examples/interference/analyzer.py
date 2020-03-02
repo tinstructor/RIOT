@@ -15,6 +15,7 @@ class experiment:
             raise ValueError("Amount of transmissions can't be negative or zero")
         self.tx_count = tx_count
         self.rx_count = 0
+        self.ifr_count = 0
         self.trx_phy = trx_phy
         self.if_phy = if_phy
 
@@ -24,6 +25,9 @@ class experiment:
     def get_rx_count(self):
         return self.rx_count
 
+    def get_ifr_count(self):
+        return self.ifr_count
+
     def set_rx_count(self, amount):
         if (amount < 0):
             raise ValueError("Can't process a negative amount of receptions")
@@ -32,14 +36,31 @@ class experiment:
 
         self.rx_count = amount
 
-    def packet_success(self):
+    def set_ifr_count(self, amount):
+        if (amount < 0):
+            raise ValueError("Can't process a negative amount of receptions")
+        elif (amount > self.tx_count):
+            raise ValueError("Can't process an amount of receptions > transmissions")
+
+        self.ifr_count = amount
+
+    def trx_packet_success(self):
         if (self.rx_count == 0):
             return 0.0
         
         return self.rx_count / self.tx_count
+    
+    def if_packet_success(self):
+        if (self.ifr_count == 0):
+            return 0.0
+        
+        return self.ifr_count / self.tx_count
 
-    def packet_loss(self):
-        return 1.0 - self.packet_success()
+    def trx_packet_loss(self):
+        return 1.0 - self.trx_packet_success()
+    
+    def if_packet_loss(self):
+        return 1.0 - self.if_packet_success()
 
     def get_trx_phy(self):
         return self.trx_phy
@@ -50,12 +71,13 @@ class experiment:
 ################################################################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument("logfile", help="The logfile to be analyzed.")
+parser.add_argument("rx_logfile", help="The rx_logfile to be analyzed.")
 parser.add_argument("csvfile", help="The csv file to which log-derived info must be written / appended.")
 parser.add_argument("-a", "--append", action="store_true", help="Append to the csv file, overwrite it otherwise.")
 parser.add_argument("-i", "--interferer", type=str, help="The interferer PHY in case there's only one.")
 parser.add_argument("-t", "--transmitter", type=str, help="The transmitter PHY in case there's only one.")
 parser.add_argument("-n", "--numtx", metavar='N', type=int, help="Amount of messages transmitted, set to 100 otherwise.")
+parser.add_argument("-l", "--ifr_logfile", help="The ifr_logfile to be analyzed.")
 args = parser.parse_args()
 
 LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
@@ -96,10 +118,10 @@ experiment_index = 0
 current_experiment = experiment(NUM_OF_TX, TRX_PHY_CONFIGS[trx_phy_index], IF_PHY_CONFIGS[if_phy_index])
 
 csv_filename = args.csvfile
-log_filename = args.logfile
+rx_log_filename = args.rx_logfile
 
-with open(log_filename, "r") as log:
-    for line in log:
+with open(rx_log_filename, "r") as rx_log:
+    for line in rx_log:
 
         chomped_line = line.rstrip()
         pkt_match = re.match(LOG_REGEXP_PKT, chomped_line)
@@ -123,11 +145,39 @@ with open(log_filename, "r") as log:
             else:
                 break
 
+if args.ifr_logfile is not None:
+
+    LOG_REGEXP_NEXT = re.compile("^.*?NEXT_EXP")
+    experiment_index = 0
+    ifr_log_filename = args.ifr_logfile
+
+    with open(ifr_log_filename, "r") as ifr_log:
+        for line in ifr_log:
+
+            chomped_line = line.rstrip()
+            pkt_match = re.match(LOG_REGEXP_PKT, chomped_line)
+            next_match = re.match(LOG_REGEXP_NEXT, chomped_line)
+            phy_match = re.match(LOG_REGEXP_PHY, chomped_line)
+
+            if (pkt_match):
+                experiments[experiment_index].set_ifr_count(experiments[experiment_index].get_ifr_count() + 1)
+            
+            if (next_match):
+                if (experiment_index < (len(TRX_PHY_CONFIGS) * len(IF_PHY_CONFIGS)) - 1):
+                    experiment_index += 1
+                else:
+                    break
+            
+            if (phy_match):
+                break
+
 for e in experiments:
     print("Results of experiment %d:\n" %(e))
     print("PHY of TX and RX:\t%s" % (experiments[e].get_trx_phy()))
     print("PHY of IF:\t\t%s" % (experiments[e].get_if_phy()))
-    print("PRR:\t\t\t%.2f" % (experiments[e].packet_success()))
+    print("TRX PRR:\t\t%.2f" % (experiments[e].trx_packet_success()))
+    if args.ifr_logfile is not None:
+        print("IF PRR:\t\t\t%.2f" % (experiments[e].if_packet_success()))
     print("---------------------------------------------------")
 
 csv_filename = "./" + csv_filename
@@ -144,5 +194,9 @@ else:
     append_write = "w"
 
 with open(csv_filename, append_write, newline='') as output_file:
-    for e in experiments:
-        output_file.write("%s,%s,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].packet_success()))
+    if args.ifr_logfile is not None:
+        for e in experiments:
+            output_file.write("%s,%s,%.2f,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].trx_packet_success(),experiments[e].if_packet_success()))
+    else:
+        for e in experiments:
+            output_file.write("%s,%s,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].trx_packet_success()))
