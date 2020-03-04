@@ -77,11 +77,13 @@ trx_phy_list = sorted(tx_complete["TX / RX PHY\nconfiguration"].unique().tolist(
 
 fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(16,9))
 coord = {0:(0,0),1:(0,1),2:(1,0),3:(1,1)}
-cmap = cm.get_cmap('Spectral')
 
 for index, trx_phy in enumerate(trx_phy_list):
-    trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
-    ax = trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
+    trx_colors = ["C0","C1","C2","C3"]
+    trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
+    trx_dfp["Interferer PHY\nconfiguration"] = trx_dfp["Interferer PHY\nconfiguration"].astype(str) + " TRX"
+    trx_dfp = trx_dfp.pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
+    trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,color=trx_colors)
 
     for i,column_name in enumerate(list(trx_dfp.columns.values)):
         trx_x = trx_dfp[column_name].dropna().index.values
@@ -89,10 +91,13 @@ for index, trx_phy in enumerate(trx_phy_list):
         trx_x_f = np.arange(trx_x[0],trx_x[-1]+0.001,0.001)
         trx_polynome = np.poly1d(np.polyfit(trx_x,trx_y,3))
         trx_y_f = trx_polynome(trx_x_f)
-        axes[coord[index][0],coord[index][1]].plot(trx_x_f,trx_y_f,linewidth=1.5,color=ax.get_lines()[i].get_color())
+        axes[coord[index][0],coord[index][1]].plot(trx_x_f,trx_y_f,linewidth=1.5,color=trx_colors[i])
 
-    if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
-    ax = if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
+    if_colors = ["C4","C5","C6","C7"]
+    if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
+    if_dfp["Interferer PHY\nconfiguration"] = if_dfp["Interferer PHY\nconfiguration"].astype(str) + " IF"
+    if_dfp = if_dfp.pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
+    if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,color=if_colors)
 
     for i,column_name in enumerate(list(if_dfp.columns.values)):
         if_x = if_dfp[column_name].dropna().index.values
@@ -100,7 +105,7 @@ for index, trx_phy in enumerate(trx_phy_list):
         if_x_f = np.arange(if_x[0],if_x[-1]+0.001,0.001)
         if_polynome = np.poly1d(np.polyfit(if_x,if_y,3))
         if_y_f = if_polynome(if_x_f)
-        axes[coord[index][0],coord[index][1]].plot(if_x_f,if_y_f,linewidth=1.5,color=ax.get_lines()[i].get_color())
+        axes[coord[index][0],coord[index][1]].plot(if_x_f,if_y_f,linewidth=1.5,color=if_colors[i])
 
     tick_offset = 0.02 if coord[index][1] < 1 else 0.04
     axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(trx_dfp.index.min(),2),round(trx_dfp.index.max(),2)+tick_offset,tick_offset).tolist())
@@ -116,9 +121,9 @@ for index, trx_phy in enumerate(trx_phy_list):
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
 
 handles, labels = axes[0,0].get_legend_handles_labels()
-fig.legend(handles[0:4], labels[0:4], loc="lower center",ncol=4)
+fig.legend(handles, labels, loc="lower center",ncol=4)
 
-plt.subplots_adjust(wspace=0.15,hspace=0.35,top=0.9,left=0.1,right=0.9)
+plt.subplots_adjust(wspace=0.14,hspace=0.34,top=0.9,left=0.1,right=0.9,bottom=0.12)
 image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
 plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
 plt.close()
