@@ -81,10 +81,7 @@ cmap = cm.get_cmap('Spectral')
 
 for index, trx_phy in enumerate(trx_phy_list):
     trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
-    trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
-
-    if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
-    ax = if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
+    ax = trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
 
     for i,column_name in enumerate(list(trx_dfp.columns.values)):
         trx_x = trx_dfp[column_name].dropna().index.values
@@ -94,6 +91,9 @@ for index, trx_phy in enumerate(trx_phy_list):
         trx_y_f = trx_polynome(trx_x_f)
         axes[coord[index][0],coord[index][1]].plot(trx_x_f,trx_y_f,linewidth=1.5,color=ax.get_lines()[i].get_color())
 
+    if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
+    ax = if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
+
     for i,column_name in enumerate(list(if_dfp.columns.values)):
         if_x = if_dfp[column_name].dropna().index.values
         if_y = if_dfp[column_name].dropna().to_numpy()
@@ -102,7 +102,7 @@ for index, trx_phy in enumerate(trx_phy_list):
         if_y_f = if_polynome(if_x_f)
         axes[coord[index][0],coord[index][1]].plot(if_x_f,if_y_f,linewidth=1.5,color=ax.get_lines()[i].get_color())
 
-    tick_offset = 0.04
+    tick_offset = 0.02 if coord[index][1] < 1 else 0.04
     axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(trx_dfp.index.min(),2),round(trx_dfp.index.max(),2)+tick_offset,tick_offset).tolist())
     axes[coord[index][0],coord[index][1]].set_xlim(round(trx_dfp.index.min(),2)-0.01,round(trx_dfp.index.max(),2)+0.01)
     axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)
@@ -115,7 +115,7 @@ for index, trx_phy in enumerate(trx_phy_list):
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_fontsize(12)
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
 
-handles, labels = ax.get_legend_handles_labels()
+handles, labels = axes[0,0].get_legend_handles_labels()
 fig.legend(handles[0:4], labels[0:4], loc="lower center",ncol=4)
 
 plt.subplots_adjust(wspace=0.15,hspace=0.35,top=0.9,left=0.1,right=0.9)
