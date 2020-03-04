@@ -38,7 +38,7 @@ def get_payload_overlap(phy_tuple,payload_tuple):
 extension = "png"
 transparent_flag = False
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [20,25,30] # in bytes
+if_payload_sizes = [20,25,30,35,40] # in bytes
 
 tx_complete = pd.DataFrame()
 for if_payload_size in if_payload_sizes:
@@ -81,26 +81,30 @@ cmap = cm.get_cmap('Spectral')
 
 for index, trx_phy in enumerate(trx_phy_list):
     trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
-    trx_dfp_i = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
-    for i in np.arange(trx_dfp_i.index.min(),trx_dfp_i.index.max(),0.001):
-        if not i in trx_dfp_i.index:
-            trx_dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
-    trx_dfp_i = trx_dfp_i.sort_index().interpolate(method="linear",limit_area="inside")
+    trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
 
     if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
-    if_dfp_i = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
-    for i in np.arange(if_dfp_i.index.min(),if_dfp_i.index.max(),0.001):
-        if not i in if_dfp_i.index:
-            if_dfp_i.loc[i] = [NaN,NaN,NaN,NaN]
-    if_dfp_i = if_dfp_i.sort_index().interpolate(method="linear",limit_area="inside")
+    ax = if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
 
-    trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
-    trx_dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
-    if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,colormap=cmap)
-    ax = if_dfp_i.plot(ax=axes[coord[index][0],coord[index][1]],linewidth=1.5,legend=False,colormap=cmap)
+    for i,column_name in enumerate(list(trx_dfp.columns.values)):
+        trx_x = trx_dfp[column_name].dropna().index.values
+        trx_y = trx_dfp[column_name].dropna().to_numpy()
+        trx_x_f = np.arange(trx_x[0],trx_x[-1]+0.001,0.001)
+        trx_polynome = np.poly1d(np.polyfit(trx_x,trx_y,3))
+        trx_y_f = trx_polynome(trx_x_f)
+        axes[coord[index][0],coord[index][1]].plot(trx_x_f,trx_y_f,linewidth=1.5,color=ax.get_lines()[i].get_color())
+
+    for i,column_name in enumerate(list(if_dfp.columns.values)):
+        if_x = if_dfp[column_name].dropna().index.values
+        if_y = if_dfp[column_name].dropna().to_numpy()
+        if_x_f = np.arange(if_x[0],if_x[-1]+0.001,0.001)
+        if_polynome = np.poly1d(np.polyfit(if_x,if_y,3))
+        if_y_f = if_polynome(if_x_f)
+        axes[coord[index][0],coord[index][1]].plot(if_x_f,if_y_f,linewidth=1.5,color=ax.get_lines()[i].get_color())
+
     tick_offset = 0.04
-    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(trx_dfp_i.index.min(),2),round(trx_dfp_i.index.max(),2)+tick_offset,tick_offset).tolist())
-    axes[coord[index][0],coord[index][1]].set_xlim(round(trx_dfp_i.index.min(),2)-0.01,round(trx_dfp_i.index.max(),2)+0.01)
+    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(trx_dfp.index.min(),2),round(trx_dfp.index.max(),2)+tick_offset,tick_offset).tolist())
+    axes[coord[index][0],coord[index][1]].set_xlim(round(trx_dfp.index.min(),2)-0.01,round(trx_dfp.index.max(),2)+0.01)
     axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)
     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
@@ -112,7 +116,7 @@ for index, trx_phy in enumerate(trx_phy_list):
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
 
 handles, labels = ax.get_legend_handles_labels()
-fig.legend(handles[4:8], labels[4:8], loc="lower center",ncol=4)
+fig.legend(handles[0:4], labels[0:4], loc="lower center",ncol=4)
 
 plt.subplots_adjust(wspace=0.15,hspace=0.35,top=0.9,left=0.1,right=0.9)
 image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
