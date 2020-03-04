@@ -124,10 +124,7 @@ timing_cmd = "make term PORT=/dev/ttyUSB6 BOARD=remote-revb -C /home/relsas/RIOT
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
 ift_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
-ifr_cmd = "make term PORT=/dev/ttyUSB7 BOARD=openmote-b"
-
-rx_q = Queue()
-ifr_q = Queue()
+ifr_cmd = "make term PORT=/dev/ttyUSB8 BOARD=openmote-b"
 
 # TODO check if combination of payload sizes and PHYs would exceed 100% overlap
 # and don't execute experiment if that's the case. Make sure to leave opening 
@@ -269,29 +266,27 @@ for if_payload_size in if_payload_sizes:
                     except TimeoutExpired:
                         timing_shell.kill()
 
+                    rx_log_filename = "rx_log_%s.log" % datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S-%f")
+                    rx_logfile = open(rx_log_filename,"w",newline='')
+                    rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
+
+                    ifr_log_filename = "ifr_log_%s.log" % datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S-%f")
+                    ifr_logfile = open(ifr_log_filename,"w",newline='')
+                    ifr_logfile.write("Created logfile %s\n" % (ifr_log_filename))
+
                     rx_shell = subprocess.Popen(shlex.split(rx_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
 
-                    rx_q.clear()
+                    rx_q = Queue()
                     rx_t = Thread(target=enqueue_output, args=(rx_shell.stdout, rx_q))
                     rx_t.daemon = True
                     rx_t.start()
 
                     ifr_shell = subprocess.Popen(shlex.split(ifr_cmd),stdin=PIPE,stdout=PIPE,stderr=PIPE,universal_newlines=True,bufsize=1,close_fds=ON_POSIX)
 
-                    ifr_q.clear()
+                    ifr_q = Queue()
                     ifr_t = Thread(target=enqueue_output, args=(ifr_shell.stdout, ifr_q))
                     ifr_t.daemon = True
                     ifr_t.start()
-                    
-                    created_on = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S-%f")
-
-                    rx_log_filename = "rx_log_%s.log" % created_on
-                    rx_logfile = open(rx_log_filename,"w",newline='')
-                    rx_logfile.write("Created logfile %s\n" % (rx_log_filename))
-
-                    ifr_log_filename = "ifr_log_%s.log" % created_on
-                    ifr_logfile = open(ifr_log_filename,"w",newline='')
-                    ifr_logfile.write("Created logfile %s\n" % (ifr_log_filename))
 
                     threading.Timer(test_duration + 3, halt_event.set).start()
                     while True:
@@ -302,6 +297,7 @@ for if_payload_size in if_payload_sizes:
                                 halt_event.clear()
                                 break
                         else:
+                            # NOTE breaks when reading an empty line and the subprocess has terminated
                             if ifr_line == '' and ifr_shell.poll() is not None:
                                 break
                             if ifr_line != '':
@@ -315,12 +311,15 @@ for if_payload_size in if_payload_sizes:
                                 halt_event.clear()
                                 break
                         else: # got line
+                            # NOTE breaks when reading an empty line and the subprocess has terminated
                             if rx_line == '' and rx_shell.poll() is not None:
                                 break
                             if rx_line != '':
                                 # print("%s" % (rx_line.strip().strip("\r\n")))
                                 rx_logfile.write("%s\n" % (rx_line.strip().strip("\r\n")))
                     
+                    if halt_event.is_set():
+                        halt_event.clear()
                     rx_logfile.write("PHY\n")
                     rx_logfile.close()
                     ifr_logfile.write("NEXT_EXP\n")
