@@ -139,6 +139,64 @@ $ make -j flash BOARD=openmote-b GNRC_NETIF_NUMOF=1 PORT_BSL=/dev/ttyUSB1
 
 >**Note:** notice the `GNRC_NETIF_NUMOF=1` argument. The number specified can be either 1 or 2 and indicates wheter just the AT86RF215 Sub-GHz interface is made available (when specifying 1) or both interfaces (i.e., Sub-GHz + 2.4GHz) of the AT86RF215 transceiver can be used.
 
+After flashing you can access the node's terminal by issuing the following command (make sure to specify the correct ttyUSB device):
+```bash
+$ make term BOARD=openmote-b PORT=/dev/ttyUSB1
+/home/relsas/RIOT-benpicco/dist/tools/pyterm/pyterm -p "/dev/ttyUSB1" -b "115200" 
+Twisted not available, please install it if you want to use pyterm's JSON capabilities
+2020-03-05 12:33:44,038 # Connect to serial port /dev/ttyUSB1
+Welcome to pyterm!
+Type '/exit' to exit.
+```
+
+You can now list all available shell commands by issuing the `help` command in the terminal window.
+```bash
+> help
+2020-03-05 12:35:52,034 #  help
+2020-03-05 12:35:52,034 # Command              Description
+2020-03-05 12:35:52,035 # ---------------------------------------
+2020-03-05 12:35:52,050 # numbytesub           set the number of payload bytes in a sub-ghz message
+2020-03-05 12:35:52,051 # numbytesup           set the number of payload bytes in a 2.4-ghz message
+2020-03-05 12:35:52,052 # taddrsub             toggle between a preset IF and TRX destination address (sub-GHz)
+2020-03-05 12:35:52,066 # taddrsup             toggle between a preset IF and TRX destination address (2.4 GHz)
+2020-03-05 12:35:52,067 # saddrsub             set a destination address (sub-GHz)
+2020-03-05 12:35:52,068 # saddrsup             set a destination address (2.4 GHz)
+2020-03-05 12:35:52,083 # physub               set the sub-GHz PHY configuration (via index)
+2020-03-05 12:35:52,085 # physup               set the 2.4 GHz PHY configuration (via index)
+2020-03-05 12:35:52,085 # reboot               Reboot the node
+2020-03-05 12:35:52,098 # ps                   Prints information about running threads.
+2020-03-05 12:35:52,099 # random_init          initializes the PRNG
+2020-03-05 12:35:52,100 # random_get           returns 32 bit of pseudo randomness
+2020-03-05 12:35:52,114 # ifconfig             Configure network interfaces
+```
+
+Sometimes you might experience that for some reason yet unknown (see [#13044](https://github.com/RIOT-OS/RIOT/issues/13044)), a node hangs after issuing the `reboot` command. Normally, after rebooting via the shell (resetting via the physical reset button gives the same terminal output but **always** works) you should get the following output:
+```bash
+> reboot
+2020-03-05 12:56:27,722 #  reboot
+2020-03-05 12:56:27,739 # main(): This is RIOT! (Version: 2014.01-22760-gf819c-interfere)
+2020-03-05 12:56:27,739 # PHY reconfigured to SUN-FSK 863-870MHz OM1
+2020-03-05 12:56:27,754 # Welcome to RIOT!
+```
+
+But instead, you might get:
+```bash
+> reboot
+2020-03-05 12:56:27,722 #  reboot
+```
+
+After which the node hangs forever untill you perform a hardware reset via the physical reset button. This behaviour will cause the most usefull script for automating interference testing (i.e., `examples > interference > controller.py`) to fail (it won't explicitely fail but the output will be useless). The "solution" to this problem is to flash the node via jlink after making the following change to the `board.h` file of your platform (in our case: `boards/openmote-b/include/board.h`).
+```c
+#define CCA_BACKDOOR_ENABLE       (0)
+```
+
+Flashing over jlink requires you to install some software available on the [SEGGER wesbite](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack). After installation, flashing over jlink is a easy as:
+```bash
+$ PROGRAMMER=jlink make flash BOARD=openmote-b GNRC_NETIF_NUMOF=1
+```
+
+>**Note:** this is not a good solution because it will prevent you from flashing via USB untill you set `CCA_BACKDOOR_ENABLE` to `(1)` again and flash over jlink once more. Setting `CCA_BACKDOOR_ENABLE` to `(0)` (possibly) also has other unwanted consequences. 
+
 ## Usage
 The basic usage of this example application is pretty straighforward. Currently, you can only use this application to its full potential if you're using one of the platforms / configurations specified in [this post](https://github.com/RIOT-OS/RIOT/pull/12128#issue-312769776). Everything is written for OpenMote-B nodes, so those should work out of the box. When using a different platform, the pins to be used on that platform can be changes in `RIOT > examples > interference > interference_constants.h`. This header file also includes several other configuration constants that may be changed for your purposes.
 
@@ -147,7 +205,7 @@ Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger 
 For your convenience a python script (see `RIOT > examples > interference > capture.py`) is provided that creates a logfile from the serial output passed to it (via a pipe). Creating a logfile with a name of your choice is done as follows:
 
 ```bash
-$ make BOARD=openmote-b term PORT=/dev/ttyUSB1 | python3 capture.py -f <name of logfile>
+$ make term BOARD=openmote-b PORT=/dev/ttyUSB1 | python3 capture.py -f <name of logfile>
 Created logfile "test.log"
 /home/relsas/RIOT-benpicco/dist/tools/pyterm/pyterm -p "/dev/ttyUSB1" -b "115200" 
 2019-10-16 13:04:13,124 # Connect to serial port /dev/ttyUSB1
