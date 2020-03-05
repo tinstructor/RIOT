@@ -7,6 +7,9 @@ This document describes the usage and configuration of the interference testing 
   - [Getting Started](#getting-started)
   - [Tips & Tricks](#tips--tricks)
   - [Usage](#usage)
+    - [Interference PRR](#interference-prr)
+    - [Controller Script](#controller-script)
+  - [Visualizing Results](#visualizing-results)
   - [Recommended Reads](#recommended-reads)
 
 ## Getting started
@@ -247,6 +250,8 @@ Type '/exit' to exit.
 
 The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. Each change of PHY configuration is indicated in the specified logfile. Since, the analyzer script has no clue at which PHY configuration index you where when the logfile was created, it assumes that you cycled through all combinations of the same configurations as specified in the `phy_cfg_sub_ghz[]` array (defined in `examples > interference > interference_constants.h`). This came to be because the legacy interference testing application **did** effectively cycle through all available PHY config combinations by means of pin interrupts triggered by the timing controller (see `examples > timing_control`). This resulted in a single logfile containing all necessary information to calculate the PRR for each combination of PHY configurations (of the transmitter/receiver and interferer respectively).
 
+>**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
+
 There is an easy way around this issue though. You can force the analyzer script to cycle through a list of PHY configurations (for both transmitter/receiver and interferer respectively) containing just a single element, i.e., a user-specified PHY configuration string. For this purpose, the optional `-i` and `-t` arguments where created. 
 ```
 $ python3 analyzer.py -h
@@ -290,7 +295,12 @@ $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv -i <interfere
 
 It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `IF_<IF bytes>_TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<IF bytes>` is the amount of bytes in the interfering transmission's PHY payload (i.e., L2 payload size + L2 header), `<TX bytes>` is the amount of bytes in the data transmission's PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `IF_20B_TX_40B_OF_1MS_SIR_10DB.csv` and `IF_30B_TX_70B_OF_1350US_SIR_0DB.csv`.
 
->**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
+### Interference PRR
+Coming soon
+
+### Controller Script
+
+Coming soon
 
 ## Visualizing Results
 
