@@ -200,13 +200,35 @@ $ PROGRAMMER=jlink make flash BOARD=openmote-b GNRC_NETIF_NUMOF=1
 ## Usage
 The basic usage of this example application is pretty straighforward. Currently, you can only use this application to its full potential if you're using one of the platforms / configurations specified in [this post](https://github.com/RIOT-OS/RIOT/pull/12128#issue-312769776). Everything is written for OpenMote-B nodes, so those should work out of the box. When using a different platform, the pins to be used on that platform can be changes in `RIOT > examples > interference > interference_constants.h`. This header file also includes several other configuration constants that may be changed for your purposes.
 
-Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger a transmission of a message over the AT86RF215's Sub-GHz interface. By default, this interface is configured for the [SUN-FSK PHY in Operating Mode 1](https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf?#page=499), i.e., 2-FSK with a data-rate of 50 kbps, a modulation index of 1, a channel spacing of 200 kHz and a channel 0 center frequency at 863 125 kHz (for a total of 34 channels in the 863-870 MHz range). A rising edge on pin PB2 will cycle through all available PHY configurations contained in the `phy_cfg_sub_ghz[]` array defined in `interference_constants.h`. Transmissions are also defined as constants of type `if_tx_t` (containing the interface to send on, the destination MAC addr, and the actual payload of the 802.15.4 data frame) and the transmission used can be set on line 45 of `RIOT > examples > interference > main.c`. In similar fashion a rising edge on PB1 and PB3 triggers a transmission and a PHY reconfiguration on the AT86RF215 2.4GHz interface respectively.
+Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger a transmission of a message over the AT86RF215's Sub-GHz interface. By default, this interface is configured for the [SUN-FSK PHY in Operating Mode 1](https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf?#page=499), i.e., 2-FSK with a data-rate of 50 kbps, a modulation index of 1, a channel spacing of 200 kHz and a channel 0 center frequency at 863 125 kHz (for a total of 34 channels in the 863-870 MHz range). A rising edge on pin PB2 will cycle through all available PHY configurations contained in the `phy_cfg_sub_ghz[]` array defined in `interference_constants.h`. However, it's much easier (and exponentially more stable) to set the PHY configuration by issuing the proper shell command,i.e., `physub` or `physup` (for the sub-GHz and 2.4GHz interface config respectively) followed by the index of the proper PHY config in the aforementioned `phy_cfg_sub_ghz[]` array. For example, reconfiguring the sub-GHz PHY config goes like this:
+```bash
+> physub 2
+2020-03-05 13:21:07,950 #  physub 2
+2020-03-05 13:21:07,951 # PHY reconfigured to SUN-OFDM 863-870MHz O4 MCS2
+```
+
+>**Note:** In similar fashion, a rising edge on PB1 and PB3 triggers a transmission and a PHY reconfiguration on the AT86RF215 2.4GHz interface. However, for PHY reconfigurations, you should really use the `physup` shell command.
+
+Transmissions are defined as structs of type `if_tx_t` (containing the interface to send on, the destination MAC address, and the actual payload of the 802.15.4 DATA frame) By default, triggering a transmission on a certain interface (by applying a rising edge to the corresponding pin) causes a 120 byte long packet (with a payload containing consecutive numbers from 0 to 9 in periodic fashion) to be transmitted to the `22:68:31:23:9D:F1:96:37` MAC address (on said interface), which in our case is the MAC address of the *receiving node*.
+
+>**Note:** By *receiving node* we mean the node intended to receive the DATA transmission, not the node that's supposed to receive the interfering transmission.
+
+As you may remember from the output of the `help` shell command, you can set the amount of L2 payload bytes as well as the destination address to send to. You can also toggle between predefined destination MAC addresses specified in `examples/interference/interference_constants.h`. When setting the destination address with `saddrsub` and `saddrsup` for sub-GHz and 2.4GHz transmissions respectively, you must make sure to format the specified MAC destination address correctly (or the shell will yell at you like in the third example).
+```bash
+> saddrsub 22:68:31:23:9D:F1:96:37
+2020-03-05 14:03:27,899 #  saddrsub 22:68:31:23:9D:F1:96:37
+> saddrsub "22:68:31:23:9D:F1:96:37"
+2020-03-05 14:03:36,426 #  saddrsub "22:68:31:23:9D:F1:96:37"
+> saddrsub 22:68:31:23:9D:F1:96:3
+2020-03-05 14:03:43,658 #  saddrsub 22:68:31:23:9D:F1:96:3
+2020-03-05 14:03:43,659 # usage: saddrsub <address string>
+```
 
 For your convenience a python script (see `RIOT > examples > interference > capture.py`) is provided that creates a logfile from the serial output passed to it (via a pipe). Creating a logfile with a name of your choice is done as follows:
 
 ```bash
 $ make term BOARD=openmote-b PORT=/dev/ttyUSB1 | python3 capture.py -f <name of logfile>
-Created logfile "test.log"
+Created logfile "<name of logfile>.log"
 /home/relsas/RIOT-benpicco/dist/tools/pyterm/pyterm -p "/dev/ttyUSB1" -b "115200" 
 2019-10-16 13:04:13,124 # Connect to serial port /dev/ttyUSB1
 Welcome to pyterm!
@@ -223,7 +245,7 @@ Type '/exit' to exit.
 2019-10-16 13:04:21,381 # ~~ PKT    -  2 snips, total size:  43 byte
 ```
 
-The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<TX bytes>` is the amount of bytes in the PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `TX_40B_OF_1MS_SIR_10DB.csv` and `TX_40B_OF_2MS_SIR_30DB.csv`.
+The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `IF_<IF bytes>_TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<TX bytes>` is the amount of bytes in the PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `TX_40B_OF_1MS_SIR_10DB.csv` and `TX_40B_OF_2MS_SIR_30DB.csv`.
 
 >**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
 
