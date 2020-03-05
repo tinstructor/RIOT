@@ -271,12 +271,22 @@ optional arguments:
                         The ifr_logfile to be analyzed.
 ```
 
-If you where to use both options at the same time, the analyzer script would calculate the PRR for that specific combination by counting the messages received before the first PHY reconfiguration indication in the given logfile and dividing by the number of messages transmitted. The number of transmitted messages can in turn be set through the `-n` argument
+If you where to use both options at the same time, the analyzer script would calculate the PRR for that specific combination by counting the messages received before the first PHY reconfiguration indication in the given logfile and dividing by the number of messages transmitted. The number of transmitted messages can in turn be set through the `-n` argument. Also, if the specified csv file already exists in the current directory, the `-a` flag may be usefull if you wish to append the results of the call to `analyzer.py` to said csv file instead of overwriting them (which is the default behavior).
 ```
-$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv -i <IF PHY> -t <TRX PHY> -n <#messages>
+$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv -i <interferer PHY> -t <transmitter/receiver PHY> -n <#messages>
 ```
 
 >**Note:** depending on whether or not the corresponding pin from the timing controller is still connected to the PHY reconfiguration pin of the receiving node, the PHY reconfiguration indication might not appear in the logfile. In case you unplugged the wire, as I did because it's only a hassle, you have to write the reconfiguration indication to the logfile manually in order for the analyzer script to work properly.
+
+>**Note:** the format of the strings passed to the `-t` and `-i` options is important. All legal values are specified in the `TRX_PHY_CONFIGS` and `IF_PHY_CONFIGS` lists (see `examples > interference > analyzer.py`) respectively:
+>```py
+>TRX_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
+>               "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
+>               "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
+>IF_PHY_CONFIGS = ["SUN-FSK 863-870MHz OM1", "SUN-FSK 863-870MHz OM2",
+>               "SUN-OFDM 863-870MHz O4 MCS2", "SUN-OFDM 863-870MHz O4 MCS3",
+>               "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
+>```
 
 It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `IF_<IF bytes>_TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<IF bytes>` is the amount of bytes in the interfering transmission's PHY payload (i.e., L2 payload size + L2 header), `<TX bytes>` is the amount of bytes in the data transmission's PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `IF_20B_TX_40B_OF_1MS_SIR_10DB.csv` and `IF_30B_TX_70B_OF_1350US_SIR_0DB.csv`.
 
