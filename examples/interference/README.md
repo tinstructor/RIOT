@@ -295,15 +295,35 @@ $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv -i <interfere
 
 It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `IF_<IF bytes>_TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<IF bytes>` is the amount of bytes in the interfering transmission's PHY payload (i.e., L2 payload size + L2 header), `<TX bytes>` is the amount of bytes in the data transmission's PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `IF_20B_TX_40B_OF_1MS_SIR_10DB.csv` and `IF_30B_TX_70B_OF_1350US_SIR_0DB.csv`.
 
+After running the analyzer script, the output written to the csv file has the following format (just an example):
+
+|TX / RX PHY configuration  |IF PHY configuration       |TRX PRR|
+|---------------------------|---------------------------|-------|
+|SUN-OFDM 863-870MHz O4 MCS3|SUN-OFDM 863-870MHz O4 MCS3|0.00   |
+|SUN-OFDM 863-870MHz O3 MCS2|SUN-OFDM 863-870MHz O4 MCS3|0.92   |
+|...                        |...                        |...    |
+
 ### Interference PRR
-Coming soon
+A newer feature of the analyzer script is that it has an option (`-l`) to specify an additional logfile containing all packets received by a node listening to the interfering transmissions. Since this feature is quite new, it's not foolproof, i.e., it could crash or output useless data if you specified an interference logfile wherein the amount of *next experiment* notifications is not equal to the amount of PHY reconfiguration indications contained in the receiving node's logfile. However, if you're forcing the analyzer script as previously explained, this should always be the case.
+
+>**Note:** once again, by *receiving node* we mean the node intended to receive the DATA transmission, not the node that's supposed to receive the interfering transmission.
+
+If you connect the transmitter/interferer PHY reconfig pin of the timing controller to PA7 of an openmote-b node that's receiving and logging interfering transmissions, similarly to the node receiving data transmissions, it will write "NEXT_EXP" (i.e., a *next experiment* indication) to the terminal each time the transmitter/receiver PHY changes. This feature was added to have backward compatibility with the original analyzer script functionality. 
+
+>**Note:** Otherwise, the analyzer script wouldn't know which logged interfering transmissions occured during which transmitter/receiver PHY configuration because the interferer PHY only changes (thus causing a PHY reconfiguration indication to be logged) when the transmitter/receiver has cycled through all possible PHY configurations.
+
+Anyway, when using the `-l` option an additional column is written to the specified csv file. As you might expect, this column contains the PRR of the interfering transmissions.
+
+|TX / RX PHY configuration  |IF PHY configuration       |TRX PRR|IF PRR|
+|---------------------------|---------------------------|-------|------|
+|SUN-OFDM 863-870MHz O4 MCS3|SUN-OFDM 863-870MHz O4 MCS3|0.00   |0.00  |
+|SUN-OFDM 863-870MHz O3 MCS2|SUN-OFDM 863-870MHz O4 MCS3|0.92   |0.00  |
+|...                        |...                        |...    |...   |
 
 ### Controller Script
-
 Coming soon
 
 ## Visualizing Results
-
 Coming soon
 
 ## Recommended Reads
