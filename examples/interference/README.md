@@ -397,7 +397,11 @@ if_payload_sizes = [20,25,30,35,40] # in bytes
 >**Note:** this script requires installation of the seaborn python library: `pip3 install seaborn` (and numpy if you don't have that already).
 
 ### Complicated graphs
-Coming soon
+Trying to solve the limited nature of heatmaps, I came up with a different graphic that plots the PRR in function of the percentage of overlap between the PHY payload of a data transmission and an entire interference transmission (occuring in the middle of the data payload). This reduces the amount of graphs to just 1 per transmitter/receiver PHY configuration. In addition to the PRR of the data transmission, for each overlap percentage, the PRR of the interfering transmission is also plotted.
+
+>**Note:** the x axis is **always** the percentage of overlap between the data payload of a data transmission and an entire interference transmission (occuring in the middle of the PHY payload)and should **never** be mis-interpreted as the percentage of overlap between the PHY payload of an interference transmission and an entire data transmission (occuring in the middle of the interference payload) when looking at the PRR of interfering transmissions.
+
+>**Note:** for some combinations of payload sizes, the overlap percentage is identical. This may happen when: both data and interference are shorter than an otherwise identical scenario resulting in the same overlap (in time), or one payload size stays the same but the other transmission increases by 1 byte. In the latter case, the 1 byte shorter transmission might consist of an equal amount of OFDM symbols because of padding. In any case, this will cause the script to fail (when all other paramers are identical) because of duplicate rows in a pandas dataframe.
 
 ## Recommended Reads
 - [**IEEE 802.15.4-2015**](https://standards.ieee.org/standard/802_15_4-2015.html): The currently active PHY + MAC layer standard for 802.15.4 networks. Although this is the official standard, many developers seem to have a total disregard for certain aspects of it. Especially on the Sub-GHz PHY layers, there seems to be a lot of confusion as to what is actually standardised and what is not. The fact that IEEE standards are very expensive to obtain doesn't help this confusion either.
