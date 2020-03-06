@@ -356,6 +356,11 @@ def get_compensation(size_tuple):
 ```
 
 Now, the controller script cycles through every combination of a list of transmitter/receiver PHY configs (`trx_phy_cfg`), a list of interferer PHY configs (`if_phy_cfg`), a list of interference payload sizes (L2 payload + 15 byte MHR + 4 byte MFR)(`if_payload_sizes`), and a single data transmission payload size (`trx_payload_size`). For each combination, all nodes are configured with the `physub` command and the payload size of the 2 transmitting nodes is set through the `numbytesub` command, after which the timing controller is configured to generate `num_of_tx` rising edges on the pins connected to the transmitter and interferer send pins (at a certain offset + compensation). In addition, the destination address of the data and interference transmissions is set to `trx_dest_addr` and `if_dest_addr` respectively via the `saddrsub` shell command.
+
+>**Note:** a PHY config is a tuple containing a PHY configuration index (the index of said PHY config in `phy_cfg_sub_ghz[]` or `phy_cfg_2_4_ghz[]`) and the corresponding PHY config description string.
+
+>**Note:** although the `numbytesub` shell command accepts a slightly larger L2 payload size than 101B (i.e., 120B PHY payload - 15B MHR - 4B MFR), the maximum user-specified PHY payload size can't exceed 120B (101B L2 payload + 15B MHR + 4B MFR), because then the offset compensation can't be calculated. You could solve this by adding a data point.
+
 ```py
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
