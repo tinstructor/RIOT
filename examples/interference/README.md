@@ -394,6 +394,8 @@ trx_payload_size = 120 # in bytes
 if_payload_sizes = [20,25,30,35,40] # in bytes
 ```
 
+>**Note:** this script requires installation of the seaborn python library: `pip3 install seaborn` (and numpy if you don't have that already).
+
 ### Complicated graphs
 Coming soon
 
