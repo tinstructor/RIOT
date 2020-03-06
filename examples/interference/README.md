@@ -397,7 +397,12 @@ if_payload_sizes = [20,25,30,35,40] # in bytes
 >**Note:** this script requires installation of the seaborn python library: `pip3 install seaborn` (and numpy if you don't have that already).
 
 ### Complicated graphs
-Trying to solve the limited nature of heatmaps, I came up with a different graphic that plots the PRR in function of the percentage of overlap between the PHY payload of a data transmission and an entire interference transmission (occuring in the middle of the data payload). This reduces the amount of graphs to just 1 per transmitter/receiver PHY configuration. In addition to the PRR of the data transmission, for each overlap percentage, the PRR of the interfering transmission is also plotted.
+Trying to solve the limited nature of heatmaps, I came up with a different graphic that plots the PRR in function of the percentage of overlap between the PHY payload of a data transmission and an entire interference transmission (occuring in the middle of the data payload). This reduces the amount of graphs to just 1 per transmitter/receiver PHY configuration. In addition to the PRR of the data transmission, for each overlap percentage, the PRR of the interfering transmission is also plotted. Generating such a graph is as easy as calling:
+```
+$ python3 delivery.py
+```
+
+With exception of the `legacy_flag`, all configuration parameters of the `delivery.py` script are identical to those in `heatmapper.py`. This means that this script will not work with legacy csv files because it expect the additional interference PRR column.
 
 >**Note:** the x axis is **always** the percentage of overlap between the data payload of a data transmission and an entire interference transmission (occuring in the middle of the PHY payload)and should **never** be mis-interpreted as the percentage of overlap between the PHY payload of an interference transmission and an entire data transmission (occuring in the middle of the interference payload) when looking at the PRR of interfering transmissions.
 
