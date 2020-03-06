@@ -381,7 +381,18 @@ After all transmissions (for a given combination) are done, all nodes are reboot
 
 ## Visualizing Results
 ### Heatmaps
-Coming soon
+Although heatmaps are certainly usefull when it comes to comparing the PRR for different transmitter-interferer PHY config combinations, the fact that they can only display such information for a single combination of payload sizes make them fairly limited. Nonetheless, the `heatmapper.py` script generates a set of heatmaps based on a given list of interference payload sizes (`if_payload_sizes`) and a given `trx_payload_size` (i.e., for each combination).
+
+>**Note:** this script is actually somewhat robust and shouldn't fail if a certain csv file corresponding to a combination of payload sizes is not present in the current directory.
+
+You can also set the extension of the image file to be generated (e.g., "png" or "pdf") and whether or not you want the image to have a transparent background (only works with file extensions that support transparency like "png").
+```py
+extension = "png"
+legacy_flag = False
+transparent_flag = False
+trx_payload_size = 120 # in bytes
+if_payload_sizes = [20,25,30,35,40] # in bytes
+```
 
 ### Complicated graphs
 Coming soon
