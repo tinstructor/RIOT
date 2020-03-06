@@ -368,6 +368,12 @@ if_dest_addr = "22:68:31:23:14:F1:99:37"
 num_of_tx = 100
 ```
 
+After all transmissions (for a given combination) are done, all nodes are rebooted via shell, the logging streams are closed, and the newly created logfiles are passed to the analyzer script. Since the logfiles only contain the received messages for a single PHY combination, the `-i` and `-t` arguments were used (in conjunction with the `-n` and `-l` arguments). 
+
+>**Note:** Assuming no pins are connected to the timing controller (other than a send pin), the PHY reconfiguration and next experiment indication strings were writen to each logfile manually.
+
+>**Note:** this script requires installation of the scipy python library: `pip3 install scipy`
+
 ## Visualizing Results
 Coming soon
 
