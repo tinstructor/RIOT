@@ -203,7 +203,7 @@ $ PROGRAMMER=jlink make flash BOARD=openmote-b GNRC_NETIF_NUMOF=1
 ## Usage
 The basic usage of this example application is pretty straighforward. Currently, you can only use this application to its full potential if you're using one of the platforms / configurations specified in [this post](https://github.com/RIOT-OS/RIOT/pull/12128#issue-312769776). Everything is written for OpenMote-B nodes, so those should work out of the box. When using a different platform, the pins to be used on that platform can be changes in `RIOT > examples > interference > interference_constants.h`. This header file also includes several other configuration constants that may be changed for your purposes.
 
-Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger a transmission of a message over the AT86RF215's Sub-GHz interface. By default, this interface is configured for the [SUN-FSK PHY in Operating Mode 1](https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf?#page=499), i.e., 2-FSK with a data-rate of 50 kbps, a modulation index of 1, a channel spacing of 200 kHz and a channel 0 center frequency at 863 125 kHz (for a total of 34 channels in the 863-870 MHz range). A rising edge on pin PB2 will cycle through all available PHY configurations contained in the `phy_cfg_sub_ghz[]` array defined in `interference_constants.h`. However, it's much easier (and exponentially more stable) to set the PHY configuration by issuing the proper shell command,i.e., `physub` or `physup` (for the sub-GHz and 2.4GHz interface config respectively) followed by the index of the proper PHY config in the aforementioned `phy_cfg_sub_ghz[]` array. For example, reconfiguring the sub-GHz PHY config goes like this:
+Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger a transmission of a message over the AT86RF215's Sub-GHz interface. By default, this interface is configured for the [SUN-FSK PHY in Operating Mode 1](https://www.silabs.com/content/usergenerated/asi/cloud/attachments/siliconlabs/en/community/wireless/proprietary/forum/jcr:content/content/primary/qna/802_15_4_promiscuous-tbzR/hivukadin_vukadi-iTXQ/802.15.4-2015.pdf?#page=499), i.e., 2-FSK with a data-rate of 50 kbps, a modulation index of 1, a channel spacing of 200 kHz and a channel 0 center frequency at 863 125 kHz (for a total of 34 channels in the 863-870 MHz range). A rising edge on pin PB2 will cycle through all available PHY configurations contained in the `phy_cfg_sub_ghz[]` and `phy_cfg_2_4_ghz[]`arrays defined in `interference_constants.h`. However, it's much easier (and exponentially more stable) to set the PHY configuration by issuing the proper shell command,i.e., `physub` or `physup` (for the sub-GHz and 2.4GHz interface config respectively) followed by the index of the proper PHY config in the aforementioned `phy_cfg_sub_ghz[]` and `phy_cfg_2_4_ghz[]`arrays. For example, reconfiguring the sub-GHz PHY config goes like this:
 ```
 > physub 2
 2020-03-05 13:21:07,950 #  physub 2
@@ -248,7 +248,7 @@ Type '/exit' to exit.
 2019-10-16 13:04:21,381 # ~~ PKT    -  2 snips, total size:  43 byte
 ```
 
-The logfiles can then be analyzed with `analyzer.py`. The script may be called by providing the name of the logfile to be analyzed and the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. Each change of PHY configuration is indicated in the specified logfile. Since, the analyzer script has no clue at which PHY configuration index you where when the logfile was created, it assumes that you cycled through all combinations of the same configurations as specified in the `phy_cfg_sub_ghz[]` array (defined in `examples > interference > interference_constants.h`). This came to be because the legacy interference testing application **did** effectively cycle through all available PHY config combinations by means of pin interrupts triggered by the timing controller (see `examples > timing_control`). This resulted in a single logfile containing all necessary information to calculate the PRR for each combination of PHY configurations (of the transmitter/receiver and interferer respectively).
+The logfiles can then be analyzed with `analyzer.py`. The script may be called by providing the name of the logfile to be analyzed and the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. Each change of PHY configuration is indicated in the specified logfile. Since, the analyzer script has no clue at which PHY configuration index you where when the logfile was created, it assumes that you cycled through all combinations of the same configurations as specified in the `phy_cfg_sub_ghz[]` and `phy_cfg_2_4_ghz[]`arrays (defined in `examples > interference > interference_constants.h`). This came to be because the legacy interference testing application **did** effectively cycle through all available PHY config combinations by means of pin interrupts triggered by the timing controller (see `examples > timing_control`). This resulted in a single logfile containing all necessary information to calculate the PRR for each combination of PHY configurations (of the transmitter/receiver and interferer respectively).
 
 >**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
 
@@ -325,7 +325,48 @@ Anyway, when using the `-l` option, an additional column is written to the speci
 |...                        |...                        |...    |...   |
 
 ### Controller Script
-Coming soon
+I admit that it's quite difficult to keep track of every possible feature previously discussed. Hence, the `examples > interference > controller.py` script was included as an example. For now, this script doesn't work with the two FSK PHY configs from `phy_cfg_sub_ghz[]` and `phy_cfg_2_4_ghz[]`. This is because the drivers used for the openmote-b (see [#12128](https://github.com/RIOT-OS/RIOT/pull/12128)) are still experimental and, in the commit on which this example was based, FSK wasn't working properly.
+
+Before you can really understand what this script does, you should really read `examples > timing_control > README.md`. In short, the timing controller triggers a number of rising edges on its GPIO pins. Two of those pins are configured to trigger interrupts on the send pins of a transmitter and interferer node respectively. The time offset between these triggers, and hence (in theory) the time offset between DATA and interference transmission, is user configurable via a timing controller shell command (the `offset` command). However, in practice, the time between triggering a send pin interrupt and actually sending out data is a function of the size of the packet to be transmitted. Hence, the offset needs to be compensated, which can be done with the `comp` timing controller shell command. 
+
+The offset compensation is therefore a function of 2 variables, i.e., the size of both the data and interference transmissions. Luckily for you, we've measured the required compensation for 11 different combinations of packet sizes and for every other combination the required compensation is calculated via 2-dimensional interpolation as follows:
+
+```py
+x = np.ogrid[20:130:10]
+x = np.tile(x,11)
+y = np.ogrid[20:130:10]
+y = np.repeat(y,11)
+z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
+              62,20,-28,-70,-118,-154,-208,-256,-298,-352,-388,
+              104,62,20,-28,-70,-118,-154,-208,-256,-298,-352,
+              152,104,62,20,-28,-70,-118,-154,-208,-256,-298,
+              194,152,104,62,20,-28,-70,-118,-154,-208,-256,
+              242,194,152,104,62,20,-28,-70,-118,-154,-208,
+              284,242,194,152,104,62,20,-28,-70,-118,-154,
+              332,284,242,194,152,104,62,20,-28,-70,-118,
+              380,332,284,242,194,152,104,62,20,-28,-70,
+              428,380,332,284,242,194,152,104,62,20,-28,
+              476,428,380,332,284,242,194,152,104,62,20])
+rbf = interpolate.Rbf(x,y,z)
+
+def get_compensation(size_tuple):
+    # NOTE size_tuple = (if_payload_size,trx_payload_size)
+    compensation = int(round(rbf(size_tuple[0],size_tuple[1]).tolist()))
+    return compensation
+```
+
+Now, the controller script cycles through every combination of a list of transmitter/receiver PHY configs (`trx_phy_cfg`), a list of interferer PHY configs (`if_phy_cfg`), a list of interference payload sizes (L2 payload + 15 byte MHR + 4 byte MFR)(`if_payload_sizes`), and a single data transmission payload size (`trx_payload_size`). For each combination, all nodes are configured with the `physub` command and the payload size of the 2 transmitting nodes is set through the `numbytesub` command, after which the timing controller is configured to generate `num_of_tx` rising edges on the pins connected to the transmitter and interferer send pins (at a certain offset + compensation). In addition, the destination address of the data and interference transmissions is set to `trx_dest_addr` and `if_dest_addr` respectively via the `saddrsub` shell command.
+```py
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+trx_payload_size = 120 # in bytes
+if_payload_sizes = [50,70,90] # in bytes
+trx_dest_addr = "22:68:31:23:9D:F1:96:37"
+if_dest_addr = "22:68:31:23:14:F1:99:37"
+num_of_tx = 100
+```
 
 ## Visualizing Results
 Coming soon
