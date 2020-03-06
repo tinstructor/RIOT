@@ -145,6 +145,9 @@ with open(rx_log_filename, "r") as rx_log:
             else:
                 break
 
+# TODO check if the number of occurences of PHY reconfiguration messages 
+# and next experiment notifications in both logfiles is equal. Otherwise
+# both logs aren't symmetrical and we should throw an exception.
 if args.ifr_logfile is not None:
 
     LOG_REGEXP_NEXT = re.compile("^.*?NEXT_EXP")

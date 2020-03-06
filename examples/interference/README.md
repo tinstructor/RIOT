@@ -193,7 +193,7 @@ After which the node hangs forever untill you perform a hardware reset via the p
 #define CCA_BACKDOOR_ENABLE       (0)
 ```
 
-Flashing over jlink requires you to install some software available on the [SEGGER wesbite](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack). After installation, flashing over jlink is a easy as:
+Flashing over jlink requires you to install some software available on the [SEGGER website](https://www.segger.com/downloads/jlink/#J-LinkSoftwareAndDocumentationPack). After installation, flashing over jlink is a easy as:
 ```
 $ PROGRAMMER=jlink make flash BOARD=openmote-b GNRC_NETIF_NUMOF=1
 ```
@@ -248,11 +248,11 @@ Type '/exit' to exit.
 2019-10-16 13:04:21,381 # ~~ PKT    -  2 snips, total size:  43 byte
 ```
 
-The logfiles can then be analyzed with the `analyzer.py` python script. The script may be called by providing the name of the logfile to be analyzed as well as the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. Each change of PHY configuration is indicated in the specified logfile. Since, the analyzer script has no clue at which PHY configuration index you where when the logfile was created, it assumes that you cycled through all combinations of the same configurations as specified in the `phy_cfg_sub_ghz[]` array (defined in `examples > interference > interference_constants.h`). This came to be because the legacy interference testing application **did** effectively cycle through all available PHY config combinations by means of pin interrupts triggered by the timing controller (see `examples > timing_control`). This resulted in a single logfile containing all necessary information to calculate the PRR for each combination of PHY configurations (of the transmitter/receiver and interferer respectively).
+The logfiles can then be analyzed with `analyzer.py`. The script may be called by providing the name of the logfile to be analyzed and the csv file to which log-derived information must be appended: `$ python3 analyzer.py <name of logfile>.log <name of csv file>.csv`. Each change of PHY configuration is indicated in the specified logfile. Since, the analyzer script has no clue at which PHY configuration index you where when the logfile was created, it assumes that you cycled through all combinations of the same configurations as specified in the `phy_cfg_sub_ghz[]` array (defined in `examples > interference > interference_constants.h`). This came to be because the legacy interference testing application **did** effectively cycle through all available PHY config combinations by means of pin interrupts triggered by the timing controller (see `examples > timing_control`). This resulted in a single logfile containing all necessary information to calculate the PRR for each combination of PHY configurations (of the transmitter/receiver and interferer respectively).
 
 >**Note:** make sure debugging is enabled in `RIOT > examples > interference > main.c`, otherwise the analyzer script won't work properly.
 
-There is an easy way around this issue though. You can force the analyzer script to cycle through a list of PHY configurations (for both transmitter/receiver and interferer respectively) containing just a single element, i.e., a user-specified PHY configuration string. For this purpose, the optional `-i` and `-t` arguments where created. 
+There is an easy way around this issue though. You can force the analyzer script to cycle through a list of PHY configurations (for both transmitter/receiver and interferer respectively) with just a single, user-specified PHY configuration string. For this purpose, the optional `-i` and `-t` arguments where created:
 ```
 $ python3 analyzer.py -h
 usage: analyzer.py [-h] [-a] [-i INTERFERER] [-t TRANSMITTER] [-n N]
@@ -276,12 +276,16 @@ optional arguments:
                         The ifr_logfile to be analyzed.
 ```
 
-If you where to use both options at the same time, the analyzer script would calculate the PRR for that specific combination by counting the messages received before the first PHY reconfiguration indication in the given logfile and dividing by the number of messages transmitted. The number of transmitted messages can in turn be set through the `-n` argument. Also, if the specified csv file already exists in the current directory, the `-a` flag may be usefull if you wish to append the results of the call to `analyzer.py` to said csv file instead of overwriting them (which is the default behavior).
+Using both options at the same time, the analyzer script calculates the PRR for that specific combination by:
+1. counting the messages received before the first PHY reconfig indication in the given logfile and;
+2. dividing by the number of messages transmitted. 
+
+The number of transmitted messages is set through the `-n` argument. Also, if the specified csv file already exists in the current directory, the `-a` flag may be usefull if you wish to append the results of the call to `analyzer.py` to said csv file instead of overwriting them (which is the default behavior).
 ```
 $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv -i <interferer PHY> -t <transmitter/receiver PHY> -n <#messages>
 ```
 
->**Note:** depending on whether or not the corresponding pin from the timing controller is still connected to the PHY reconfiguration pin of the receiving node, the PHY reconfiguration indication might not appear in the logfile. In case you unplugged the wire, as I did because it's only a hassle, you have to write the reconfiguration indication to the logfile manually in order for the analyzer script to work properly.
+>**Note:** depending on whether the corresponding pin from the timing controller is connected to the PHY reconfiguration pin of the receiving node, the PHY reconfiguration indication might not appear in the logfile. In case you unplugged the wire, as you should, you have to write the reconfiguration indication to the logfile manually in order for the analyzer script to work properly.
 
 >**Note:** the format of the strings passed to the `-t` and `-i` options is important. All legal values are specified in the `TRX_PHY_CONFIGS` and `IF_PHY_CONFIGS` lists (see `examples > interference > analyzer.py`) respectively:
 >```py
@@ -304,15 +308,15 @@ After running the analyzer script, the output written to the csv file has the fo
 |...                        |...                        |...    |
 
 ### Interference PRR
-A newer feature of the analyzer script is that it has an option (`-l`) to specify an additional logfile containing all packets received by a node listening to the interfering transmissions. Since this feature is quite new, it's not foolproof, i.e., it could crash or output useless data if you specified an interference logfile wherein the amount of *next experiment* notifications is not equal to the amount of PHY reconfiguration indications contained in the receiving node's logfile. However, if you're forcing the analyzer script as previously explained, this should always be the case.
+A newer feature of the analyzer script is that it has an option (`-l`) to specify an additional logfile containing all packets received by a node listening to interfering transmissions. Since this feature is quite new, it could output useless data if you specify an interference logfile wherein the amount of *next experiment* indications isn't equal to the amount of PHY reconfig indications in the receiving node's logfile. However, if you're forcing the analyzer script as previously explained, this is a non-issue.
 
 >**Note:** once again, by *receiving node* we mean the node intended to receive the DATA transmission, not the node that's supposed to receive the interfering transmission.
 
-If you connect the transmitter/interferer PHY reconfig pin of the timing controller to PA7 of an openmote-b node that's receiving and logging interfering transmissions, similarly to the node receiving data transmissions, it will write "NEXT_EXP" (i.e., a *next experiment* indication) to the terminal each time the transmitter/receiver PHY changes. This feature was added to have backward compatibility with the original analyzer script functionality. 
+If you connect the transmitter/interferer PHY reconfig pin of the timing controller to PA7 of an openmote-b node that's receiving/logging interfering transmissions, similarly to the node receiving data transmissions, it will write "NEXT_EXP" (i.e., a *next experiment* indication) to the terminal (and therefore to its logfile) each time the transmitter/receiver PHY changes. This feature ensures backward compatibility with the original analyzer functionality. 
 
->**Note:** Otherwise, the analyzer script wouldn't know which logged interfering transmissions occured during which transmitter/receiver PHY configuration because the interferer PHY only changes (thus causing a PHY reconfiguration indication to be logged) when the transmitter/receiver has cycled through all possible PHY configurations.
+>**Note:** Otherwise, the analyzer script wouldn't know which logged interfering transmissions occured during which transmitter/receiver PHY configuration, because the interferer PHY only changes (thus causing a PHY reconfiguration indication to be logged) when the transmitter/receiver has cycled through all possible PHY configurations.
 
-Anyway, when using the `-l` option an additional column is written to the specified csv file. As you might expect, this column contains the PRR of the interfering transmissions.
+Anyway, when using the `-l` option, an additional column is written to the specified csv file. As you might expect, this column contains the PRR of the interfering transmissions.
 
 |TX / RX PHY configuration  |IF PHY configuration       |TRX PRR|IF PRR|
 |---------------------------|---------------------------|-------|------|
