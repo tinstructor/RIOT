@@ -380,6 +380,10 @@ After all transmissions (for a given combination) are done, all nodes are reboot
 >**Note:** this script requires installation of the scipy python library: `pip3 install scipy`
 
 ## Visualizing Results
+### Heatmaps
+Coming soon
+
+### Complicated graphs
 Coming soon
 
 ## Recommended Reads
