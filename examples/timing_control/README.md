@@ -56,11 +56,31 @@ You can now list all available shell commands by issuing the `help` command in t
 ```
 
 ## Usage
-Coming soon
+In short, the timing controller generates rising edges on its GPIO pins. Two of those pins (PA7 and PA5) are configured to trigger interrupts on the send pins of a transmitter and interferer node respectively (when used in conjunction with `examples > interference`). The time offset (in microseconds) between these rising edges, and hence (in theory) the time offset between DATA and interference transmission, is user configurable via the `offset` shell command:
+```
+> offset 1000
+2020-03-09 12:13:44,151 #  offset 1000
+```
+
+However, in practice, the time between triggering a send pin interrupt and actually sending out data is a function of the size of the packet to be transmitted. Hence, the offset needs to be compensated, which can be done with the `comp` shell command (in microseconds):
+ ```
+ > comp 100
+2020-03-09 12:14:34,720 #  comp 100
+ ```
+
+The number of consecutive rising edges on PA7 and PA5 can in turn be set with the `numtx` shell command (100 when unspecified). After the specified amount of rising edges was generated, a rising edge is generated on a (sub-)set of pins originally intended to trigger PHY reconfigurations on the openmote-b nodes in an interference test. The complete set of PHY reconfig pins can be found in `examples > timing_control > timing_control_constants.h`:
+```c
+#define TX_PHY_CFG_PIN      GPIO_PIN(PORT_A, 4)
+#define RX_PHY_CFG_PIN      GPIO_PIN(PORT_C, 1)
+#define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 0)
+```
+
+Notice that we specifically said (sub-)set. That's because a rising edge on `IF_PHY_CFG_PIN` only occurs when `numtx` consecutive rising edges on PA7 and PA5 and a subsequent rising edge on PA4 and PC1 have occured for a user-specified amount of times.
+
+>**Note:** by default, when you don't specify the number via `trxnumphy`, it equals 1. In that case, a rising edge occurs on **all** PHY reconfig pins after **every** `numtx` rising edges on PA7 and PA5.
 
 ## Recommended Reads
-- [**IEEE 802.15.4-2015**](https://standards.ieee.org/standard/802_15_4-2015.html): The currently active PHY + MAC layer standard for 802.15.4 networks. Although this is the official standard, many developers seem to have a total disregard for certain aspects of it. Especially on the Sub-GHz PHY layers, there seems to be a lot of confusion as to what is actually standardised and what is not. The fact that IEEE standards are very expensive to obtain doesn't help this confusion either.
-- [**Jump Start Git**](https://www.sitepoint.com/premium/books/jump-start-git) *by Shaumik Daityari*: If you don't speak Git, this book is where you might want to start your journey.
 - [**C in a Nutshell**](http://shop.oreilly.com/product/0636920033844.do) *by Peter Prinz & Tony Crawford*: Although C is an incredibly forgiving language when it comes to getting what you want out of it (hence the abundance of terribly written but otherwise "functional" code), some parts of our source code contain more advanced features and contstructs from the C99 and later C11 specification. We make no mistake about it, seasoned embedded developers would probably have a heart-attack looking at parts of our code, but the important thing to remember is that we're well on our way to write better source code and this book is what's getting us there.
 - [**The Quick Python Book**](https://www.manning.com/books/the-quick-python-book-third-edition) *by Naomi Ceder*: Tis book offers a clear introduction to the Python programming language and its famously easy-to-read syntax. Written for programmers new to Python, the latest edition includes new exercises throughout. It covers features common to other languages concisely, while introducing Python's comprehensive standard functions library and unique features in detail.
 - [**RIOT online course**](https://github.com/RIOT-OS/riot-course): This project provides a learning course for RIOT, an operating system for constrained IoT devices. The course is divided in 5 sections, of which section 2, 3 and 4 are certainly worth a read if you wish to better understand the inner workings of this application.
+- [**The Zolertia RE-Mote wiki**](https://github.com/Zolertia/Resources/wiki/RE-Mote): The RE-Mote is a hardware development platform designed jointly with universities and industrial partners, in the frame of the European research project RERUM. It aims to fill the gap of existing IoT platforms lacking an industrial-grade design and ultra-low power consumption, yet allowing makers and researchers alike to develop IoT applications and connected products. This wiki is particularly usefull if you keep forgetting the RE-Mote pin layout.
