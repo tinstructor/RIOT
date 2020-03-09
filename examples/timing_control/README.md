@@ -7,6 +7,7 @@ This document describes the usage and configuration of the timing controller app
   - [Getting Started](#getting-started)
   - [Tips & Tricks](#tips--tricks)
   - [Usage](#usage)
+    - [Interference testing with controller script](#interference-testing-with-controller-script)
   - [Recommended Reads](#recommended-reads)
 
 ## Getting started
@@ -75,9 +76,12 @@ The number of consecutive rising edges on PA7 and PA5 can in turn be set with th
 #define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 0)
 ```
 
-Notice that we specifically said (sub-)set. That's because a rising edge on `IF_PHY_CFG_PIN` only occurs when `numtx` consecutive rising edges on PA7 and PA5 and a subsequent rising edge on PA4 and PC1 have occured for a user-specified amount of times.
+Notice that we specifically said (sub-)set. That's because a rising edge on `IF_PHY_CFG_PIN` only occurs when `numtx` consecutive rising edges on PA7 and PA5 and a subsequent rising edge on PA4 and PC1 have occured for an amount of times that can be specified via the `trxnumphy` shell command. This whole cycle then repeats itself for an amount of times that can be specified via the `ifnumphy` shell command. The reason this works this way is that originally the timing controller was meant to automate almost the entire interference test. The only purpose of the python scripts from `examples > interference` was to log all messages received by the receiving node to a single logfile and to analyze this logfile in a single go afterwards. However, since it was found that reconfiguring PHY's via pin interrupts was quite unstable, we opted to make the PHY of the openmote-b nodes configurable via shell command and handed over the automation to the controller python script (see `examples > interference > controller.py`).
 
 >**Note:** by default, when you don't specify the number via `trxnumphy`, it equals 1. In that case, a rising edge occurs on **all** PHY reconfig pins after **every** `numtx` rising edges on PA7 and PA5.
+
+### Interference testing with controller script
+If you wish to use this application with the controller python script from `examples > interference` you should not use any wires connecting the PHY reconfig pins to their corresponding openmote pin because the script write reconfiguration messages to the logfile itself (so that the analyzer script functions properly).
 
 ## Recommended Reads
 - [**C in a Nutshell**](http://shop.oreilly.com/product/0636920033844.do) *by Peter Prinz & Tony Crawford*: Although C is an incredibly forgiving language when it comes to getting what you want out of it (hence the abundance of terribly written but otherwise "functional" code), some parts of our source code contain more advanced features and contstructs from the C99 and later C11 specification. We make no mistake about it, seasoned embedded developers would probably have a heart-attack looking at parts of our code, but the important thing to remember is that we're well on our way to write better source code and this book is what's getting us there.
