@@ -69,12 +69,14 @@ However, in practice, the time between triggering a send pin interrupt and actua
 2020-03-09 12:14:34,720 #  comp 100
  ```
 
-The number of consecutive rising edges on PA7 and PA5 can in turn be set with the `numtx` shell command (100 when unspecified). After the specified amount of rising edges was generated, a rising edge is generated on a (sub-)set of pins originally intended to trigger PHY reconfigurations on the openmote-b nodes in an interference test. The complete set of PHY reconfig pins can be found in `examples > timing_control > timing_control_constants.h`:
+The number of consecutive rising edges on PA7 and PA5 can in turn be set with the `numtx` shell command (100 when unspecified). The time between two rising edges on the same pin is fixed to 500 milliseconds. After the specified amount of rising edges was generated, a rising edge is generated on a (sub-)set of pins originally intended to trigger PHY reconfigurations on the openmote-b nodes in an interference test. The complete set of PHY reconfig pins can be found in `examples > timing_control > timing_control_constants.h`:
 ```c
 #define TX_PHY_CFG_PIN      GPIO_PIN(PORT_A, 4)
 #define RX_PHY_CFG_PIN      GPIO_PIN(PORT_C, 1)
 #define IF_PHY_CFG_PIN      GPIO_PIN(PORT_C, 0)
 ```
+
+>**Note:** while it is theoretically possible to set a lower interval (`TX_WUP_INTERVAL`, see `timing_control_constants.h`) between two rising edges on either PA7 or PA5 as long as this interval is larger than two times the duration (`PULSE_DURATION_US`, see `timing_control_constants.h`) of a pulse on such pin (which in turn dictates the maximum offset compensation), in practice, you can't go much lower than 500 milliseconds when using the timing controller in an interference testing setup. For some reason, stability is not guaranteed in that case.
 
 Notice that we specifically said (sub-)set. That's because a rising edge on `IF_PHY_CFG_PIN` only occurs when `numtx` consecutive rising edges on PA7 and PA5 and a subsequent rising edge on PA4 and PC1 have occured for an amount of times that can be specified via the `trxnumphy` shell command. This whole cycle then repeats itself for an amount of times that can be specified via the `ifnumphy` shell command. The reason this works this way is that originally the timing controller was meant to automate almost the entire interference test. The only purpose of the python scripts from `examples > interference` was to log all messages received by the receiving node to a single logfile and to analyze this logfile in a single go afterwards. However, since it was found that reconfiguring PHY's via pin interrupts was quite unstable, we opted to make the PHY of the openmote-b nodes configurable via shell command and handed over the automation to the controller python script (see `examples > interference > controller.py`).
 
