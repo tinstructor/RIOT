@@ -71,7 +71,6 @@ for if_payload_size in if_payload_sizes:
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap((phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]]),(row["Interferer payload"],row["TX / RX payload"])),axis=1)
-# tx_complete["Weighted TRX PRR"] = tx_complete["TRX PRR"] * tx_complete["Payload overlap"]
 
 trx_phy_list = sorted(tx_complete["TX / RX PHY\nconfiguration"].unique().tolist())
 
@@ -79,38 +78,32 @@ fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(16,9))
 coord = {0:(0,0),1:(0,1),2:(1,0),3:(1,1)}
 
 for index, trx_phy in enumerate(trx_phy_list):
-    trx_colors = ["C0","C1","C2","C3"]
+    bottom_colors = ["C0","C1","C2","C3"]
     trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
-    trx_dfp["Interferer PHY\nconfiguration"] = trx_dfp["Interferer PHY\nconfiguration"].astype(str) + " TRX"
-    trx_dfp = trx_dfp.pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="TRX PRR")
-    trx_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,color=trx_colors)
+    trx_dfp = trx_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["TRX PRR"],fill_value=-1)
+    trx_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=bottom_colors)
 
-    for i,column_name in enumerate(list(trx_dfp.columns.values)):
-        trx_x = trx_dfp[column_name].dropna().index.values
-        trx_y = trx_dfp[column_name].dropna().to_numpy()
-        trx_x_f = np.arange(trx_x[0],trx_x[-1]+0.001,0.001)
-        trx_polynome = np.poly1d(np.polyfit(trx_x,trx_y,3))
-        trx_y_f = trx_polynome(trx_x_f)
-        axes[coord[index][0],coord[index][1]].plot(trx_x_f,trx_y_f,linewidth=1.5,color=trx_colors[i])
+    rects = axes[coord[index][0],coord[index][1]].patches
+    bottoms = [rect.get_height() for rect in rects]
+    print(bottoms)
 
-    if_colors = ["C4","C5","C6","C7"]
+    label_present = False
+    for rect in rects:
+        if rect.get_height() < 0:
+            # axes[coord[index][0],coord[index][1]].text(rect.get_x() + rect.get_width() / 2,0.05,"NaN",ha='center', va='bottom')
+            if not label_present:
+                axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None", label="N/A")
+                label_present = True
+            else:
+                axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None")
+
+    top_colors = ["C4","C5","C6","C7"]
     if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
-    if_dfp["Interferer PHY\nconfiguration"] = if_dfp["Interferer PHY\nconfiguration"].astype(str) + " IF"
-    if_dfp = if_dfp.pivot(index="Payload overlap", columns="Interferer PHY\nconfiguration", values="IF PRR")
-    if_dfp.plot(ax=axes[coord[index][0],coord[index][1]],marker='x',markeredgewidth=1.8,markersize=8,linestyle="None",legend=False,color=if_colors)
+    if_dfp = if_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["IF PRR"])
+    if_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=top_colors,bottom=1)
+    print(if_dfp)
 
-    for i,column_name in enumerate(list(if_dfp.columns.values)):
-        if_x = if_dfp[column_name].dropna().index.values
-        if_y = if_dfp[column_name].dropna().to_numpy()
-        if_x_f = np.arange(if_x[0],if_x[-1]+0.001,0.001)
-        if_polynome = np.poly1d(np.polyfit(if_x,if_y,3))
-        if_y_f = if_polynome(if_x_f)
-        axes[coord[index][0],coord[index][1]].plot(if_x_f,if_y_f,linewidth=1.5,color=if_colors[i])
-
-    tick_offset = 0.02 if coord[index][1] < 1 else 0.04
-    axes[coord[index][0],coord[index][1]].set_xticks(np.arange(round(trx_dfp.index.min(),2),round(trx_dfp.index.max(),2)+tick_offset,tick_offset).tolist())
-    axes[coord[index][0],coord[index][1]].set_xlim(round(trx_dfp.index.min(),2)-0.01,round(trx_dfp.index.max(),2)+0.01)
-    axes[coord[index][0],coord[index][1]].set_ylim(-0.05,1.05)
+    axes[coord[index][0],coord[index][1]].set_ylim(0,2.05)
     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
     axes[coord[index][0],coord[index][1]].title.set_fontsize(14)
@@ -120,55 +113,15 @@ for index, trx_phy in enumerate(trx_phy_list):
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_fontsize(12)
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
 
-handles, labels = axes[0,0].get_legend_handles_labels()
-fig.legend(handles, labels, loc="lower center",ncol=4)
+    labels = [item.get_text() for item in axes[coord[index][0],coord[index][1]].get_xticklabels()]
+    axes[coord[index][0],coord[index][1]].set_xticklabels(["%.3f" % round(float(label),3) for label in labels])
 
-plt.subplots_adjust(wspace=0.14,hspace=0.34,top=0.9,left=0.1,right=0.9,bottom=0.12)
+handles, labels = axes[0,0].get_legend_handles_labels()
+handles.insert(len(handles) - 1,handles.pop(0))
+labels.insert(len(labels) - 1,labels.pop(0))
+fig.legend(handles, labels, loc="lower center",ncol=5)
+
+plt.subplots_adjust(wspace=0.14,hspace=0.40,top=0.9,left=0.1,right=0.9,bottom=0.16)
 image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
 plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
 plt.close()
-
-# for index, trx_phy in enumerate(trx_phy_list):
-#     bottom_colors = ["C0","C1","C2","C3"]
-#     trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
-#     trx_dfp = trx_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["TRX PRR"],fill_value=-1)
-#     trx_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=bottom_colors)
-#     print(trx_dfp)
-#     top_colors = ["C4","C5","C6","C7"]
-#     if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
-#     if_dfp = if_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["IF PRR"])
-#     if_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=top_colors,bottom=1)
-#     print(if_dfp)
-
-#     axes[coord[index][0],coord[index][1]].set_ylim(0,2.05)
-#     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
-#     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
-#     axes[coord[index][0],coord[index][1]].title.set_fontsize(14)
-#     axes[coord[index][0],coord[index][1]].title.set_weight("regular")
-#     axes[coord[index][0],coord[index][1]].xaxis.get_label().set_fontsize(12)
-#     axes[coord[index][0],coord[index][1]].xaxis.get_label().set_weight("regular")
-#     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_fontsize(12)
-#     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
-
-#     labels = [item.get_text() for item in axes[coord[index][0],coord[index][1]].get_xticklabels()]
-#     axes[coord[index][0],coord[index][1]].set_xticklabels(["%.3f" % round(float(label),3) for label in labels])
-
-#     rects = axes[coord[index][0],coord[index][1]].patches
-
-#     label_present = False
-#     for rect in rects:
-#         if rect.get_height() < 0:
-#             # axes[coord[index][0],coord[index][1]].text(rect.get_x() + rect.get_width() / 2,0.05,"NaN",ha='center', va='bottom')
-#             if not label_present:
-#                 axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None", label="N/A")
-#                 label_present = True
-#             else:
-#                 axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None")
-
-# handles, labels = axes[0,0].get_legend_handles_labels()
-# fig.legend(handles, labels, loc="lower center",ncol=5)
-
-# plt.subplots_adjust(wspace=0.14,hspace=0.40,top=0.9,left=0.1,right=0.9,bottom=0.16)
-# image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
-# plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
-# plt.close()
