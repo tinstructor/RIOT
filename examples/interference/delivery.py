@@ -127,3 +127,48 @@ plt.subplots_adjust(wspace=0.14,hspace=0.34,top=0.9,left=0.1,right=0.9,bottom=0.
 image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
 plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
 plt.close()
+
+# for index, trx_phy in enumerate(trx_phy_list):
+#     bottom_colors = ["C0","C1","C2","C3"]
+#     trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
+#     trx_dfp = trx_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["TRX PRR"],fill_value=-1)
+#     trx_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=bottom_colors)
+#     print(trx_dfp)
+#     top_colors = ["C4","C5","C6","C7"]
+#     if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
+#     if_dfp = if_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["IF PRR"])
+#     if_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=top_colors,bottom=1)
+#     print(if_dfp)
+
+#     axes[coord[index][0],coord[index][1]].set_ylim(0,2.05)
+#     axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
+#     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
+#     axes[coord[index][0],coord[index][1]].title.set_fontsize(14)
+#     axes[coord[index][0],coord[index][1]].title.set_weight("regular")
+#     axes[coord[index][0],coord[index][1]].xaxis.get_label().set_fontsize(12)
+#     axes[coord[index][0],coord[index][1]].xaxis.get_label().set_weight("regular")
+#     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_fontsize(12)
+#     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
+
+#     labels = [item.get_text() for item in axes[coord[index][0],coord[index][1]].get_xticklabels()]
+#     axes[coord[index][0],coord[index][1]].set_xticklabels(["%.3f" % round(float(label),3) for label in labels])
+
+#     rects = axes[coord[index][0],coord[index][1]].patches
+
+#     label_present = False
+#     for rect in rects:
+#         if rect.get_height() < 0:
+#             # axes[coord[index][0],coord[index][1]].text(rect.get_x() + rect.get_width() / 2,0.05,"NaN",ha='center', va='bottom')
+#             if not label_present:
+#                 axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None", label="N/A")
+#                 label_present = True
+#             else:
+#                 axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None")
+
+# handles, labels = axes[0,0].get_legend_handles_labels()
+# fig.legend(handles, labels, loc="lower center",ncol=5)
+
+# plt.subplots_adjust(wspace=0.14,hspace=0.40,top=0.9,left=0.1,right=0.9,bottom=0.16)
+# image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
+# plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
+# plt.close()
