@@ -81,30 +81,27 @@ for index, trx_phy in enumerate(trx_phy_list):
     bottom_colors = ["C0","C1","C2","C3"]
     trx_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
     trx_dfp = trx_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["TRX PRR"],fill_value=-1)
-    trx_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=bottom_colors)
+    trx_dfp.plot.bar(width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=bottom_colors)
 
     rects = axes[coord[index][0],coord[index][1]].patches
-    bottoms = [rect.get_height() for rect in rects]
-    print(bottoms)
 
     label_present = False
     for rect in rects:
         if rect.get_height() < 0:
-            # axes[coord[index][0],coord[index][1]].text(rect.get_x() + rect.get_width() / 2,0.05,"NaN",ha='center', va='bottom')
             if not label_present:
-                axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None", label="N/A")
+                axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.8, color="red", linestyle="None", label="N/A")
                 label_present = True
             else:
-                axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.5, color="red", linestyle="None")
+                axes[coord[index][0],coord[index][1]].plot(rect.get_x() + rect.get_width() / 2, 0.05, marker='o', markersize=2.8, color="red", linestyle="None")
 
     top_colors = ["C4","C5","C6","C7"]
     if_dfp = tx_complete.loc[tx_complete["TX / RX PHY\nconfiguration"] == trx_phy].copy()
+    if_dfp["IF PRR"] += if_dfp["TRX PRR"]
     if_dfp = if_dfp.pivot_table(index=["Payload overlap"],columns=["Interferer PHY\nconfiguration"],values=["IF PRR"])
-    if_dfp.plot(kind="bar",width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=top_colors,bottom=1)
-    print(if_dfp)
+    if_dfp.plot.bar(width=0.5,ax=axes[coord[index][0],coord[index][1]],legend=False,color=top_colors,zorder=-1)
 
     axes[coord[index][0],coord[index][1]].set_ylim(0,2.05)
-    axes[coord[index][0],coord[index][1]].set_ylabel("PRR")
+    axes[coord[index][0],coord[index][1]].set_ylabel("Combined PRR")
     axes[coord[index][0],coord[index][1]].title.set_text("TX / RX PHY: " + trx_phy)
     axes[coord[index][0],coord[index][1]].title.set_fontsize(14)
     axes[coord[index][0],coord[index][1]].title.set_weight("regular")
