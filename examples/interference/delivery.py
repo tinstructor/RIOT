@@ -107,6 +107,7 @@ for index, trx_phy in enumerate(trx_phy_list):
     axes[coord[index][0],coord[index][1]].title.set_weight("regular")
     axes[coord[index][0],coord[index][1]].xaxis.get_label().set_fontsize(12)
     axes[coord[index][0],coord[index][1]].xaxis.get_label().set_weight("regular")
+    axes[coord[index][0],coord[index][1]].xaxis.labelpad = 8
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_fontsize(12)
     axes[coord[index][0],coord[index][1]].yaxis.get_label().set_weight("regular")
 
@@ -118,7 +119,7 @@ handles.insert(len(handles) - 1,handles.pop(0))
 labels.insert(len(labels) - 1,labels.pop(0))
 fig.legend(handles, labels, loc="lower center",ncol=5)
 
-plt.subplots_adjust(wspace=0.14,hspace=0.40,top=0.9,left=0.1,right=0.9,bottom=0.16)
+plt.subplots_adjust(wspace=0.14,hspace=0.42,top=0.9,left=0.1,right=0.9,bottom=0.16)
 image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
 plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
 plt.close()
