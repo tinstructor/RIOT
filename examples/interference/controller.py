@@ -61,11 +61,12 @@ trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [50,70,90] # in bytes
+if_payload_sizes = [45] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
 if_dest_addr = "22:68:31:23:14:F1:99:37"
 sinr = 0 # in dB
-num_of_tx = 4
+num_of_tx = 10
+pfhr_flag = True
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 # NOTE offset compensation is calculated by means of 2D interpolation. You can get 
@@ -93,28 +94,37 @@ def get_compensation(size_tuple):
     return compensation
 
 # TODO make this function compatible with FSK again
-# TODO also return a list for offsets in PFHR (if flag is set)
-def get_offset_list(phy_tuple):
-    # NOTE phy_tuple(if_idx,trx_idx)
-    udbps = {2:6,3:12,4:6,5:12}
-    tail_bits = 6
-    pfhr_sym = 12
-    ofdm_sym_rate = (8 + (1 / 3))
-    pfhr_duration_us = (pfhr_sym / ofdm_sym_rate) * 1000
-    if_duration_us = ((math.ceil(((if_payload_size * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym) / ofdm_sym_rate) * 1000
-    trx_duration_us = ((math.ceil(((trx_payload_size * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym) / ofdm_sym_rate) * 1000
-    mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
-    return [mid_trx_payload_offset]
-
-def get_payload_overlap(phy_tuple,payload_tuple):
+def get_offset_list(phy_tuple,payload_tuple):
     # NOTE phy_tuple(if_idx,trx_idx)
     # NOTE payload_tuple(if_payload_size,trx_payload_size)
     udbps = {2:6,3:12,4:6,5:12}
     tail_bits = 6
     pfhr_sym = 12
-    if_sym = (math.ceil(((payload_tuple[0] * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym)
-    trx_sym = (math.ceil(((payload_tuple[1] * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym)
-    return if_sym / (trx_sym - pfhr_sym)
+    ofdm_sym_rate = (8 + (1 / 3))
+    pfhr_duration_us = (pfhr_sym / ofdm_sym_rate) * 1000
+    if_duration_us = ((math.ceil(((payload_tuple[0] * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    trx_duration_us = ((math.ceil(((payload_tuple[1] * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    if not pfhr_flag:
+        mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
+        return [mid_trx_payload_offset]
+    else:
+        trx_pfhr_offsets = [overlap_duration - if_duration_us for overlap_duration in ((np.arange(pfhr_sym) + 1) / ofdm_sym_rate) * 1000]
+        return trx_pfhr_offsets
+
+def get_payload_overlap(phy_tuple,payload_tuple,offset):
+    # NOTE phy_tuple(if_idx,trx_idx)
+    # NOTE payload_tuple(if_payload_size,trx_payload_size)
+    udbps = {2:6,3:12,4:6,5:12}
+    tail_bits = 6
+    pfhr_sym = 12
+    ofdm_sym_rate = (8 + (1 / 3))
+    pfhr_duration_us = (pfhr_sym / ofdm_sym_rate) * 1000
+    if_duration_us = ((math.ceil(((payload_tuple[0] * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    trx_duration_us = ((math.ceil(((payload_tuple[1] * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    if not pfhr_flag:
+        return if_duration_us / (trx_duration_us - pfhr_duration_us)
+    else:
+        return (if_duration_us - abs(offset)) / (if_duration_us - pfhr_duration_us)
 
 halt_event = threading.Event()
 
@@ -132,8 +142,8 @@ ifr_cmd = "make term PORT=/dev/ttyUSB8 BOARD=openmote-b"
 for if_payload_size in if_payload_sizes:
     for if_idx, if_phy in if_phy_cfg:
         for trx_idx, trx_phy in trx_phy_cfg:
-            if get_payload_overlap((if_idx,trx_idx),(if_payload_size,trx_payload_size)) <= 1.0:
-                for offset in get_offset_list((if_idx,trx_idx)):
+            for offset in get_offset_list((if_idx,trx_idx),(if_payload_size,trx_payload_size)):
+                if get_payload_overlap((if_idx,trx_idx),(if_payload_size,trx_payload_size),offset) <= 1.0:
                     threading.Timer(1, halt_event.set).start()
                     while True:
                         if halt_event.is_set():
@@ -360,7 +370,10 @@ for if_payload_size in if_payload_sizes:
                     except TimeoutExpired:
                         ifr_shell.kill()
                     
-                    csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
+                    if not pfhr_flag:
+                        csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
+                    else:
+                        csv_filename = "./PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
                     analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d -l %s" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx,ifr_log_filename)
                     if os.path.exists(os.path.dirname(csv_filename)):
                         analyzer_cmd = analyzer_cmd + " -a"
