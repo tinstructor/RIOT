@@ -108,7 +108,7 @@ def get_offset_list(phy_tuple,payload_tuple):
         mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
         return [mid_trx_payload_offset]
     else:
-        trx_pfhr_offsets = [overlap_duration - if_duration_us for overlap_duration in ((np.arange(pfhr_sym) + 1) / ofdm_sym_rate) * 1000]
+        trx_pfhr_offsets = [int(round(overlap_duration - if_duration_us)) for overlap_duration in ((np.arange(pfhr_sym) + 1) / ofdm_sym_rate) * 1000]
         return trx_pfhr_offsets
 
 def get_payload_overlap(phy_tuple,payload_tuple,offset):
@@ -124,7 +124,7 @@ def get_payload_overlap(phy_tuple,payload_tuple,offset):
     if not pfhr_flag:
         return if_duration_us / (trx_duration_us - pfhr_duration_us)
     else:
-        return (if_duration_us - abs(offset)) / (if_duration_us - pfhr_duration_us)
+        return (if_duration_us - abs(offset)) / pfhr_duration_us
 
 halt_event = threading.Event()
 
