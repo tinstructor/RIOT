@@ -95,7 +95,6 @@ for if_payload_size in if_payload_sizes:
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap((phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]]),(row["Interferer payload"],row["TX / RX payload"]),row["Offset"]),axis=1)
-print(tx_complete)
 trx_phy_list = sorted(tx_complete["TX / RX PHY\nconfiguration"].unique().tolist())
 
 fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(16,9))
