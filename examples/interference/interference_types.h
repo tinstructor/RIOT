@@ -51,9 +51,9 @@ typedef enum {
     PHY_CFG_SUB_GHZ_OFDM_2,
     PHY_CFG_SUB_GHZ_OFDM_3,
     PHY_CFG_SUB_GHZ_OFDM_4,
-    // PHY_CFG_SUB_GHZ_OFDM_5,
-    // PHY_CFG_SUB_GHZ_OFDM_6,
-    // PHY_CFG_SUB_GHZ_OFDM_7,
+    PHY_CFG_SUB_GHZ_OFDM_5,
+    PHY_CFG_SUB_GHZ_OFDM_6,
+    PHY_CFG_SUB_GHZ_OFDM_7,
     NUM_PHY_CFG_SUB_GHZ
 } phy_cfg_idx_sub_ghz_t;
 

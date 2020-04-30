@@ -10,8 +10,46 @@ import os
 import atexit
 import sys
 import queue
+import errno
+import csv
+import math
+import re
 
 ON_POSIX = 'posix' in sys.builtin_module_names
+
+class att_experiment:
+    def __init__(self, tx_count, phy):
+        if (tx_count <= 0):
+            raise ValueError("Amount of transmissions can't be negative or zero")
+        self.tx_count = tx_count
+        self.rx_count = 0
+        self.phy = phy
+
+    def get_tx_count(self):
+        return self.tx_count
+
+    def get_rx_count(self):
+        return self.rx_count
+
+    def set_rx_count(self, amount):
+        if (amount < 0):
+            raise ValueError("Can't process a negative amount of receptions")
+        elif (amount > self.tx_count):
+            raise ValueError("Can't process an amount of receptions > transmissions")
+
+        self.rx_count = amount
+
+    def packet_success(self):
+        if (self.rx_count == 0):
+            return 0.0
+        
+        return self.rx_count / self.tx_count
+
+    def packet_loss(self):
+        return 1.0 - self.packet_success()
+
+    def get_phy(self):
+        return self.phy
 
 class Queue(queue.Queue):
     def clear(self):
@@ -57,11 +95,15 @@ attenuation = 0 # in dB
 num_of_tx = 200
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
+LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
+LOG_REGEXP_PHY = re.compile("^.*?PHY")
+experiment_index = 0
+
 halt_event = threading.Event()
 
 # NOTE you might have to change the serial port numbers of the devices
 # depending on the order in which you plugged them into the USB ports
-timing_cmd = "make term PORT=/dev/ttyUSB6 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
+timing_cmd = "make term PORT=/dev/ttyUSB4 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
 
@@ -189,4 +231,38 @@ for trx_payload_size in trx_payload_sizes:
             rx_shell.kill()
 
         csv_filename = "./TX_%dB_AT_%dDBM.csv" % (trx_payload_size,attenuation)
-        # TODO write a new script like analyzer.py
+        current_att_experiment = att_experiment(num_of_tx, trx_phy)
+
+        with open(rx_log_filename, "r") as rx_log:
+            for line in rx_log:
+
+                chomped_line = line.rstrip()
+                pkt_match = re.match(LOG_REGEXP_PKT, chomped_line)
+                phy_match = re.match(LOG_REGEXP_PHY, chomped_line)
+
+                if (pkt_match):
+                    current_att_experiment.set_rx_count(current_att_experiment.get_rx_count() + 1)
+                
+                if (phy_match):
+                    experiment_index += 1
+                    break
+        
+        print("Results of experiment %d:\n" % (experiment_index))
+        print("PHY of TX and RX:\t%s" % (current_att_experiment.get_phy()))
+        print("TRX PRR:\t\t%.2f" % (current_att_experiment.packet_success()))
+        print("---------------------------------------------------")
+
+        csv_filename = "./" + csv_filename
+        if not os.path.exists(os.path.dirname(csv_filename)):
+            append_write = "w"
+
+            try:
+                os.makedirs(os.path.dirname(csv_filename))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+        else:
+            append_write = "a"
+
+        with open(csv_filename, append_write, newline='') as output_file:
+            output_file.write("%s,%.2f\n" % (current_att_experiment.get_phy(),current_att_experiment.packet_success()))
