@@ -23,6 +23,7 @@ class att_experiment:
             raise ValueError("Amount of transmissions can't be negative or zero")
         self.tx_count = tx_count
         self.rx_count = 0
+        self.rssi_sum = 0
         self.phy = phy
 
     def get_tx_count(self):
@@ -38,6 +39,15 @@ class att_experiment:
             raise ValueError("Can't process an amount of receptions > transmissions")
 
         self.rx_count = amount
+
+    def add_rssi(self, amount):
+        self.rssi_sum += amount
+
+    def get_rssi(self):
+        if (self.rx_count == 0):
+            return 0.0
+            
+        return self.rssi_sum / self.rx_count
 
     def packet_success(self):
         if (self.rx_count == 0):
@@ -87,17 +97,18 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (3,"SUN-OFDM 863-870MHz O4 MCS3"), 
-               (6,"SUN-OFDM 863-870MHz O4 MCS4"), (7,"SUN-OFDM 863-870MHz O4 MCS5"),
-               (8,"SUN-OFDM 863-870MHz O4 MCS6")]
-trx_payload_sizes = [25,50,75,100,125] # in bytes
+trx_phy_cfg = [(3,"SUN-OFDM 863-870MHz O4 MCS3")]
+# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (3,"SUN-OFDM 863-870MHz O4 MCS3"), 
+#                (6,"SUN-OFDM 863-870MHz O4 MCS4"), (7,"SUN-OFDM 863-870MHz O4 MCS5"),
+#                (8,"SUN-OFDM 863-870MHz O4 MCS6")]
+trx_payload_sizes = [25]#,50,75,100,125] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
-attenuation = 0 # in dB
-num_of_tx = 250
+attenuation = -110 # in dB
+num_of_tx = 10
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
-LOG_REGEXP_PKT = re.compile("^.*?PKT *?-")
-LOG_REGEXP_PHY = re.compile("^.*?PHY")
+LOG_REGEXP_PKT = re.compile(r"^.*?rssi: (?P<rssi>[+-]?\d+).*?")
+LOG_REGEXP_PHY = re.compile(r"^.*?PHY")
 experiment_index = 0
 
 halt_event = threading.Event()
@@ -231,7 +242,7 @@ for trx_payload_size in trx_payload_sizes:
         except TimeoutExpired:
             rx_shell.kill()
 
-        csv_filename = "./TX_%dB_AT_%dDBM.csv" % (trx_payload_size,attenuation)
+        csv_filename = "./TX_%dB_AT_%dDB.csv" % (trx_payload_size,attenuation)
         current_att_experiment = att_experiment(num_of_tx, trx_phy)
 
         with open(rx_log_filename, "r") as rx_log:
@@ -242,6 +253,8 @@ for trx_payload_size in trx_payload_sizes:
                 phy_match = re.match(LOG_REGEXP_PHY, chomped_line)
 
                 if (pkt_match):
+                    rssi = int(pkt_match.group("rssi"))
+                    current_att_experiment.add_rssi(rssi)
                     current_att_experiment.set_rx_count(current_att_experiment.get_rx_count() + 1)
                 
                 if (phy_match):
@@ -266,4 +279,4 @@ for trx_payload_size in trx_payload_sizes:
             append_write = "a"
 
         with open(csv_filename, append_write, newline='') as output_file:
-            output_file.write("%s,%.2f\n" % (current_att_experiment.get_phy(),current_att_experiment.packet_success()))
+            output_file.write("%s,%.2f,%.2f\n" % (current_att_experiment.get_phy(),current_att_experiment.packet_success(),current_att_experiment.get_rssi()))
