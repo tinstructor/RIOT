@@ -97,14 +97,13 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(3,"SUN-OFDM 863-870MHz O4 MCS3")]
-# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (3,"SUN-OFDM 863-870MHz O4 MCS3"), 
-#                (6,"SUN-OFDM 863-870MHz O4 MCS4"), (7,"SUN-OFDM 863-870MHz O4 MCS5"),
-#                (8,"SUN-OFDM 863-870MHz O4 MCS6")]
-trx_payload_sizes = [25]#,50,75,100,125] # in bytes
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (3,"SUN-OFDM 863-870MHz O4 MCS3"), 
+               (6,"SUN-OFDM 863-870MHz O4 MCS4"), (7,"SUN-OFDM 863-870MHz O4 MCS5"),
+               (8,"SUN-OFDM 863-870MHz O4 MCS6")]
+trx_payload_sizes = [20,55,90,125] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
-attenuation = -110 # in dB
-num_of_tx = 10
+attenuation = -104 # in dB
+num_of_tx = 250
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 LOG_REGEXP_PKT = re.compile(r"^.*?rssi: (?P<rssi>[+-]?\d+).*?")
@@ -263,7 +262,8 @@ for trx_payload_size in trx_payload_sizes:
         
         print("Results of experiment %d:\n" % (experiment_index))
         print("PHY of TX and RX:\t%s" % (current_att_experiment.get_phy()))
-        print("TRX PRR:\t\t%.2f" % (current_att_experiment.packet_success()))
+        print("TRX PRR:\t\t%.3f" % (current_att_experiment.packet_success()))
+        print("Average RSSI:\t\t%.2f" % (current_att_experiment.get_rssi()))
         print("---------------------------------------------------")
 
         csv_filename = "./" + csv_filename
@@ -279,4 +279,4 @@ for trx_payload_size in trx_payload_sizes:
             append_write = "a"
 
         with open(csv_filename, append_write, newline='') as output_file:
-            output_file.write("%s,%.2f,%.2f\n" % (current_att_experiment.get_phy(),current_att_experiment.packet_success(),current_att_experiment.get_rssi()))
+            output_file.write("%s,%.3f,%.2f\n" % (current_att_experiment.get_phy(),current_att_experiment.packet_success(),current_att_experiment.get_rssi()))
