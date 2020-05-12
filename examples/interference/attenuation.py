@@ -97,14 +97,14 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(7,"SUN-OFDM 863-870MHz O4 MCS5")]
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
 # trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (3,"SUN-OFDM 863-870MHz O4 MCS3"), 
-#                (6,"SUN-OFDM 863-870MHz O4 MCS4"), (7,"SUN-OFDM 863-870MHz O4 MCS5")]#,
+#                (6,"SUN-OFDM 863-870MHz O4 MCS4")]#, (7,"SUN-OFDM 863-870MHz O4 MCS5")]#,
 #                #(8,"SUN-OFDM 863-870MHz O4 MCS6")]
-trx_payload_sizes = [20,70,120] # in bytes
+trx_payload_sizes = [127] # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
-attenuation = -90 # in dB
-num_of_tx = 160
+attenuation = -99.5 # in dB
+num_of_tx = 200
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 LOG_REGEXP_PKT = re.compile(r"^.*?rssi: (?P<rssi>[+-]?\d+).*?")
