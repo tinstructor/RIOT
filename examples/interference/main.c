@@ -341,8 +341,8 @@ static void *thread_handler(void *arg)
 
 static int numbyte_handler(int argc, char **argv)
 {
-    if (argc != 2 || atoi(argv[1]) < 1 || atoi(argv[1]) > 128) {
-        printf("usage: %s <# of %s L2 payload bytes [1-128]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
+    if (argc != 2 || atoi(argv[1]) < 1 || atoi(argv[1]) > 255) {
+        printf("usage: %s <# of %s L2 payload bytes [1-255]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
         return 1;
     }
 
