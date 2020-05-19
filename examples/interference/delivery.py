@@ -13,9 +13,9 @@ rc("font",**{"family":"sans-serif","weight":"regular","sans-serif":["Fira Sans"]
 
 extension = "png"
 transparent_flag = False
-pfhr_flag = True
+pfhr_flag = False
 trx_payload_size = 120 # in bytes
-if_payload_sizes = [45] # in bytes
+if_payload_sizes = [20,25,30,35,40] # in bytes
 
 def get_offset_list(phy_tuple,payload_tuple):
     # NOTE phy_tuple(if_idx,trx_idx)
@@ -95,6 +95,7 @@ for if_payload_size in if_payload_sizes:
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap((phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]]),(row["Interferer payload"],row["TX / RX payload"]),row["Offset"]),axis=1)
+tx_complete["IF PRR"] = tx_complete.apply(lambda row: random.random(),axis=1) #TODO use actual values
 trx_phy_list = sorted(tx_complete["TX / RX PHY\nconfiguration"].unique().tolist())
 
 fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(16,9))
