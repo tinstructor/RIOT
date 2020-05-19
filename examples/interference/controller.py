@@ -54,7 +54,7 @@ def exit_handler():
 
 atexit.register(exit_handler)
 
-# NOTE changes the following set of values before starting the script in order
+# NOTE change the following set of values before starting the script in order
 # to reflect the correct scenario
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
@@ -63,13 +63,17 @@ if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1
 trx_payload_size = 255 # in bytes
 trx_dest_addr = "22:68:31:23:9D:F1:96:37"
 if_dest_addr = "22:68:31:23:14:F1:99:37"
-sinr = 0 # in dB
+sir = 0 # in dB
 num_of_tx = 10
 pfhr_flag = True
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 # NOTE offset compensation is calculated by means of 2D interpolation. You can get 
 # the appropriate compensation by calling rbf(if_payload_size,trx_payload_size)
+# TODO add values for x (= if_payload_size) going to 370 and y (= trx_payload_size)
+# going to 260 so that the interpolation is accurate for all selected payload sizes.
+# However it may be faster to fix trx_payload_size to 255 and just go with 1D inter-
+# polation altogether
 x = np.ogrid[20:130:10]
 x = np.tile(x,11)
 y = np.ogrid[20:130:10]
@@ -362,9 +366,9 @@ for if_idx, if_phy in if_phy_cfg:
                     ifr_shell.kill()
                 
                 if not pfhr_flag:
-                    csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
+                    csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sir)
                 else:
-                    csv_filename = "./PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sinr)
+                    csv_filename = "./PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sir)
                 analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d -l %s" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx,ifr_log_filename)
                 if os.path.exists(os.path.dirname(csv_filename)):
                     analyzer_cmd = analyzer_cmd + " -a"
