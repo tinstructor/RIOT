@@ -98,13 +98,12 @@ atexit.register(exit_handler)
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
-# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (3,"SUN-OFDM 863-870MHz O4 MCS3"), 
-#                (6,"SUN-OFDM 863-870MHz O4 MCS4")]#, (7,"SUN-OFDM 863-870MHz O4 MCS5")]#,
-#                #(8,"SUN-OFDM 863-870MHz O4 MCS6")]
-trx_payload_sizes = [127] # in bytes
-trx_dest_addr = "22:68:31:23:9D:F1:96:37"
-attenuation = -99.5 # in dB
-num_of_tx = 200
+# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+#                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+trx_payload_sizes = [255] # in bytes
+trx_dest_addr = "22:68:31:23:2F:4A:16:3A"
+attenuation = 39 # in dB
+num_of_tx = 10
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 LOG_REGEXP_PKT = re.compile(r"^.*?rssi: (?P<rssi>[+-]?\d+).*?")
@@ -115,9 +114,9 @@ halt_event = threading.Event()
 
 # NOTE you might have to change the serial port numbers of the devices
 # depending on the order in which you plugged them into the USB ports
-timing_cmd = "make term PORT=/dev/ttyUSB4 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
+timing_cmd = "make term PORT=/dev/ttyUSB8 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
-tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
+tx_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 
 for trx_payload_size in trx_payload_sizes:
     for trx_idx, trx_phy in trx_phy_cfg:

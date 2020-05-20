@@ -39,7 +39,7 @@ typedef enum {
 typedef struct {
     kernel_pid_t iface;
     char dest[24];
-    char payload[129];
+    char payload[493];
     mutex_t lock;
 } if_tx_t;
 

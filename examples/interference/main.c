@@ -341,17 +341,17 @@ static void *thread_handler(void *arg)
 
 static int numbyte_handler(int argc, char **argv)
 {
-    if (argc != 2 || atoi(argv[1]) < 1 || atoi(argv[1]) > 236) {
-        printf("usage: %s <# of %s L2 payload bytes [1-236]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
+    if (argc != 2 || atoi(argv[1]) < 1 || atoi(argv[1]) > 492) {
+        printf("usage: %s <# of %s L2 payload bytes [1-492]>\n",argv[0],(!strcmp("numbytesub",argv[0]) ? "sub-GHz" : "2.4GHz"));
         return 1;
     }
 
 #ifdef MODULE_AT86RF215
     if (!strcmp("numbytesub",argv[0])) {
         // NOTE enters this block when strings are equal
-        uint8_t payload_size = atoi(argv[1]);
+        uint16_t payload_size = atoi(argv[1]);
         char *payload = malloc(sizeof(char) * payload_size + 1);
-        for (uint8_t i = 0; i < payload_size; i++) {
+        for (uint16_t i = 0; i < payload_size; i++) {
             memset(payload + i, (i % 10) +'0', 1);
         }
         payload[payload_size] = '\0';
@@ -363,9 +363,9 @@ static int numbyte_handler(int argc, char **argv)
 #if (GNRC_NETIF_NUMOF >= 2)
     else {
         // NOTE enters this block when strings are not equal
-        uint8_t payload_size = atoi(argv[1]);
+        uint16_t payload_size = atoi(argv[1]);
         char *payload = malloc(sizeof(char) * payload_size + 1);
-        for (uint8_t i = 0; i < payload_size; i++) {
+        for (uint16_t i = 0; i < payload_size; i++) {
             memset(payload + i, (i % 10) +'0', 1);
         }
         payload[payload_size] = '\0';
