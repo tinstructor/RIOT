@@ -56,16 +56,18 @@ atexit.register(exit_handler)
 
 # NOTE change the following set of values before starting the script in order
 # to reflect the correct scenario
+# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+# if_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 255 # in bytes
-trx_dest_addr = "22:68:31:23:9D:F1:96:37"
-if_dest_addr = "22:68:31:23:14:F1:99:37"
+trx_dest_addr = "22:68:31:23:2F:4A:16:3A"
+if_dest_addr = "22:68:31:23:14:F4:D2:3B"
 sir = 0 # in dB
-num_of_tx = 10
-pfhr_flag = True
+num_of_tx = 400
+pfhr_flag = False
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 # NOTE offset compensation is calculated by means of 2D interpolation. You can get 
@@ -122,7 +124,8 @@ def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
         mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
         return [mid_trx_payload_offset]
     else:
-        trx_pfhr_offsets = [int(round(overlap_duration - if_duration_us)) for overlap_duration in ([4,6,12] / ofdm_sym_rate) * 1000]
+        overlap_durations_us = [(overlapping_symbols / ofdm_sym_rate) * 1000 for overlapping_symbols in [4,6,12]]
+        trx_pfhr_offsets = [int(round(overlap_duration_us - if_duration_us)) for overlap_duration_us in overlap_durations_us]
         return trx_pfhr_offsets
 
 halt_event = threading.Event()
@@ -131,9 +134,9 @@ halt_event = threading.Event()
 # depending on the order in which you plugged them into the USB ports
 timing_cmd = "make term PORT=/dev/ttyUSB8 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
-tx_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
-ift_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
-ifr_cmd = "make term PORT=/dev/ttyUSB7 BOARD=openmote-b"
+ifr_cmd = "make term PORT=/dev/ttyUSB3 BOARD=openmote-b"
+tx_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
+ift_cmd = "make term PORT=/dev/ttyUSB7 BOARD=openmote-b"
 
 for if_idx, if_phy in if_phy_cfg:
     for trx_idx, trx_phy in trx_phy_cfg:
@@ -366,7 +369,7 @@ for if_idx, if_phy in if_phy_cfg:
                     ifr_shell.kill()
                 
                 if not pfhr_flag:
-                    csv_filename = "./IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sir)
+                    csv_filename = "./PP_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sir)
                 else:
                     csv_filename = "./PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv" % (if_payload_size,trx_payload_size,offset,sir)
                 analyzer_cmd = "python3 analyzer.py %s %s -i \"%s\" -t \"%s\" -n %d -l %s" % (rx_log_filename,csv_filename,if_phy,trx_phy,num_of_tx,ifr_log_filename)
@@ -379,3 +382,4 @@ for if_idx, if_phy in if_phy_cfg:
                     py_shell.kill()
                     outs, errs = py_shell.communicate()
                 print(outs)
+
