@@ -97,9 +97,9 @@ atexit.register(exit_handler)
 
 # NOTE changes the following set of values before starting the script in order
 # to reflect the correct scenario
-trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
-# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-#                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
+trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_sizes = [255] # in bytes
 trx_dest_addr = "22:68:31:23:2F:4A:16:3A"
 attenuation = 39 # in dB

@@ -11,7 +11,7 @@ import atexit
 import sys
 import queue
 import numpy as np
-from scipy import interpolate
+import scipy.optimize
 import math
 
 ON_POSIX = 'posix' in sys.builtin_module_names
@@ -70,12 +70,18 @@ num_of_tx = 400
 pfhr_flag = False
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
-# NOTE offset compensation is calculated by means of 2D interpolation. You can get 
-# the appropriate compensation by calling rbf(if_payload_size,trx_payload_size)
-# TODO add values for x (= if_payload_size) going to 370 and y (= trx_payload_size)
-# going to 260 so that the interpolation is accurate for all selected payload sizes.
-# However it may be faster to fix trx_payload_size to 255 and just go with 1D inter-
-# polation altogether
+def fitPlaneLTSQ(XYZ):
+    (rows,cols) = XYZ.shape
+    G = np.ones((rows,3))
+    G[:,0] = XYZ[:,0]  #X
+    G[:,1] = XYZ[:,1]  #Y
+    Z = XYZ[:,2]
+    (a,b,c),resid,rank,s = np.linalg.lstsq(G,Z,rcond=None)
+    normal = (a,b,-1)
+    nn = np.linalg.norm(normal)
+    normal = normal / nn
+    return (c,normal)
+
 x = np.ogrid[20:130:10]
 x = np.tile(x,11)
 y = np.ogrid[20:130:10]
@@ -91,10 +97,14 @@ z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
               380,332,284,242,194,152,104,62,20,-28,-70,
               428,380,332,284,242,194,152,104,62,20,-28,
               476,428,380,332,284,242,194,152,104,62,20])
-rbf = interpolate.Rbf(x,y,z)
+
+data = np.stack((x,y,z),axis=-1)
+c,normal = fitPlaneLTSQ(data)
 
 def get_compensation(if_pls,trx_pls):
-    compensation = int(round(rbf(if_pls,trx_pls).tolist()))
+    point = np.array([0.0,0.0,c])
+    d = -point.dot(normal)
+    compensation = int(round((-normal[0]*if_pls-normal[1]*trx_pls-d)*1./normal[2]))
     return compensation
 
 def get_if_payload_sizes(if_idx,trx_idx):
