@@ -56,15 +56,15 @@ atexit.register(exit_handler)
 
 # NOTE change the following set of values before starting the script in order
 # to reflect the correct scenario
-# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
+# trx_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-# if_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
+# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 255 # in bytes
-trx_dest_addr = "22:68:31:23:2F:4A:16:3A"
-if_dest_addr = "22:68:31:23:14:F4:D2:3B"
+trx_dest_addr = "22:68:31:23:14:F4:D2:3B"
+if_dest_addr = "22:68:31:23:2F:4A:16:3A"
 sir = 0 # in dB
 num_of_tx = 400
 pfhr_flag = False
@@ -109,13 +109,13 @@ def get_compensation(if_pls,trx_pls):
 
 def get_if_payload_sizes(if_idx,trx_idx):
     if not pfhr_flag:
-        if (trx_idx == 2 or trx_idx == 4) and (if_idx == 2 or if_idx == 4):
+        if trx_idx in [2,4] and if_idx in [2,4]:
             return [21,54,118,182]
-        elif (trx_idx == 2 or trx_idx == 4) and (if_idx == 3 or if_idx == 5):
+        elif trx_idx in [2,4] and if_idx in [3,5]:
             return [21,108,237,364]
-        elif (trx_idx == 3 or trx_idx == 5) and (if_idx == 2 or if_idx == 4):
+        elif trx_idx in [3,5] and if_idx in [2,4]:
             return [21,22,54,86]
-        elif (trx_idx == 3 or trx_idx == 5) and (if_idx == 3 or if_idx == 5):
+        elif trx_idx in [3,5] and if_idx in [3,5]:
             return [21,45,108,173]
         else:
             raise ValueError("Index combination doesn't exist!")
@@ -131,7 +131,7 @@ def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
     if_duration_us = ((math.ceil(((if_pls * 8) + tail_bits) / udbps[if_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
     trx_duration_us = ((math.ceil(((trx_pls * 8) + tail_bits) / udbps[trx_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
     if not pfhr_flag:
-        mid_trx_payload_offset = int(round(((trx_duration_us + pfhr_duration_us) / 2) - (if_duration_us / 2)))
+        mid_trx_payload_offset = int(round((trx_duration_us + pfhr_duration_us - if_duration_us) / 2))
         return [mid_trx_payload_offset]
     else:
         overlap_durations_us = [(overlapping_symbols / ofdm_sym_rate) * 1000 for overlapping_symbols in [4,6,12]]

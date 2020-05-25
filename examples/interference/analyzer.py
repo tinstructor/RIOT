@@ -178,9 +178,9 @@ for e in experiments:
     print("Results of experiment %d:\n" %(e))
     print("PHY of TX and RX:\t%s" % (experiments[e].get_trx_phy()))
     print("PHY of IF:\t\t%s" % (experiments[e].get_if_phy()))
-    print("TRX PRR:\t\t%.2f" % (experiments[e].trx_packet_success()))
+    print("TRX PRR:\t\t%.3f" % (experiments[e].trx_packet_success()))
     if args.ifr_logfile is not None:
-        print("IF PRR:\t\t\t%.2f" % (experiments[e].if_packet_success()))
+        print("IF PRR:\t\t\t%.3f" % (experiments[e].if_packet_success()))
     print("---------------------------------------------------")
 
 csv_filename = "./" + csv_filename
@@ -199,7 +199,7 @@ else:
 with open(csv_filename, append_write, newline='') as output_file:
     if args.ifr_logfile is not None:
         for e in experiments:
-            output_file.write("%s,%s,%.2f,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].trx_packet_success(),experiments[e].if_packet_success()))
+            output_file.write("%s,%s,%.3f,%.3f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].trx_packet_success(),experiments[e].if_packet_success()))
     else:
         for e in experiments:
-            output_file.write("%s,%s,%.2f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].trx_packet_success()))
+            output_file.write("%s,%s,%.3f\n" % (experiments[e].get_trx_phy(),experiments[e].get_if_phy(),experiments[e].trx_packet_success()))
