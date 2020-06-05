@@ -13,7 +13,9 @@ import queue
 import numpy as np
 import scipy.optimize
 import math
+import random
 
+random.seed(datetime.datetime.now())
 ON_POSIX = 'posix' in sys.builtin_module_names
 
 class Queue(queue.Queue):
@@ -59,15 +61,15 @@ atexit.register(exit_handler)
 # trx_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
-if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+if_phy_cfg = [(5,"SUN-OFDM 863-870MHz O3 MCS2")]
+# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+#               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 255 # in bytes
 trx_dest_addr = "22:68:31:23:14:F4:D2:3B"
 if_dest_addr = "22:68:31:23:2F:4A:16:3A"
 sir = 0 # in dB
-num_of_tx = 400
-pfhr_flag = False
+num_of_tx = 50
+pfhr_flag = True
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 def fitPlaneLTSQ(XYZ):
@@ -105,6 +107,9 @@ def get_compensation(if_pls,trx_pls):
     point = np.array([0.0,0.0,c])
     d = -point.dot(normal)
     compensation = int(round((-normal[0]*if_pls-normal[1]*trx_pls-d)*1./normal[2]))
+    # NOTE random offset to simulate phase difference between useful
+    # transmitter and interferer
+    compensation += random.randint(-60,60)
     return compensation
 
 def get_if_payload_sizes(if_idx,trx_idx):

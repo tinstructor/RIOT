@@ -12,10 +12,10 @@ import os.path
 rc("font",**{"family":"sans-serif","weight":"regular","sans-serif":["Fira Sans"]})
 
 extension = "pdf"
-transparent_flag = False
-pfhr_flag = False
+transparent_flag = True
+pfhr_flag = True
 trx_payload_size = 255 # in bytes
-if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] # in bytes
+if_payload_sizes = [255]#[21,22,45,54,86,108,118,173,182,237,364] # in bytes
 
 def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
     udbps = {2:6,3:12,4:6,5:12}
@@ -46,9 +46,9 @@ def get_payload_overlap(phy_tuple,payload_tuple,offset):
     if_duration_us = ((math.ceil(((payload_tuple[0] * 8) + tail_bits) / udbps[phy_tuple[0]]) + pfhr_sym) / ofdm_sym_rate) * 1000
     trx_duration_us = ((math.ceil(((payload_tuple[1] * 8) + tail_bits) / udbps[phy_tuple[1]]) + pfhr_sym) / ofdm_sym_rate) * 1000
     if not pfhr_flag:
-        return if_duration_us / (trx_duration_us - pfhr_duration_us)
+        return round(if_duration_us / (trx_duration_us - pfhr_duration_us),2)
     else:
-        return (if_duration_us - abs(offset)) / pfhr_duration_us
+        return round((if_duration_us - abs(offset)) / pfhr_duration_us,2)
 
 tx_complete = pd.DataFrame()
 for if_payload_size in if_payload_sizes:
