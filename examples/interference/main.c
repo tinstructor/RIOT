@@ -43,11 +43,11 @@ static char stack[THREAD_STACKSIZE_MAIN];
 static gnrc_netif_t *netif = NULL;
 
 #ifdef MODULE_AT86RF215
-static if_tx_t tx_sub_ghz = {.iface = IFACE_SUB_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_120B};
+static if_tx_t tx_sub_ghz = {.iface = IFACE_SUB_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_255B};
 static phy_cfg_idx_sub_ghz_t current_phy_cfg_idx_sub_ghz;
 static mutex_t phy_cfg_sub_ghz_lock;
 #if (GNRC_NETIF_NUMOF >= 2)
-static if_tx_t tx_2_4_ghz = {.iface = IFACE_2_4_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_120B};
+static if_tx_t tx_2_4_ghz = {.iface = IFACE_2_4_GHZ, .dest = TRX_DEST_ADDR, .payload = TX_255B};
 static phy_cfg_idx_2_4_ghz_t current_phy_cfg_idx_2_4_ghz;
 static mutex_t phy_cfg_2_4_ghz_lock;
 #endif /* (GNRC_NETIF_NUMOF >= 2) */

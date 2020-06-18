@@ -11,7 +11,8 @@ import atexit
 import sys
 import queue
 import numpy as np
-import scipy.optimize
+# import scipy.optimize
+from scipy import interpolate
 import math
 import random
 
@@ -61,52 +62,25 @@ atexit.register(exit_handler)
 # trx_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-if_phy_cfg = [(5,"SUN-OFDM 863-870MHz O3 MCS2")]
-# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-#               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")],
+              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 255 # in bytes
 trx_dest_addr = "22:68:31:23:14:F4:D2:3B"
 if_dest_addr = "22:68:31:23:2F:4A:16:3A"
 sir = 0 # in dB
-num_of_tx = 50
-pfhr_flag = True
+num_of_tx = 400
+pfhr_flag = False
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
-def fitPlaneLTSQ(XYZ):
-    (rows,cols) = XYZ.shape
-    G = np.ones((rows,3))
-    G[:,0] = XYZ[:,0]  #X
-    G[:,1] = XYZ[:,1]  #Y
-    Z = XYZ[:,2]
-    (a,b,c),resid,rank,s = np.linalg.lstsq(G,Z,rcond=None)
-    normal = (a,b,-1)
-    nn = np.linalg.norm(normal)
-    normal = normal / nn
-    return (c,normal)
+x = np.array([21,22,30,45,54,60,70,86,90,108,118,130,140,150,160,173,182,190,200,210,220,237,240,255,260,270,280,290,300,310,320,330,340,350,364,370,380,390,400])
+y = np.array([1090,1085,1043,965,918,887,835,752,731,638,586,570,518,466,414,370,323,258,206,160,130,37,30,20,0,-70,-130,-180,-230,-270,-310,-350,-390,-430,-490,-510,-570,-620,-680])
 
-x = np.ogrid[20:130:10]
-x = np.tile(x,11)
-y = np.ogrid[20:130:10]
-y = np.repeat(y,11)
-z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
-              62,20,-28,-70,-118,-154,-208,-256,-298,-352,-388,
-              104,62,20,-28,-70,-118,-154,-208,-256,-298,-352,
-              152,104,62,20,-28,-70,-118,-154,-208,-256,-298,
-              194,152,104,62,20,-28,-70,-118,-154,-208,-256,
-              242,194,152,104,62,20,-28,-70,-118,-154,-208,
-              284,242,194,152,104,62,20,-28,-70,-118,-154,
-              332,284,242,194,152,104,62,20,-28,-70,-118,
-              380,332,284,242,194,152,104,62,20,-28,-70,
-              428,380,332,284,242,194,152,104,62,20,-28,
-              476,428,380,332,284,242,194,152,104,62,20])
-
-data = np.stack((x,y,z),axis=-1)
-c,normal = fitPlaneLTSQ(data)
+f = interpolate.interp1d(x,y)
 
 def get_compensation(if_pls,trx_pls):
-    point = np.array([0.0,0.0,c])
-    d = -point.dot(normal)
-    compensation = int(round((-normal[0]*if_pls-normal[1]*trx_pls-d)*1./normal[2]))
+    # TODO make 2D, current interpolation only works if trx_pls = 255B
+    compensation = int(np.round(f(if_pls)))
     # NOTE random offset to simulate phase difference between useful
     # transmitter and interferer
     compensation += random.randint(-60,60)
