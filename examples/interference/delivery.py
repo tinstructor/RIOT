@@ -11,11 +11,12 @@ import os.path
 
 rc("font",**{"family":"sans-serif","weight":"regular","sans-serif":["Fira Sans"]})
 
-extension = "pdf"
-transparent_flag = True
-pfhr_flag = True
+extension = "png"
+transparent_flag = False
+pfhr_flag = False
+sir = 3 # in dB
 trx_payload_size = 255 # in bytes
-if_payload_sizes = [255]#[21,22,45,54,86,108,118,173,182,237,364] # in bytes
+if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] # in bytes
 
 def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
     udbps = {2:6,3:12,4:6,5:12}
@@ -66,9 +67,9 @@ for if_payload_size in if_payload_sizes:
     tx_raw = pd.DataFrame()
     for offset in offset_list:
         if not pfhr_flag:
-            filename = "/home/relsas/RIOT-benpicco/examples/interference/PP_IF_%dB_TX_%dB_OF_%dUS_SIR_0DB.csv"%(if_payload_size,trx_payload_size,offset)
+            filename = "/home/relsas/RIOT-benpicco/examples/interference/PP_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(if_payload_size,trx_payload_size,offset,sir)
         else:
-            filename = "/home/relsas/RIOT-benpicco/examples/interference/PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_0DB.csv"%(if_payload_size,trx_payload_size,offset)
+            filename = "/home/relsas/RIOT-benpicco/examples/interference/PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(if_payload_size,trx_payload_size,offset,sir)
         if os.path.isfile(filename):
             if tx_raw.empty:
                 tx_raw = pd.read_csv(filename,header=None)
@@ -153,8 +154,8 @@ else:
 
 plt.subplots_adjust(wspace=0.09,hspace=0.16,top=0.9,left=0.1,right=0.9,bottom=0.15)
 if not pfhr_flag:
-    image_file = "IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
+    image_file = "PP_IF_%d-%dB_TX_%dB_SIR_%dDB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,sir,extension)
 else:
-    image_file = "PFHR_IF_%d-%dB_TX_%dB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,extension)
+    image_file = "PFHR_IF_%d-%dB_TX_%dB_SIR_%dDB.%s" % (if_payload_sizes[0],if_payload_sizes[-1],trx_payload_size,sir,extension)
 plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
 plt.close()

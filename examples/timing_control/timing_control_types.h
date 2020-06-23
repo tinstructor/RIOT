@@ -52,6 +52,7 @@ typedef struct {
 typedef struct {
     int64_t offset;
     int32_t compensation;
+    uint16_t absphase;
     mutex_t lock;
 } tc_offset_t;
 

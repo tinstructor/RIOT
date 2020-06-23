@@ -59,12 +59,12 @@ atexit.register(exit_handler)
 
 # NOTE change the following set of values before starting the script in order
 # to reflect the correct scenario
-# trx_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
-trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
-               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
-if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1")],
-              (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+trx_phy_cfg = [(4,"SUN-OFDM 863-870MHz O3 MCS1")]
+# trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+#                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
+if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2")]
+# if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
+#               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 trx_payload_size = 255 # in bytes
 trx_dest_addr = "22:68:31:23:14:F4:D2:3B"
 if_dest_addr = "22:68:31:23:2F:4A:16:3A"
@@ -81,9 +81,6 @@ f = interpolate.interp1d(x,y)
 def get_compensation(if_pls,trx_pls):
     # TODO make 2D, current interpolation only works if trx_pls = 255B
     compensation = int(np.round(f(if_pls)))
-    # NOTE random offset to simulate phase difference between useful
-    # transmitter and interferer
-    compensation += random.randint(-60,60)
     return compensation
 
 def get_if_payload_sizes(if_idx,trx_idx):

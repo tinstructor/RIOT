@@ -51,7 +51,7 @@ xtimer_t phy_cfg_timer;
 
 static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
 static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX_PIN};
-static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US, .compensation = COMPENSATION_US};
+static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US, .compensation = COMPENSATION_US, .absphase = OFDM_SYM_PERIOD_US/2};
 static tc_phy_t if_trx_phy = {.phy = SUN_FSK_OM1};
 static tc_phy_t if_if_phy = {.phy = SUN_FSK_OM1};
 static tc_numtx_t if_numtx = {.numtx = NUM_OF_TX};
@@ -160,6 +160,7 @@ static void *thread_tc_handler(void *arg)
     while (experiments < if_if_numphy.numphy) {
         mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
+        // TODO add random phase offset within plus minus half an OFDM symbol
         uint32_t compensated_offset = labs(if_tx_offset.offset + if_tx_offset.compensation);
         xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - compensated_offset - PULSE_DURATION_US);
         gpio_set(if_tx_pin_cfg.first_pin);
@@ -259,6 +260,26 @@ static int comp_handler(int argc, char **argv)
     }
     else {
         DEBUG("experiment has already started: can't set offset\n");
+    }
+
+    return 0;
+}
+
+static int absphase_handler(int argc, char **argv)
+{
+    if (argc != 2) {
+        printf("usage: %s <useconds>\n", argv[0]);
+        return 1;
+    }
+
+    if (!get_has_started()) {
+        uint16_t absphase = atoi(argv[1]);
+        mutex_lock(&if_tx_offset.lock);
+        if_tx_offset.absphase = absphase;
+        mutex_unlock(&if_tx_offset.lock);
+    }
+    else {
+        DEBUG("experiment has already started: can't set absphase\n");
     }
 
     return 0;
@@ -386,6 +407,7 @@ static const shell_command_t shell_commands[] = {
     {"start", "starts the interference experiment", start_handler},
     {"offset", "sets an IF/TX offset (in microseconds)", offset_handler},
     {"comp", "sets an IF/TX offset compensation (in microseconds)", comp_handler},
+    {"absphase", "sets an IF/TX random phase bound (in microseconds)", absphase_handler},
     {"numtx", "sets the number of messages transmitted for each IF/TX PHY combination", numtx_handler},
     {"ifnumphy", "sets the number of IF PHY reconfigurations", numphy_handler},
     {"trxnumphy", "sets the number of TRX PHY reconfigurations", numphy_handler},
