@@ -23,6 +23,7 @@ USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
 USEMODULE += xtimer
+USEMODULE += random
 
 # Specify all required features
 FEATURES_REQUIRED += periph_gpio

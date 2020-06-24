@@ -72,6 +72,7 @@ sir = 0 # in dB
 num_of_tx = 400
 pfhr_flag = False
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
+ofdm_sym_duration = 120 # in useconds
 
 x = np.array([21,22,30,45,54,60,70,86,90,108,118,130,140,150,160,173,182,190,200,210,220,237,240,255,260,270,280,290,300,310,320,330,340,350,364,370,380,390,400])
 y = np.array([1090,1085,1043,965,918,887,835,752,731,638,586,570,518,466,414,370,323,258,206,160,130,37,30,20,0,-70,-130,-180,-230,-270,-310,-350,-390,-430,-490,-510,-570,-620,-680])
@@ -245,6 +246,18 @@ for if_idx, if_phy in if_phy_cfg:
                 timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
                 try:
                     timing_shell.communicate(input="comp %s\n" % (get_compensation(if_payload_size,trx_payload_size)),timeout=2)
+                except TimeoutExpired:
+                    timing_shell.kill()
+
+                threading.Timer(1, halt_event.set).start()
+                while True:
+                    if halt_event.is_set():
+                        halt_event.clear()
+                        break
+
+                timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
+                try:
+                    timing_shell.communicate(input="absphase %s\n" % (ofdm_sym_duration / 2),timeout=2)
                 except TimeoutExpired:
                     timing_shell.kill()
 

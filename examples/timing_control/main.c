@@ -31,6 +31,7 @@
 #include "shell_commands.h"
 #include "board.h"
 #include "xtimer.h"
+#include "random.h"
 #include "periph/gpio.h"
 #include "periph/pm.h"
 #include "timing_control_constants.h"
@@ -51,7 +52,7 @@ xtimer_t phy_cfg_timer;
 
 static tc_start_flag_t start_flag = {.can_start = false, .has_started = false};
 static tc_pin_cfg_t if_tx_pin_cfg = {.first_pin = TX_TX_PIN, .second_pin = IF_TX_PIN};
-static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US, .compensation = COMPENSATION_US, .absphase = OFDM_SYM_PERIOD_US/2};
+static tc_offset_t if_tx_offset = {.offset = IF_TX_OFFSET_US, .compensation = COMPENSATION_US, .absphase = 0};
 static tc_phy_t if_trx_phy = {.phy = SUN_FSK_OM1};
 static tc_phy_t if_if_phy = {.phy = SUN_FSK_OM1};
 static tc_numtx_t if_numtx = {.numtx = NUM_OF_TX};
@@ -142,6 +143,8 @@ static void *thread_tc_handler(void *arg)
     uint8_t phy_reconfigs = 0;
     uint8_t experiments = 0;
 
+    random_init(_xtimer_now());
+
     // FIXME yielding a thread only causes threads of the same or higher priority to execute.
     // Hence, this thread will be stuck in this loop forever (unless the user button is pressed)
     // because the main thread has lower priority and issuing the "start" command has no effect.
@@ -160,15 +163,15 @@ static void *thread_tc_handler(void *arg)
     while (experiments < if_if_numphy.numphy) {
         mutex_lock(&if_tx_offset.lock);
         mutex_lock(&if_tx_pin_cfg.lock);
-        // TODO add random phase offset within plus minus half an OFDM symbol
+        int32_t phase_delay = (random_uint32() % (2 * if_tx_offset.absphase + 1)) - if_tx_offset.absphase;
         uint32_t compensated_offset = labs(if_tx_offset.offset + if_tx_offset.compensation);
         xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - compensated_offset - PULSE_DURATION_US);
         gpio_set(if_tx_pin_cfg.first_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, compensated_offset);
+        xtimer_periodic_wakeup(&last_wup_tc, compensated_offset + phase_delay);
         gpio_set(if_tx_pin_cfg.second_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - compensated_offset);
+        xtimer_periodic_wakeup(&last_wup_tc, PULSE_DURATION_US - compensated_offset - phase_delay);
         gpio_clear(if_tx_pin_cfg.first_pin);
-        xtimer_periodic_wakeup(&last_wup_tc, compensated_offset);
+        xtimer_periodic_wakeup(&last_wup_tc, compensated_offset + phase_delay);
         gpio_clear(if_tx_pin_cfg.second_pin);
         mutex_unlock(&if_tx_pin_cfg.lock);
         mutex_unlock(&if_tx_offset.lock);
@@ -267,16 +270,27 @@ static int comp_handler(int argc, char **argv)
 
 static int absphase_handler(int argc, char **argv)
 {
-    if (argc != 2) {
-        printf("usage: %s <useconds>\n", argv[0]);
+    if (argc != 2 || atoi(argv[1]) < 0) {
+        printf("usage: %s <useconds> (non-negative)\n", argv[0]);
         return 1;
     }
 
     if (!get_has_started()) {
         uint16_t absphase = atoi(argv[1]);
+        bool ap_oob_flag = false;
         mutex_lock(&if_tx_offset.lock);
-        if_tx_offset.absphase = absphase;
+        if (labs(if_tx_offset.offset + if_tx_offset.compensation) < absphase) {
+            ap_oob_flag = true;
+        }
+        else {
+            if_tx_offset.absphase = absphase;
+        }
         mutex_unlock(&if_tx_offset.lock);
+        // NOTE just making sure all mutexes are unlocked before returning 1 on error
+        if (ap_oob_flag) {
+            DEBUG("absphase can't be larger than absolute value of compensated offset\n");
+            return 1;
+        }
     }
     else {
         DEBUG("experiment has already started: can't set absphase\n");

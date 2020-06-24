@@ -49,7 +49,6 @@
 #define PULSE_DURATION_US   (150UL * US_PER_MS)
 // #define PULSE_DURATION_US   (40UL * US_PER_MS)
 #define PHY_CFG_INTERVAL    (20UL * US_PER_MS)
-#define OFDM_SYM_PERIOD_US  120UL
 
 static const msg_t msg_phy_cfg = {.type = TC_MSG_PHY_CFG};
 static const msg_t msg_start = {.type = TC_MSG_START};
