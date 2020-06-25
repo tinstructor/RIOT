@@ -165,7 +165,7 @@ static void *thread_tc_handler(void *arg)
         mutex_lock(&if_tx_pin_cfg.lock);
         int32_t phase_delay = (random_uint32() % (2 * if_tx_offset.absphase + 1)) - if_tx_offset.absphase;
         uint32_t compensated_offset = labs(if_tx_offset.offset + if_tx_offset.compensation);
-        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - compensated_offset - PULSE_DURATION_US);
+        xtimer_periodic_wakeup(&last_wup_tc, TX_WUP_INTERVAL - compensated_offset - phase_delay - PULSE_DURATION_US);
         gpio_set(if_tx_pin_cfg.first_pin);
         xtimer_periodic_wakeup(&last_wup_tc, compensated_offset + phase_delay);
         gpio_set(if_tx_pin_cfg.second_pin);

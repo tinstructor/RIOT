@@ -257,7 +257,7 @@ for if_idx, if_phy in if_phy_cfg:
 
                 timing_shell = subprocess.Popen(shlex.split(timing_cmd),stdin=PIPE,universal_newlines=True)
                 try:
-                    timing_shell.communicate(input="absphase %s\n" % (ofdm_sym_duration / 2),timeout=2)
+                    timing_shell.communicate(input="absphase %s\n" % (int(round(ofdm_sym_duration / 2))),timeout=2)
                 except TimeoutExpired:
                     timing_shell.kill()
 
