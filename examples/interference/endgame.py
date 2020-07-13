@@ -1,0 +1,178 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import math
+from matplotlib import rc
+import os.path
+import datetime
+from itertools import groupby
+
+rc("font",**{"family":"sans-serif","weight":"regular","sans-serif":["Fira Sans"]})
+
+extension = "png"
+transparent_flag = False
+pfhr_flag = False
+trx_payload_size = 255 # in bytes
+if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] # in bytes
+sirs = [-3,0,3,6,9] # in dB
+
+def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
+    udbps = {2:6,3:12,4:6,5:12}
+    tail_bits = 6
+    pfhr_sym = 12
+    ofdm_sym_rate = (8 + (1 / 3))
+    pfhr_duration_us = (pfhr_sym / ofdm_sym_rate) * 1000
+    if_duration_us = ((math.ceil(((if_pls * 8) + tail_bits) / udbps[if_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    trx_duration_us = ((math.ceil(((trx_pls * 8) + tail_bits) / udbps[trx_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    if not pfhr_flag:
+        mid_trx_payload_offset = int(round((trx_duration_us + pfhr_duration_us - if_duration_us) / 2))
+        return [mid_trx_payload_offset]
+    else:
+        overlap_durations_us = [(overlapping_symbols / ofdm_sym_rate) * 1000 for overlapping_symbols in [4,6,12]]
+        trx_pfhr_offsets = [int(round(overlap_duration_us - if_duration_us)) for overlap_duration_us in overlap_durations_us]
+        return trx_pfhr_offsets
+
+def get_payload_overlap(if_idx,trx_idx,if_pls,trx_pls,offset):
+    udbps = {2:6,3:12,4:6,5:12}
+    tail_bits = 6
+    pfhr_sym = 12
+    ofdm_sym_rate = (8 + (1 / 3))
+    pfhr_duration_us = (pfhr_sym / ofdm_sym_rate) * 1000
+    if_duration_us = ((math.ceil(((if_pls * 8) + tail_bits) / udbps[if_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    trx_duration_us = ((math.ceil(((trx_pls * 8) + tail_bits) / udbps[trx_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
+    if not pfhr_flag:
+        return round(if_duration_us / (trx_duration_us - pfhr_duration_us),2)
+    else:
+        return round((if_duration_us - abs(offset)) / pfhr_duration_us,2)
+
+tx_complete = pd.DataFrame()
+for sir in sirs:
+    for if_payload_size in if_payload_sizes:
+        a = [2,3,4,5]
+        b = [2,3,4,5]
+        index_tuples = [(x,y) for x in a for y in b]
+        if not pfhr_flag:
+            offset_list = [get_offsets(if_idx,trx_idx,if_payload_size,trx_payload_size)[0] for if_idx,trx_idx in index_tuples]
+        else:
+            temp_list = [get_offsets(if_idx,trx_idx,if_payload_size,trx_payload_size) for if_idx,trx_idx in index_tuples]
+            offset_list = sum(temp_list,[])
+
+        offset_list = sorted(list(set(offset_list)))
+        
+        tx_raw = pd.DataFrame()
+        for offset in offset_list:
+            if not pfhr_flag:
+                filename = "/home/relsas/RIOT-benpicco/examples/interference/PP_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(if_payload_size,trx_payload_size,offset,sir)
+            else:
+                filename = "/home/relsas/RIOT-benpicco/examples/interference/PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(if_payload_size,trx_payload_size,offset,sir)
+            if os.path.isfile(filename):
+                if tx_raw.empty:
+                    tx_raw = pd.read_csv(filename,header=None)
+                    tx_raw.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","TRX PRR","IF PRR"]
+                    tx_raw.insert(0,"Offset",offset)
+                    tx_raw.insert(0,"Sir",sir)
+                else:
+                    temp_df = pd.read_csv(filename,header=None)
+                    temp_df.columns = ["TX / RX PHY\nconfiguration","Interferer PHY\nconfiguration","TRX PRR","IF PRR"]
+                    temp_df.insert(0,"Offset",offset)
+                    temp_df.insert(0,"Sir",sir)
+                    tx_raw = pd.concat([tx_raw,temp_df])
+
+        if not tx_raw.empty:
+            tx_raw.insert(0,"TX / RX payload",trx_payload_size)
+            tx_raw.insert(0,"Interferer payload",if_payload_size)
+            tx_raw.replace({"SUN-OFDM 863-870MHz ":""},regex=True,inplace=True)
+
+            if tx_complete.empty:
+                tx_complete = tx_raw
+            else:
+                tx_complete = pd.concat([tx_complete,tx_raw])
+                
+            tx_complete.reset_index(drop=True,inplace=True)
+
+phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
+tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap(phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]],row["Interferer payload"],row["TX / RX payload"],row["Offset"]),axis=1)
+test = pd.pivot_table(tx_complete,index=["TX / RX PHY\nconfiguration","Payload overlap"],values=["TRX PRR"],columns=["Interferer PHY\nconfiguration","Sir"])
+
+def add_h_line(ax, xpos, ypos):
+    line = plt.Line2D([ypos, ypos+ .08], [xpos, xpos], color='black', transform=ax.transAxes)
+    line.set_clip_on(False)
+    ax.add_line(line)
+
+def add_v_line(ax, xpos, ypos):
+    line = plt.Line2D([xpos, xpos], [ypos, ypos+ .06], color='black', transform=ax.transAxes)
+    line.set_clip_on(False)
+    ax.add_line(line)
+
+def y_label_pos(my_index,level):
+    labels = my_index.get_level_values(level)
+    return [(k, sum(1 for i in g)) for k,g in groupby(labels)]
+
+def x_label_pos(my_index,level):
+    labels = my_index.get_level_values(level)
+    return [(k, sum(1 for i in g)) for k,g in groupby(labels)]
+
+def y_label_group(ax, df):
+    xpos = -.08
+    scale = 1./df.index.size
+    for level in range(df.index.nlevels)[::-1]:
+        pos = df.index.size
+        for label, rpos in y_label_pos(df.index,level):
+            add_h_line(ax, pos*scale, xpos)
+            pos -= rpos
+            lypos = (pos + .5 * rpos)*scale
+            ax.text(xpos+.04, lypos, label, va='center', ha='center', transform=ax.transAxes, rotation = 0 if level == 1 else 90, fontsize=11,fontweight="regular") 
+        add_h_line(ax, pos*scale , xpos)
+        xpos -= .08
+
+def x_label_group(ax, df):
+    ypos = -.06
+    scale = 1./df.columns.size
+    for level in range(df.columns.nlevels)[:0:-1]:
+        pos = df.columns.size
+        for label, rpos in y_label_pos(df.columns,level)[::-1]:
+            add_v_line(ax, pos*scale, ypos)
+            pos -= rpos
+            lxpos = (pos + .5 * rpos)*scale
+            ax.text(lxpos, ypos+.03, label, va='center', ha='center', transform=ax.transAxes, fontsize=11,fontweight="regular")
+        add_v_line(ax, pos*scale , ypos)
+        ypos -= .06
+
+fig = plt.figure(figsize=(10,10))
+ax = sns.heatmap(test,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.804,"aspect":20},annot=True, annot_kws={"size": 8})
+ax.collections[0].colorbar.set_label("PRR",labelpad=8,fontsize=14,fontweight="regular")
+ax.collections[0].colorbar.ax.set_frame_on(True)
+ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4,tick1On=True)
+ax.collections[0].colorbar.ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4)
+
+for axis in ['top','bottom','left','right']:
+    ax.spines[axis].set_visible(True)
+    ax.spines[axis].set_color("black")
+    ax.spines[axis].set_linewidth(1.6)
+    ax.collections[0].colorbar.ax.spines[axis].set_linewidth(1.6)
+    ax.collections[0].colorbar.ax.spines[axis].set_color("black")
+
+y_labels = ['' for item in ax.get_yticklabels()]
+ax.set_yticklabels(y_labels)
+ax.set_ylabel("TX / RX PHY\nPayload overlap")
+x_labels = ['' for item in ax.get_xticklabels()]
+ax.set_xticklabels(x_labels)
+ax.set_xlabel("SIR\nIF PHY")
+
+ax.hlines([5, 10, 15], *ax.get_xlim())
+ax.vlines([5, 10, 15], *ax.get_ylim())
+
+plt.gca().yaxis.set_label("test")
+plt.gca().yaxis.get_label().set_fontsize(14)
+plt.gca().yaxis.get_label().set_weight("regular")
+plt.gca().yaxis.labelpad = 70
+plt.gca().xaxis.get_label().set_fontsize(14)
+plt.gca().xaxis.get_label().set_weight("regular")
+plt.gca().xaxis.labelpad = 54
+
+y_label_group(ax, test)
+x_label_group(ax, test)
+image_file = "test.%s" % (extension)
+plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
+plt.close()
