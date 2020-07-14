@@ -14,7 +14,7 @@ extension = "png"
 transparent_flag = False
 pfhr_flag = False
 trx_payload_size = 255 # in bytes
-if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] # in bytes
+if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] if not pfhr_flag else [255] # in bytes
 sirs = [-3,0,3,6,9] # in dB
 
 def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
@@ -93,27 +93,28 @@ for sir in sirs:
 
 phy_names = {"O4 MCS2":2,"O4 MCS3":3,"O3 MCS1":4,"O3 MCS2":5}
 tx_complete["Payload overlap"] = tx_complete.apply(lambda row: get_payload_overlap(phy_names[row["Interferer PHY\nconfiguration"]],phy_names[row["TX / RX PHY\nconfiguration"]],row["Interferer payload"],row["TX / RX payload"],row["Offset"]),axis=1)
-test = pd.pivot_table(tx_complete,index=["TX / RX PHY\nconfiguration","Payload overlap"],values=["TRX PRR"],columns=["Interferer PHY\nconfiguration","Sir"])
+TRX_PRR = pd.pivot_table(tx_complete,index=["TX / RX PHY\nconfiguration","Payload overlap"],values=["TRX PRR"],columns=["Interferer PHY\nconfiguration","Sir"])
+IF_PRR = pd.pivot_table(tx_complete,index=["TX / RX PHY\nconfiguration","Payload overlap"],values=["IF PRR"],columns=["Interferer PHY\nconfiguration","Sir"])
 
-def add_h_line(ax, xpos, ypos):
-    line = plt.Line2D([ypos, ypos+ .08], [xpos, xpos], color='black', transform=ax.transAxes)
+def add_h_line(ax,xpos,ypos):
+    line = plt.Line2D([ypos,ypos+.08],[xpos, xpos],color='black',transform=ax.transAxes)
     line.set_clip_on(False)
     ax.add_line(line)
 
-def add_v_line(ax, xpos, ypos):
-    line = plt.Line2D([xpos, xpos], [ypos, ypos+ .06], color='black', transform=ax.transAxes)
+def add_v_line(ax,xpos,ypos):
+    line = plt.Line2D([xpos,xpos],[ypos,ypos+(.05 if not pfhr_flag else .08)],color='black',transform=ax.transAxes)
     line.set_clip_on(False)
     ax.add_line(line)
 
 def y_label_pos(my_index,level):
     labels = my_index.get_level_values(level)
-    return [(k, sum(1 for i in g)) for k,g in groupby(labels)]
+    return [(k,sum(1 for i in g)) for k,g in groupby(labels)]
 
 def x_label_pos(my_index,level):
     labels = my_index.get_level_values(level)
-    return [(k, sum(1 for i in g)) for k,g in groupby(labels)]
+    return [(k,sum(1 for i in g)) for k,g in groupby(labels)]
 
-def y_label_group(ax, df):
+def y_label_group(ax,df):
     xpos = -.08
     scale = 1./df.index.size
     for level in range(df.index.nlevels)[::-1]:
@@ -127,7 +128,7 @@ def y_label_group(ax, df):
         xpos -= .08
 
 def x_label_group(ax, df):
-    ypos = -.06
+    ypos = (-.05 if not pfhr_flag else -0.08)
     scale = 1./df.columns.size
     for level in range(df.columns.nlevels)[:0:-1]:
         pos = df.columns.size
@@ -135,15 +136,18 @@ def x_label_group(ax, df):
             add_v_line(ax, pos*scale, ypos)
             pos -= rpos
             lxpos = (pos + .5 * rpos)*scale
-            ax.text(lxpos, ypos+.03, label, va='center', ha='center', transform=ax.transAxes, fontsize=11,fontweight="regular")
+            ax.text(lxpos, ypos+(.025 if not pfhr_flag else .04), label, va='center', ha='center', transform=ax.transAxes, fontsize=11, fontweight="regular")
         add_v_line(ax, pos*scale , ypos)
-        ypos -= .06
+        ypos -= (.05 if not pfhr_flag else 0.08)
 
 fig = plt.figure(figsize=(10,10))
-ax = sns.heatmap(test,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.804,"aspect":20},annot=True, annot_kws={"size": 8})
-ax.collections[0].colorbar.set_label("PRR",labelpad=8,fontsize=14,fontweight="regular")
+if not pfhr_flag:
+    ax = sns.heatmap(TRX_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.804,"aspect":20},annot=True, annot_kws={"size": 8})
+else:
+    ax = sns.heatmap(TRX_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.481,"aspect":12},annot=True, annot_kws={"size": 8})
+ax.collections[0].colorbar.set_label("TX / RX PRR",labelpad=8,fontsize=14,fontweight="regular")
 ax.collections[0].colorbar.ax.set_frame_on(True)
-ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4,tick1On=True)
+ax.tick_params(axis='both',colors="black",width=1.6,length=4,tick1On=True)
 ax.collections[0].colorbar.ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4)
 
 for axis in ['top','bottom','left','right']:
@@ -160,19 +164,71 @@ x_labels = ['' for item in ax.get_xticklabels()]
 ax.set_xticklabels(x_labels)
 ax.set_xlabel("SIR\nIF PHY")
 
-ax.hlines([5, 10, 15], *ax.get_xlim())
+if not pfhr_flag:
+    ax.hlines([5, 10, 15], *ax.get_xlim())
+else:
+    ax.hlines([3, 6, 9], *ax.get_xlim())
 ax.vlines([5, 10, 15], *ax.get_ylim())
 
-plt.gca().yaxis.set_label("test")
+
 plt.gca().yaxis.get_label().set_fontsize(14)
 plt.gca().yaxis.get_label().set_weight("regular")
 plt.gca().yaxis.labelpad = 70
 plt.gca().xaxis.get_label().set_fontsize(14)
 plt.gca().xaxis.get_label().set_weight("regular")
-plt.gca().xaxis.labelpad = 54
+plt.gca().xaxis.labelpad = 46
 
-y_label_group(ax, test)
-x_label_group(ax, test)
-image_file = "test.%s" % (extension)
+y_label_group(ax, TRX_PRR)
+x_label_group(ax, TRX_PRR)
+if not pfhr_flag:
+    image_file = "PP_TRX_PRR.%s" % (extension)
+else:
+    image_file = "PFHR_TRX_PRR.%s" % (extension)
+plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
+plt.close()
+
+fig = plt.figure(figsize=(10,10))
+if not pfhr_flag:
+    ax = sns.heatmap(IF_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.804,"aspect":20},annot=True, annot_kws={"size": 8})
+else:
+    ax = sns.heatmap(IF_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.481,"aspect":12},annot=True, annot_kws={"size": 8})
+ax.collections[0].colorbar.set_label("IF PRR",labelpad=8,fontsize=14,fontweight="regular")
+ax.collections[0].colorbar.ax.set_frame_on(True)
+ax.tick_params(axis='both',colors="black",width=1.6,length=4,tick1On=True)
+ax.collections[0].colorbar.ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4)
+
+for axis in ['top','bottom','left','right']:
+    ax.spines[axis].set_visible(True)
+    ax.spines[axis].set_color("black")
+    ax.spines[axis].set_linewidth(1.6)
+    ax.collections[0].colorbar.ax.spines[axis].set_linewidth(1.6)
+    ax.collections[0].colorbar.ax.spines[axis].set_color("black")
+
+y_labels = ['' for item in ax.get_yticklabels()]
+ax.set_yticklabels(y_labels)
+ax.set_ylabel("TX / RX PHY\nPayload overlap")
+x_labels = ['' for item in ax.get_xticklabels()]
+ax.set_xticklabels(x_labels)
+ax.set_xlabel("SIR\nIF PHY")
+
+if not pfhr_flag:
+    ax.hlines([5, 10, 15], *ax.get_xlim())
+else:
+    ax.hlines([3, 6, 9], *ax.get_xlim())
+ax.vlines([5, 10, 15], *ax.get_ylim())
+
+plt.gca().yaxis.get_label().set_fontsize(14)
+plt.gca().yaxis.get_label().set_weight("regular")
+plt.gca().yaxis.labelpad = 70
+plt.gca().xaxis.get_label().set_fontsize(14)
+plt.gca().xaxis.get_label().set_weight("regular")
+plt.gca().xaxis.labelpad = 46
+
+y_label_group(ax, IF_PRR)
+x_label_group(ax, IF_PRR)
+if not pfhr_flag:
+    image_file = "PP_IF_PRR.%s" % (extension)
+else:
+    image_file = "PFHR_IF_PRR.%s" % (extension)
 plt.savefig(image_file,bbox_inches='tight',dpi=330,transparent=transparent_flag)
 plt.close()
