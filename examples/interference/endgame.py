@@ -42,9 +42,9 @@ def get_payload_overlap(if_idx,trx_idx,if_pls,trx_pls,offset):
     if_duration_us = ((math.ceil(((if_pls * 8) + tail_bits) / udbps[if_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
     trx_duration_us = ((math.ceil(((trx_pls * 8) + tail_bits) / udbps[trx_idx]) + pfhr_sym) / ofdm_sym_rate) * 1000
     if not pfhr_flag:
-        return round(if_duration_us / (trx_duration_us - pfhr_duration_us),2)
+        return round(if_duration_us * 100 / (trx_duration_us - pfhr_duration_us),1)
     else:
-        return round((if_duration_us - abs(offset)) / pfhr_duration_us,2)
+        return round((if_duration_us - abs(offset)) * 100 / pfhr_duration_us,1)
 
 tx_complete = pd.DataFrame()
 for sir in sirs:
@@ -142,10 +142,10 @@ def x_label_group(ax, df):
 
 fig = plt.figure(figsize=(10,10))
 if not pfhr_flag:
-    ax = sns.heatmap(TRX_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.804,"aspect":20},annot=True, annot_kws={"size": 8})
+    ax = sns.heatmap(TRX_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.83,"aspect":23,"pad":0.025},annot=True, annot_kws={"size": 8})
 else:
-    ax = sns.heatmap(TRX_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.481,"aspect":12},annot=True, annot_kws={"size": 8})
-ax.collections[0].colorbar.set_label("TX / RX PRR",labelpad=8,fontsize=14,fontweight="regular")
+    ax = sns.heatmap(TRX_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.498,"aspect":14,"pad":0.025},annot=True, annot_kws={"size": 8})
+ax.collections[0].colorbar.set_label("UTX PRR",labelpad=8,fontsize=14,fontweight="regular")
 ax.collections[0].colorbar.ax.set_frame_on(True)
 ax.tick_params(axis='both',colors="black",width=1.6,length=4,tick1On=True)
 ax.collections[0].colorbar.ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4)
@@ -159,10 +159,13 @@ for axis in ['top','bottom','left','right']:
 
 y_labels = ['' for item in ax.get_yticklabels()]
 ax.set_yticklabels(y_labels)
-ax.set_ylabel("TX / RX PHY\nPayload overlap")
+if not pfhr_flag:
+    ax.set_ylabel("UTX PHY\n$O_{pp}$ [%]")
+else:
+    ax.set_ylabel("UTX PHY\n$E(O_{pfhr})$ [%]")
 x_labels = ['' for item in ax.get_xticklabels()]
 ax.set_xticklabels(x_labels)
-ax.set_xlabel("SIR\nIF PHY")
+ax.set_xlabel("$SIR$ [dB]\nInterferer PHY")
 
 if not pfhr_flag:
     ax.hlines([5, 10, 15], *ax.get_xlim())
@@ -189,10 +192,10 @@ plt.close()
 
 fig = plt.figure(figsize=(10,10))
 if not pfhr_flag:
-    ax = sns.heatmap(IF_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.804,"aspect":20},annot=True, annot_kws={"size": 8})
+    ax = sns.heatmap(IF_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.83,"aspect":23,"pad":0.025},annot=True, annot_kws={"size": 8})
 else:
-    ax = sns.heatmap(IF_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.481,"aspect":12},annot=True, annot_kws={"size": 8})
-ax.collections[0].colorbar.set_label("IF PRR",labelpad=8,fontsize=14,fontweight="regular")
+    ax = sns.heatmap(IF_PRR,cmap="RdYlGn",linewidths=0.6,vmin=0,vmax=1.0,square=True,cbar_kws={"shrink":0.498,"aspect":14,"pad":0.025},annot=True, annot_kws={"size": 8})
+ax.collections[0].colorbar.set_label("Interferer PRR",labelpad=8,fontsize=14,fontweight="regular")
 ax.collections[0].colorbar.ax.set_frame_on(True)
 ax.tick_params(axis='both',colors="black",width=1.6,length=4,tick1On=True)
 ax.collections[0].colorbar.ax.tick_params(axis='both', colors="black", labelsize=11,width=1.6,length=4)
@@ -206,10 +209,13 @@ for axis in ['top','bottom','left','right']:
 
 y_labels = ['' for item in ax.get_yticklabels()]
 ax.set_yticklabels(y_labels)
-ax.set_ylabel("TX / RX PHY\nPayload overlap")
+if not pfhr_flag:
+    ax.set_ylabel("UTX PHY\n$O_{pp}$ [%]")
+else:
+    ax.set_ylabel("UTX PHY\n$E(O_{pfhr})$ [%]")
 x_labels = ['' for item in ax.get_xticklabels()]
 ax.set_xticklabels(x_labels)
-ax.set_xlabel("SIR\nIF PHY")
+ax.set_xlabel("$SIR$ [dB]\nInterferer PHY")
 
 if not pfhr_flag:
     ax.hlines([5, 10, 15], *ax.get_xlim())
