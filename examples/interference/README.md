@@ -210,9 +210,9 @@ Assuming you're using an OpenMote-B node, a rising edge on pin PB0 will trigger 
 2020-03-05 13:21:07,951 # PHY reconfigured to SUN-OFDM 863-870MHz O4 MCS2
 ```
 
->**Note:** In similar fashion, a rising edge on PB1 and PB3 triggers a transmission and a PHY reconfiguration on the AT86RF215 2.4GHz interface. However, for PHY reconfigurations, you should really use the `physup` shell command.
+>**Note:** In similar fashion, a rising edge on PB1 and PB3 triggers a transmission and a PHY reconfiguration on the AT86RF215 2.4GHz interface. However, for PHY reconfigurations, you should really use the `physup` or `physup` shell command.
 
-Transmissions are defined as structs of type `if_tx_t` (containing the interface to send on, the destination MAC address, and the actual payload of the 802.15.4 DATA frame) By default, triggering a transmission on a certain interface (by applying a rising edge to the corresponding pin) causes a 120 byte long packet (with a payload containing consecutive numbers from 0 to 9 in periodic fashion) to be transmitted to the `22:68:31:23:9D:F1:96:37` MAC address (on said interface), which in our case is the MAC address of the *receiving node*.
+Transmissions are defined as structs of type `if_tx_t` (containing the interface to send on, the destination MAC address, and the actual payload of the 802.15.4 DATA frame) By default, triggering a transmission on a certain interface (by applying a rising edge to the corresponding pin) causes a 255 byte long packet (with a payload containing consecutive numbers from 0 to 9 in periodic fashion) to be transmitted to the `22:68:31:23:14:F4:D2:3B` MAC address (on said interface), which in our case is the MAC address of the *receiving node*.
 
 >**Note:** By *receiving node* we mean the node intended to receive the DATA transmission, not the node that's supposed to receive the interfering transmission.
 
@@ -297,7 +297,7 @@ $ python3 analyzer.py <name of logfile>.log <name of csv file>.csv -i <interfere
 >               "SUN-OFDM 863-870MHz O3 MCS1", "SUN-OFDM 863-870MHz O3 MCS2"]
 >```
 
-It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `IF_<IF bytes>_TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<IF bytes>` is the amount of bytes in the interfering transmission's PHY payload (i.e., L2 payload size + L2 header), `<TX bytes>` is the amount of bytes in the data transmission's PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `IF_20B_TX_40B_OF_1MS_SIR_10DB.csv` and `IF_30B_TX_70B_OF_1350US_SIR_0DB.csv`.
+It is highly advisable that you follow a certain naming scheme when specifying the csv filenames (this will become clear further on). Specifically, you should format it as follows: `<scenario>_IF_<IF bytes>_TX_<TX bytes>B_OF_<offset><prefix>S_SIR_<sir>DB.csv`. Wherein `<scenario>` indicates which part of the useful transmission is being interfered with, `<IF bytes>` is the amount of bytes in the interfering transmission's PHY payload (i.e., L2 payload size + L2 header), `<TX bytes>` is the amount of bytes in the data transmission's PHY payload (i.e., L2 payload size + L2 header), `<offset>` is a quantifier for the amount of time units between start of transmission of the interferer (IF) and the transmitter (TX) (have a look at `RIOT > examples > timing_control > README.md` for further explanation), `<prefix>` can be either capital U (for micro) or capital M (for mili) and specifies the base time-unit for the TX <-> IF offset, and finally, `<sir>` specifies the difference in signal strength between TX and IF (in dB). Some correctly formatted examples include: `PP_IF_20B_TX_40B_OF_1MS_SIR_10DB.csv` and `PFHR_IF_30B_TX_70B_OF_1350US_SIR_0DB.csv`.
 
 After running the analyzer script, the output written to the csv file has the following format (just an example):
 
@@ -312,7 +312,7 @@ A newer feature of the analyzer script is that it has an option (`-l`) to specif
 
 >**Note:** once again, by *receiving node* we mean the node intended to receive the DATA transmission, not the node that's supposed to receive the interfering transmission.
 
-If you connect the transmitter/interferer PHY reconfig pin of the timing controller to PA7 of an openmote-b node that's receiving/logging interfering transmissions, similarly to the node receiving data transmissions, it will write "NEXT_EXP" (i.e., a *next experiment* indication) to the terminal (and therefore to its logfile) each time the transmitter/receiver PHY changes. This feature ensures backward compatibility with the original analyzer functionality. 
+If you connect the transmitter/interferer PHY reconfig pin of the timing controller to PA7 of an openmote-b node that's receiving/logging interfering transmissions, similarly to the node receiving data transmissions, it will write "NEXT_EXP" (i.e., a *next experiment* indication) to the terminal (and therefore to its logfile) each time the transmitter/receiver PHY changes. This feature ensures backward compatibility with the original analyzer functionality. Alternatively, you may write the next experiment indication to the logfile manually (and forego the physical wire altogether).
 
 >**Note:** Otherwise, the analyzer script wouldn't know which logged interfering transmissions occured during which transmitter/receiver PHY configuration, because the interferer PHY only changes (thus causing a PHY reconfiguration indication to be logged) when the transmitter/receiver has cycled through all possible PHY configurations.
 
@@ -329,84 +329,93 @@ I admit that it's quite difficult to keep track of every possible feature previo
 
 Before you can really understand what this script does, you should read `examples > timing_control > README.md`. In short, the timing controller triggers a number of rising edges on its GPIO pins. Two of those pins are configured to trigger interrupts on the send pins of a transmitter and interferer node respectively. The time offset between these triggers, and hence (in theory) the time offset between DATA and interference transmission, is user configurable via a timing controller shell command (the `offset` command). However, in practice, the time between triggering a send pin interrupt and actually sending out data is a function of the size of the packet to be transmitted. Hence, the offset needs to be compensated, which can be done with the `comp` timing controller shell command. 
 
-The offset compensation is therefore a function of 2 variables, i.e., the size of both the data and interference transmissions. Luckily for you, we've measured the required compensation for 11 different combinations of packet sizes and for every other combination the required compensation is calculated via 2-dimensional interpolation as follows:
+The offset compensation is therefore a function of 2 variables, i.e., the size of both the data and interference transmissions. Luckily, since the only useful transmission payload size we required for our research was 255 bytes, there's only one variable left (i.e., the interference payload size). As such, we can get away with measuring the required compensation for 39 interfering packet sizes (and leaving the useful payload size to 255 bytes), and calculating all other necessary values by means of 1-dimensional interpolation as follows: 
 
 ```py
-x = np.ogrid[20:130:10]
-x = np.tile(x,11)
-y = np.ogrid[20:130:10]
-y = np.repeat(y,11)
-z = np.array([20,-28,-70,-118,-154,-208,-256,-298,-352,-388,-442,
-              62,20,-28,-70,-118,-154,-208,-256,-298,-352,-388,
-              104,62,20,-28,-70,-118,-154,-208,-256,-298,-352,
-              152,104,62,20,-28,-70,-118,-154,-208,-256,-298,
-              194,152,104,62,20,-28,-70,-118,-154,-208,-256,
-              242,194,152,104,62,20,-28,-70,-118,-154,-208,
-              284,242,194,152,104,62,20,-28,-70,-118,-154,
-              332,284,242,194,152,104,62,20,-28,-70,-118,
-              380,332,284,242,194,152,104,62,20,-28,-70,
-              428,380,332,284,242,194,152,104,62,20,-28,
-              476,428,380,332,284,242,194,152,104,62,20])
-rbf = interpolate.Rbf(x,y,z)
+x = np.array([21,22,30,45,54,60,70,86,90,108,118,130,140,150,160,173,182,190,200,210,220,237,240,255,260,270,280,290,300,310,320,330,340,350,364,370,380,390,400])
+y = np.array([1090,1085,1043,965,918,887,835,752,731,638,586,570,518,466,414,370,323,258,206,160,130,37,30,20,0,-70,-130,-180,-230,-270,-310,-350,-390,-430,-490,-510,-570,-620,-680])
 
-def get_compensation(size_tuple):
-    # NOTE size_tuple = (if_payload_size,trx_payload_size)
-    compensation = int(round(rbf(size_tuple[0],size_tuple[1]).tolist()))
+f = interpolate.interp1d(x,y)
+
+def get_compensation(if_pls,trx_pls):
+    # TODO make 2D, current interpolation only works if trx_pls = 255B
+    compensation = int(np.round(f(if_pls)))
     return compensation
 ```
 
-Now, the controller script cycles through every combination of a list of transmitter/receiver PHY configs (`trx_phy_cfg`), a list of interferer PHY configs (`if_phy_cfg`), a list of interference payload sizes (L2 payload + 15 byte MHR + 4 byte MFR)(`if_payload_sizes`), and a single data transmission payload size (`trx_payload_size`). For each combination, all nodes are configured with the `physub` command and the payload size of the 2 transmitting nodes is set through the `numbytesub` command, after which the timing controller is configured to generate `num_of_tx` rising edges on the pins connected to the transmitter and interferer send pins (at a certain offset + compensation). In addition, the destination address of the data and interference transmissions is set to `trx_dest_addr` and `if_dest_addr` respectively via the `saddrsub` shell command.
+>**Note:** Otherwise, you'd need to measure the required compensation for a sufficiently large number of different combinations of packet sizes and for every other combination the required compensation must then be calculated via 2-dimensional interpolation.
+
+Now, the controller script cycles through every combination in a list of transmitter/receiver PHY configs (`trx_phy_cfg`), a list of interferer PHY configs (`if_phy_cfg`), ~~a list of interference PHY payload sizes (L2 payload + 15 byte MHR + 4 byte MFR)(`if_payload_sizes`)~~, and a single data transmission PHY payload size (`trx_payload_size`). For each combination, all nodes are configured with the `physub` command and the payload size of the 2 transmitting nodes is set through the `numbytesub` command, after which the timing controller is configured to generate `num_of_tx` rising edges on the pins connected to the transmitter and interferer send pins (at a certain offset + compensation). In addition, the destination address of the data and interference transmissions is set to `trx_dest_addr` and `if_dest_addr` respectively via the `saddrsub` shell command.
 
 >**Note:** a PHY config is a tuple containing a PHY configuration index (the index of said PHY config in `phy_cfg_sub_ghz[]` or `phy_cfg_2_4_ghz[]`) and the corresponding PHY config description string.
 
->**Note:** although the `numbytesub` shell command accepts a slightly larger L2 payload size than 101B (i.e., 120B PHY payload - 15B MHR - 4B MFR), the maximum user-specified PHY payload size can't exceed 120B (101B L2 payload + 15B MHR + 4B MFR), because then the offset compensation can't be calculated. You could solve this by adding a data point.
+>**Note:** although the `numbytesub` shell command accepts a much larger interferer L2 payload size than 381B (i.e., 400B PHY payload - 15B MHR - 4B MFR), the maximum user-specified interferer PHY payload size can't exceed 400B (381B L2 payload + 15B MHR + 4B MFR), because then the offset compensation can't be calculated. You could solve this by adding a data point.
 
 ```py
 trx_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
                (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
 if_phy_cfg = [(2,"SUN-OFDM 863-870MHz O4 MCS2"), (4,"SUN-OFDM 863-870MHz O3 MCS1"),
               (3,"SUN-OFDM 863-870MHz O4 MCS3"), (5,"SUN-OFDM 863-870MHz O3 MCS2")]
-trx_payload_size = 120 # in bytes
-if_payload_sizes = [50,70,90] # in bytes
-trx_dest_addr = "22:68:31:23:9D:F1:96:37"
-if_dest_addr = "22:68:31:23:14:F1:99:37"
-num_of_tx = 100
+trx_payload_size = 255 # in bytes
+trx_dest_addr = "22:68:31:23:14:F4:D2:3B"
+if_dest_addr = "22:68:31:23:2F:4A:16:3A"
+sir = 0 # in dB
+num_of_tx = 400
+pfhr_flag = False
+RIOT_location = "/home/relsas/RIOT-benpicco"
 ```
 
-After all transmissions (for a given combination) are done, all nodes are rebooted via shell, the logging streams are closed, and the newly created logfiles are passed to the analyzer script. Since the logfiles only contain the received messages for a single PHY combination, the `-i` and `-t` arguments were used (in conjunction with the `-n` and `-l` arguments). 
+>**Note:** Make sure to specify the location of RIOT as an absolute path string (i.e., `RIOT_location`). Otherwise the script won't work.
+
+**UPDATE:** in the latest version of this script, the list of interference PHY payload sizes is no longer specified manually. Instead, it is retrieved automatically for each combination of transmitter and interferer PHY config (through their index). In addition, the `pfhr_flag` flag sets the type of interference scenario for which you are testing. Setting it to `False` means you're targeting the PHY payload of useful transmissions, and vice versa for the PFHR. Besides the list of retrieved payload sizes, this flag also has implications on the timing offsets (which are automatically calculated). How, this is done is not really important to reproduce our experiments though. Setting this flag also cause the correct `<scenario>` to be prepended to the resulting csv files. This is necessary for the next step, visualizing the results.
+
+```py
+def get_if_payload_sizes(if_idx,trx_idx):
+    if not pfhr_flag:
+        if trx_idx in [2,4] and if_idx in [2,4]:
+            return [21,54,118,182]
+        elif trx_idx in [2,4] and if_idx in [3,5]:
+            return [21,108,237,364]
+        elif trx_idx in [3,5] and if_idx in [2,4]:
+            return [21,22,54,86]
+        elif trx_idx in [3,5] and if_idx in [3,5]:
+            return [21,45,108,173]
+        else:
+            raise ValueError("Index combination doesn't exist!")
+    else:
+        return [255]
+```
+
+**UPDATE:** in the latest version of this script, you can specify the SIR level at which the experiments were performed. However, this doesn't set the attenuator automatically (which is manual work), but merely makes sure that the resulting csv files have the correct file name.
+
+After all transmissions (for each combination) are done, all nodes are rebooted via shell, the logging streams are closed, and the newly created logfiles are passed to the analyzer script. Since the logfiles only contain the received messages for a single PHY combination, the `-i` and `-t` arguments were used (in conjunction with the `-n` and `-l` arguments). This cycle repeats itself for each combination of PHY configs, PHY payload sizes, and offsets.
 
 >**Note:** Assuming no pins are connected to the timing controller (other than a send pin), the PHY reconfiguration and next experiment indication strings were writen to each logfile manually.
 
 >**Note:** this script requires installation of the scipy python library: `pip3 install scipy`
 
 ## Visualizing Results
-### Heatmaps
-Although heatmaps are certainly usefull when it comes to comparing the PRR for different transmitter-interferer PHY config combinations, the fact that they can only display such information for a single combination of payload sizes make them fairly limited. Nonetheless, the `heatmapper.py` script generates a set of heatmaps based on a given list of interference payload sizes (`if_payload_sizes`) and a given `trx_payload_size` (i.e., for each combination).
+If you've properly formatted the names of the csv files, which is automatically correct if you've used the `controller.py` script, visualizing the data is rather easy with the `examples > interference > endgame.py` script. For the sake of brevity we'll only specify how to operate this script. In order to understand the graphs it outputs we kindly refer you to our research paper.
 
->**Note:** this script is actually somewhat robust and shouldn't fail if a certain csv file corresponding to a combination of payload sizes is not present in the current directory.
+Once you've obtained all required data in the form of appropriately named csv files, generating visuals is as easy as running `python3 endgame.py` from the `examples > interference` directory (on a Linux machine). Note that the `pfhr_flag` flag determines which csv files are being visualized.
+
+>**Note:** if you're reading this and you've got a data folder supplied by us, simply copy its contents into the `examples > interference` directory and run the python script from there.
 
 You can also set the extension of the image file to be generated (e.g., "png" or "pdf") and whether or not you want the image to have a transparent background (only works with file extensions that support transparency like "png").
+
 ```py
 extension = "png"
-legacy_flag = False
 transparent_flag = False
-trx_payload_size = 120 # in bytes
-if_payload_sizes = [20,25,30,35,40] # in bytes
+pfhr_flag = False
+trx_payload_size = 255 # in bytes
+if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] if not pfhr_flag else [255] # in bytes
+sirs = [-3,0,3,6,9] # in dB
+RIOT_location = "/home/relsas/RIOT-benpicco"
 ```
 
->**Note:** this script requires installation of the seaborn python library: `pip3 install seaborn` (and numpy if you don't have that already).
+> **Note:** this script no longer works with legacy csv files in which the interference PRR column is absent. Hence, we strongly advise you to only use the `controller.py` script to replicate our experiments.
 
-### Complicated graphs
-Trying to solve the limited nature of heatmaps, I came up with a different graphic that plots the PRR in function of the percentage of overlap between the PHY payload of a data transmission and an entire interference transmission (occuring in the middle of the data payload). This reduces the amount of graphs to just 1 per transmitter/receiver PHY configuration. In addition to the PRR of the data transmission, for each overlap percentage, the PRR of the interfering transmission is also plotted. Generating such a graph is as easy as calling:
-```
-$ python3 delivery.py
-```
-
-With exception of the absent `legacy_flag`, all configuration parameters of the `delivery.py` script are identical to those in `heatmapper.py`. This means that this script will not work with legacy csv files because it expects the additional interference PRR column.
-
->**Note:** the x axis is **always** the percentage of overlap between the data payload of a data transmission and an entire interference transmission (occuring in the middle of the PHY payload)and should **never** be mis-interpreted as the percentage of overlap between the PHY payload of an interference transmission and an entire data transmission (occuring in the middle of the interference payload) when looking at the PRR of interfering transmissions.
-
->**Note:** for some combinations of payload sizes, the overlap percentage is identical. This may happen when: both data and interference are shorter than an otherwise identical scenario resulting in the same overlap (in time), or one payload size stays the same but the other transmission increases by 1 byte. In the latter case, the 1 byte shorter transmission might consist of an equal amount of OFDM symbols because of padding. In any case, this will cause the script to fail (when all other paramers are identical) because of duplicate rows in a pandas dataframe.
+> **Note:** this script requires installation of the seaborn python library: `pip3 install seaborn` (and numpy if you don't have that already)
 
 ## Recommended Reads
 - [**IEEE 802.15.4-2015**](https://standards.ieee.org/standard/802_15_4-2015.html): The currently active PHY + MAC layer standard for 802.15.4 networks. Although this is the official standard, many developers seem to have a total disregard for certain aspects of it. Especially on the Sub-GHz PHY layers, there seems to be a lot of confusion as to what is actually standardised and what is not. The fact that IEEE standards are very expensive to obtain doesn't help this confusion either.
