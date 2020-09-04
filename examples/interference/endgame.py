@@ -16,6 +16,7 @@ pfhr_flag = False
 trx_payload_size = 255 # in bytes
 if_payload_sizes = [21,22,45,54,86,108,118,173,182,237,364] if not pfhr_flag else [255] # in bytes
 sirs = [-3,0,3,6,9] # in dB
+RIOT_location = "/home/relsas/RIOT-benpicco"
 
 def get_offsets(if_idx,trx_idx,if_pls,trx_pls):
     udbps = {2:6,3:12,4:6,5:12}
@@ -63,9 +64,9 @@ for sir in sirs:
         tx_raw = pd.DataFrame()
         for offset in offset_list:
             if not pfhr_flag:
-                filename = "/home/relsas/RIOT-benpicco/examples/interference/PP_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(if_payload_size,trx_payload_size,offset,sir)
+                filename = "%s/examples/interference/PP_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(RIOT_location,if_payload_size,trx_payload_size,offset,sir)
             else:
-                filename = "/home/relsas/RIOT-benpicco/examples/interference/PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(if_payload_size,trx_payload_size,offset,sir)
+                filename = "%s/examples/interference/PFHR_IF_%dB_TX_%dB_OF_%dUS_SIR_%dDB.csv"%(RIOT_location,if_payload_size,trx_payload_size,offset,sir)
             if os.path.isfile(filename):
                 if tx_raw.empty:
                     tx_raw = pd.read_csv(filename,header=None)

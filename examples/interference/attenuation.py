@@ -104,6 +104,7 @@ trx_payload_sizes = [255] # in bytes
 trx_dest_addr = "22:68:31:23:2F:4A:16:3A"
 attenuation = 39 # in dB
 num_of_tx = 10
+RIOT_location = "/home/relsas/RIOT-benpicco"
 test_duration = int(round(0.5 * num_of_tx)) + 2 # in seconds
 
 LOG_REGEXP_PKT = re.compile(r"^.*?rssi: (?P<rssi>[+-]?\d+).*?")
@@ -114,7 +115,7 @@ halt_event = threading.Event()
 
 # NOTE you might have to change the serial port numbers of the devices
 # depending on the order in which you plugged them into the USB ports
-timing_cmd = "make term PORT=/dev/ttyUSB8 BOARD=remote-revb -C /home/relsas/RIOT-benpicco/examples/timing_control/"
+timing_cmd = "make term PORT=/dev/ttyUSB8 BOARD=remote-revb -C %s/examples/timing_control/" % RIOT_location
 rx_cmd = "make term PORT=/dev/ttyUSB1 BOARD=openmote-b"
 tx_cmd = "make term PORT=/dev/ttyUSB5 BOARD=openmote-b"
 
