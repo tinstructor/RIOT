@@ -161,12 +161,12 @@ for axis in ['top','bottom','left','right']:
 y_labels = ['' for item in ax.get_yticklabels()]
 ax.set_yticklabels(y_labels)
 if not pfhr_flag:
-    ax.set_ylabel("UTX PHY\n$O_{pp}$ [%]")
+    ax.set_ylabel("UTX PHY\n$O_{pp}$ (%)")
 else:
-    ax.set_ylabel("UTX PHY\n$E(O_{pfhr})$ [%]")
+    ax.set_ylabel("UTX PHY\n$E(O_{pfhr})$ (%)")
 x_labels = ['' for item in ax.get_xticklabels()]
 ax.set_xticklabels(x_labels)
-ax.set_xlabel("$SIR$ [dB]\nInterferer PHY")
+ax.set_xlabel("SIR (dB)\nInterferer PHY")
 
 if not pfhr_flag:
     ax.hlines([5, 10, 15], *ax.get_xlim())
@@ -211,12 +211,12 @@ for axis in ['top','bottom','left','right']:
 y_labels = ['' for item in ax.get_yticklabels()]
 ax.set_yticklabels(y_labels)
 if not pfhr_flag:
-    ax.set_ylabel("UTX PHY\n$O_{pp}$ [%]")
+    ax.set_ylabel("UTX PHY\n$O_{pp}$ (%)")
 else:
-    ax.set_ylabel("UTX PHY\n$E(O_{pfhr})$ [%]")
+    ax.set_ylabel("UTX PHY\n$E(O_{pfhr})$ (%)")
 x_labels = ['' for item in ax.get_xticklabels()]
 ax.set_xticklabels(x_labels)
-ax.set_xlabel("$SIR$ [dB]\nInterferer PHY")
+ax.set_xlabel("SIR (dB)\nInterferer PHY")
 
 if not pfhr_flag:
     ax.hlines([5, 10, 15], *ax.get_xlim())
