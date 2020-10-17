@@ -102,7 +102,24 @@ static const uart_conf_t uart_config[] = {
  * @{
  */
 static const spi_conf_t spi_config[] = {
-    {
+    {    /* EXT1 */
+        .dev      = &(SERCOM4->SPI),
+        .miso_pin = GPIO_PIN(PB, 29),
+        .mosi_pin = GPIO_PIN(PB, 27),
+        .clk_pin  = GPIO_PIN(PB, 26),
+        .miso_mux = GPIO_MUX_D,
+        .mosi_mux = GPIO_MUX_D,
+        .clk_mux  = GPIO_MUX_D,
+        .miso_pad = SPI_PAD_MISO_3,
+        .mosi_pad = SPI_PAD_MOSI_0_SCK_1,
+        .gclk_src = SAM0_GCLK_48MHZ,
+#ifdef MODULE_PERIPH_DMA
+        .tx_trigger = SERCOM4_DMAC_ID_TX,
+        .rx_trigger = SERCOM4_DMAC_ID_RX,
+#endif
+
+    },
+    {    /* EXT2, EXT3 */
         .dev      = &(SERCOM6->SPI),
         .miso_pin = GPIO_PIN(PC, 7),
         .mosi_pin = GPIO_PIN(PC, 4),
@@ -113,7 +130,10 @@ static const spi_conf_t spi_config[] = {
         .miso_pad = SPI_PAD_MISO_3,
         .mosi_pad = SPI_PAD_MOSI_0_SCK_1,
         .gclk_src = SAM0_GCLK_48MHZ,
-
+#ifdef MODULE_PERIPH_DMA
+        .tx_trigger = SERCOM6_DMAC_ID_TX,
+        .rx_trigger = SERCOM6_DMAC_ID_RX,
+#endif
     }
 };
 
